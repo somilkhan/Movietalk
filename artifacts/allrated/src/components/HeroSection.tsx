@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'wouter';
 import type { Title } from '@workspace/api-client-react';
 import { getGenreNames } from '@/lib/tmdbGenres';
@@ -9,19 +9,29 @@ export function HeroSection({ titles }: { titles: Title[] | undefined }) {
 
   const [logoPath, setLogoPath] = useState<string | null>(null);
   const [backdropError, setBackdropError] = useState(false);
+  const [trailerUrl, setTrailerUrl] = useState<string | null>(null);
 
   const title = featured?.[index];
 
-  // Fetch logo for the title
+  // Fetch logo and trailer for the title
   useEffect(() => {
     setLogoPath(null);
     setBackdropError(false);
+    setTrailerUrl(null);
     if (!title) return;
 
     const ctrl = new AbortController();
+
+    // Fetch logo
     fetch(`/api/catalog/title/${title.mediaType}/${title.id}/logo`, { signal: ctrl.signal })
       .then(r => r.ok ? r.json() : null)
       .then(data => data?.logoPath ? setLogoPath(data.logoPath) : null)
+      .catch(() => {});
+
+    // Fetch trailer
+    fetch(`/api/catalog/title/${title.mediaType}/${title.id}/trailer`, { signal: ctrl.signal })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => data?.url ? setTrailerUrl(data.url) : null)
       .catch(() => {});
 
     return () => ctrl.abort();
@@ -36,26 +46,44 @@ export function HeroSection({ titles }: { titles: Title[] | undefined }) {
 
   return (
     <section className="relative w-full h-[75vh] md:h-auto md:aspect-video max-h-[85vh] overflow-hidden group" data-testid="hero-section">
-      {/* Backdrop image */}
-      {backdropUrl && !backdropError && (
-        <img
-          src={backdropUrl}
-          alt={title.title}
-          className="absolute inset-0 h-full w-full object-cover z-0"
-          onError={() => setBackdropError(true)}
-        />
-      )}
-
-      {/* Fallback: pure black */}
-      {(!backdropUrl || backdropError) && (
-        <div className="absolute inset-0 bg-black z-0" />
+      {/* Video background (bingr.one style) */}
+      {trailerUrl && !backdropError ? (
+        <div className="absolute inset-0 z-0 bg-black overflow-hidden">
+          <video
+            src={trailerUrl}
+            autoPlay
+            loop
+            playsInline
+            muted
+            disablePictureInPicture
+            disableRemotePlayback
+            controlsList="nodownload nofullscreen noremoteplayback"
+            className="w-full h-full object-cover object-center opacity-90 animate-in fade-in duration-1000 scale-[1.35] pointer-events-none"
+            onError={() => setBackdropError(true)}
+          />
+        </div>
+      ) : (
+        /* Static backdrop image fallback */
+        <>
+          {backdropUrl && !backdropError && (
+            <img
+              src={backdropUrl}
+              alt={title.title}
+              className="absolute inset-0 h-full w-full object-cover z-0"
+              onError={() => setBackdropError(true)}
+            />
+          )}
+          {(!backdropUrl || backdropError) && (
+            <div className="absolute inset-0 bg-black z-0" />
+          )}
+        </>
       )}
 
       {/* Gradient overlays */}
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent pointer-events-none z-[1]" />
-      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent pointer-events-none z-[1]" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent w-[50%] md:w-[65%] pointer-events-none z-[1] transition-opacity duration-1000 opacity-0 md:opacity-100" />
 
-      {/* Bingr logo - top left (mobile only, desktop has sidebar logo) */}
+      {/* Bingr logo - top left (mobile only) */}
       <div className="absolute top-5 left-5 z-20 md:hidden">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="white" className="drop-shadow-lg">
           <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/>
