@@ -63,7 +63,7 @@ export function HeroSection({ titles }: { titles: Title[] | undefined }) {
       </div>
 
       {/* Content */}
-      <div className="absolute inset-0 flex flex-col justify-end px-6 pb-28 md:pb-16 md:pl-[100px] lg:pl-[120px] pointer-events-none z-10">
+      <div className="absolute inset-0 flex flex-col justify-end px-6 pb-10 md:pb-16 md:pl-[100px] lg:pl-[120px] pointer-events-none z-10">
         <div className="flex flex-col gap-3 max-w-2xl">
           {/* Logo or Title */}
           {logoPath ? (
@@ -137,9 +137,9 @@ export function HeroSection({ titles }: { titles: Title[] | undefined }) {
         </div>
       </div>
 
-      {/* Filmstrip thumbnails */}
+      {/* Filmstrip thumbnails — DESKTOP ONLY */}
       {featured.length > 1 && (
-        <div className="absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 z-20 w-full max-w-3xl px-6">
+        <div className="hidden md:block absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 z-20 w-full max-w-3xl px-6">
           <div className="flex gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-smooth py-2">
             {featured.map((t, i) => (
               <button
