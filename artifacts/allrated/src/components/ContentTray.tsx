@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from 'react';
 import { Link } from 'wouter';
 import type { Title } from '@workspace/api-client-react';
 import { cn } from '@/lib/utils';
-import { PosterCard } from './PosterCard';
+import { TitleCard, NumberedTitleCard } from './TitleCard';
 
 interface ContentTrayProps {
   heading: string;
@@ -20,7 +20,6 @@ export function ContentTray({
   loading,
   numbered,
   viewAllHref,
-  size = 'md',
   className,
 }: ContentTrayProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -53,15 +52,18 @@ export function ContentTray({
 
   return (
     <section className={cn('relative mb-8 md:mb-10', className)}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 px-4 md:px-12 lg:px-16">
-        <h2 className="text-white font-bold text-[18px] md:text-[22px]">
+      {/* Header — matches bingr.one exactly */}
+      <div className="flex items-center justify-between mb-4 px-6 lg:px-20">
+        <h2 className="text-[17px] lg:text-[19px] font-semibold text-white/90">
           {heading}
         </h2>
         {viewAllHref && (
-          <Link href={viewAllHref} className="text-white/50 text-xs md:text-sm font-medium hover:text-white transition-colors flex items-center gap-1">
+          <Link
+            href={viewAllHref}
+            className="flex items-center gap-1 text-[12px] font-semibold text-white/50 bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full transition"
+          >
             View All
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
               <path d="M9 18l6-6-6-6"/>
             </svg>
           </Link>
@@ -90,12 +92,12 @@ export function ContentTray({
         <button
           onClick={() => scroll('left')}
           className={cn(
-            "absolute left-2 top-1/2 -translate-y-1/2 z-20 hidden md:flex h-10 w-10 items-center justify-center rounded-full bg-black/60 backdrop-blur text-white hover:bg-black/80 transition-all",
-            canScrollLeft ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            "absolute left-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white transition-all duration-300 hover:bg-black/80 opacity-0 group-hover/tray:opacity-100 pointer-events-none group-hover/tray:pointer-events-auto",
+            canScrollLeft ? 'translate-x-0' : '-translate-x-4 opacity-0'
           )}
           aria-label="Scroll left"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <path d="M15 18l-6-6 6-6"/>
           </svg>
         </button>
@@ -103,12 +105,12 @@ export function ContentTray({
         <button
           onClick={() => scroll('right')}
           className={cn(
-            "absolute right-2 top-1/2 -translate-y-1/2 z-20 hidden md:flex h-10 w-10 items-center justify-center rounded-full bg-black/60 backdrop-blur text-white hover:bg-black/80 transition-all",
-            canScrollRight ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            "absolute right-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white transition-all duration-300 hover:bg-black/80 opacity-0 group-hover/tray:opacity-100 pointer-events-none group-hover/tray:pointer-events-auto",
+            canScrollRight ? 'translate-x-0' : 'translate-x-4 opacity-0'
           )}
           aria-label="Scroll right"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <path d="M9 18l6-6-6-6"/>
           </svg>
         </button>
@@ -116,33 +118,25 @@ export function ContentTray({
         {/* Cards */}
         <div
           ref={scrollRef}
-          className={cn(
-            "flex gap-2 md:gap-4 overflow-x-auto no-scrollbar scroll-smooth",
-            "snap-x snap-mandatory scroll-pl-4 md:scroll-pl-12 lg:scroll-pl-16",
-            "px-4 md:px-12 lg:px-16 pb-2"
-          )}
+          className="flex gap-3 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-smooth px-6 lg:px-20 pt-4"
         >
-          {loading &&
+          {loading || !titles ? (
             Array.from({ length: skeletonCount }).map((_, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "flex-shrink-0 rounded-lg bg-[#1a1a1a] animate-shimmer",
-                  size === 'sm' ? 'w-[150px] md:w-[180px] aspect-[2/3]' :
-                  size === 'lg' ? 'w-[200px] md:w-[280px] aspect-[2/3]' :
-                  'w-[160px] md:w-[220px] aspect-[2/3]'
-                )}
-              />
-            ))}
-
-          {Array.isArray(titles) && titles.map((title, i) => (
-            <PosterCard
-              key={`${title.mediaType}-${title.id}`}
-              title={title}
-              index={numbered ? i : undefined}
-              size={size}
-            />
-          ))}
+              <div key={i} className="flex-shrink-0 w-[130px] md:w-[160px] lg:w-[185px]">
+                <div className="aspect-[2/3] rounded-lg bg-[#1a1c24] animate-pulse" />
+                <div className="mt-2 h-4 bg-[#1a1c24] rounded animate-pulse w-3/4" />
+                <div className="mt-1 h-3 bg-[#1a1c24] rounded animate-pulse w-1/2" />
+              </div>
+            ))
+          ) : (
+            titles.map((title, i) =>
+              numbered ? (
+                <NumberedTitleCard key={`${title.id}-${i}`} title={title} index={i} />
+              ) : (
+                <TitleCard key={`${title.id}-${i}`} title={title} index={i} />
+              )
+            )
+          )}
         </div>
       </div>
     </section>
