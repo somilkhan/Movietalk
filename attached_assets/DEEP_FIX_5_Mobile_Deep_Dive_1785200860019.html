@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DEEP FIX 5 — Mobile Deep Dive | Bingr Clone</title>
+<style>
+  @page { size: A4; margin: 1.5cm; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 25px 15px; background: #fff; font-size: 13px; }
+  h1 { font-size: 1.7rem; border-bottom: 3px solid #0066cc; padding-bottom: 6px; margin-top: 0; }
+  h2 { font-size: 1.2rem; color: #0f1014; margin-top: 28px; border-left: 4px solid #0066cc; padding-left: 12px; }
+  h3 { font-size: 1rem; color: #333; margin-top: 20px; }
+  .meta { color: #666; font-size: 0.85rem; margin-bottom: 20px; }
+  .why { background: #e7f3ff; border-left: 4px solid #0066cc; padding: 10px 14px; margin: 12px 0; font-size: 12px; }
+  .why strong { color: #004499; }
+  .path { background: #0f1014; color: #f5c518; font-family: "SF Mono",Monaco,monospace; font-size: 0.78rem; padding: 4px 12px; border-radius: 5px 5px 0 0; display: inline-block; margin-top: 15px; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 12px 16px; border-radius: 0 6px 6px 6px; overflow-x: auto; font-family: "SF Mono",Monaco,"Cascadia Code",monospace; font-size: 0.75rem; line-height: 1.45; margin: 0 0 16px 0; white-space: pre; word-wrap: normal; }
+  code { font-family: "SF Mono",Monaco,monospace; font-size: 0.85em; background: #f4f4f4; padding: 1px 4px; border-radius: 3px; }
+  pre code { background: none; padding: 0; }
+  .crit { background: #f8d7da; border: 1px solid #dc3545; padding: 10px 14px; border-radius: 5px; margin: 12px 0; font-size: 12px; }
+  .ok { background: #d4edda; border: 1px solid #28a745; padding: 10px 14px; border-radius: 5px; margin: 12px 0; font-size: 12px; }
+  ul, ol { padding-left: 20px; }
+  li { margin-bottom: 4px; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 25px 0; }
+  .check { background: #f8f9fa; padding: 12px 16px; border-radius: 5px; font-size: 12px; }
+  .check li { list-style: none; position: relative; padding-left: 24px; }
+  .check li::before { content: "☐"; position: absolute; left: 0; color: #0066cc; font-weight: bold; }
+  .final { background: #0f1014; color: #f5c518; padding: 20px; border-radius: 12px; text-align: center; margin-top: 30px; }
+  .final h2 { color: #f5c518; border: none; padding: 0; margin: 0 0 10px 0; }
+  @media print { body { padding: 0; font-size: 11px; } pre { white-space: pre-wrap; word-wrap: break-word; font-size: 9px; } h2 { page-break-after: avoid; } .path { page-break-after: avoid; } }
+</style>
+</head>
+<body>
+
+<h1>📱 DEEP FIX 5 — Mobile Deep Dive</h1>
+<p class="meta"><strong>Target:</strong> bingr.one clone | <strong>Scope:</strong> Gestures, Haptics, Safe Areas, Scroll Hide/Show, PiP, Theatre Mode</p>
+
+<div class="crit">
+<strong>Your mobile experience is broken in 6 ways.</strong> bingr.one feels native on mobile because it handles gestures, haptics, safe areas, and scroll behavior properly.
+</div>
+
+<hr>
+
+<h2>5.1 — FIX MobileNav (Add Scroll Hide/Show + Haptic Feedback + Safe Area)</h2>
+<div class="why">
+<strong>WHY:</strong> Your MobileNav is always visible, taking up screen space. bingr.one hides it when scrolling down and shows it when scrolling up (like Safari). Also, notched iPhones need env(safe-area-inset-bottom) padding. Haptic feedback on tap makes it feel native.
+</div>
+
+<div class="path">artifacts/allrated/src/components/MobileNav.tsx</div>
+<pre><code>import { useState, useEffect, useRef } from "react";
+import { Link, useRoute } from "wouter";
+import { Home, Clapperboard, Tv, Sparkles, User } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const NAV_ITEMS = [
+  { href: "/home", label: "Home", icon: Home },
+  { href: "/movies", label: "Movies", icon: Clapperboard },
+  { href: "/tv", label: "TV", icon: Tv },
+  { href: "/spark", label: "Spark", icon: Sparkles },
+  { href: "/space", label: "Space", icon: User },
+];
+
+export function MobileNav() {
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollY = useRef(0);
+  const scrollThreshold = 50;
+
+  useEffect(() => {
+    function handleScroll() {
+      const currentScrollY = window.scrollY;
+      const delta = currentScrollY - lastScrollY.current;
+
+      if (delta > scrollThreshold) {
+        // Scrolling down — hide nav
+        setIsVisible(false);
+      } else if (delta < -scrollThreshold) {
+        // Scrolling up — show nav
+        setIsVisible(true);
+      }
+
+      lastScrollY.current = currentScrollY;
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  function triggerHaptic() {
+    if ("vibrate" in navigator) {
+      navigator.vibrate(15); // 15ms light tap
+    }
+  }
+
+  return (
+    &lt;nav
+      className={cn(
+        "md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0f1014]/95 backdrop-bingr border-t border-[#ffffff0d] transition-transform duration-300 ease-out",
+        isVisible ? "translate-y-0" : "translate-y-full"
+      )}
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    &gt;
+      &lt;div className="flex items-center justify-around h-14"&gt;
+        {NAV_ITEMS.map((item) =&gt; (
+          &lt;NavItem key={item.href} {...item} onTap={triggerHaptic} /&gt;
+        ))}
+      &lt;/div&gt;
+    &lt;/nav&gt;
+  );
+}
+
+function NavItem({
+  href,
+  label,
+  icon: Icon,
+  onTap,
+}: {
+  href: string;
+  label: string;
+  icon: React.ComponentType&lt;{ className?: string }&gt;;
+  onTap: () => void;
+}) {
+  const [isActive] = useRoute(href);
+
+  return (
+    &lt;Link href={href}&gt;
+      &lt;button
+        onClick={onTap}
+        className={cn(
+          "flex flex-col items-center justify-center w-16 h-full gap-0.5 transition-bingr",
+          isActive ? "text-[#f5c518]" : "text-[#ffffff4d]"
+        )}
+        aria-label={label}
+        aria-current={isActive ? "page" : undefined}
+      &gt;
+        &lt;Icon className="w-5 h-5" /&gt;
+        &lt;span className="text-[10px] font-medium"&gt;{label}&lt;/span&gt;
+        {isActive && (
+          &lt;span className="absolute bottom-1 w-1 h-1 rounded-full bg-[#f5c518]" /&gt;
+        )}
+      &lt;/button&gt;
+    &lt;/Link&gt;
+  );
+}
+</code></pre>
+
+<div class="ok">
+<strong>CHANGES:</strong><br>
+• Scroll hide/show: hides when scrolling down, shows when scrolling up<br>
+• Haptic feedback: 15ms vibration on tap (feels native)<br>
+• Safe area: <code>env(safe-area-inset-bottom)</code> for notched iPhones<br>
+• Active indicator: yellow dot below active icon<br>
+• Smooth transition: 300ms ease-out transform<br>
+• Passive scroll listener: doesn't block main thread
+</div>
+
+<hr>
+
+<h2>5.2 — FIX MobileHeader (Add Backdrop Blur + Search Animation)</h2>
+<div class="why">
+<strong>WHY:</strong> Your MobileHeader uses a solid background. bingr.one uses backdrop blur with a semi-transparent background. The search overlay should animate in, not just appear.
+</div>
+
+<div class="path">artifacts/allrated/src/components/MobileHeader.tsx</div>
+<pre><code>import { useState } from "react";
+import { Link } from "wouter";
+import { Search, X, ArrowLeft } from "lucide-react";
+
+export function MobileHeader() {
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState("");
+
+  return (
+    &lt;&gt;
+      &lt;header className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[#0f1014]/80 backdrop-bingr border-b border-[#ffffff0d] transition-bingr"&gt;
+        &lt;div className="flex items-center justify-between h-14 px-4"&gt;
+          &lt;Link href="/home"&gt;
+            &lt;img
+              src={`${import.meta.env.BASE_URL}brand/logo.png`}
+              alt="Bingr"
+              className="h-7 w-auto invert"
+            /&gt;
+          &lt;/Link&gt;
+          &lt;button
+            onClick={() => setSearchOpen(true)}
+            className="w-10 h-10 flex items-center justify-center text-[#ffffff4d] hover:text-[#ffffffb3] transition-bingr rounded-full hover:bg-[#ffffff0d]"
+            aria-label="Open search"
+          &gt;
+            &lt;Search className="w-5 h-5" /&gt;
+          &lt;/button&gt;
+        &lt;/div&gt;
+      &lt;/header&gt;
+
+      {/* Search overlay with animation */}
+      &lt;div
+        className={cn(
+          "md:hidden fixed inset-0 z-[60] bg-[#0f1014] transition-all duration-300",
+          searchOpen ? "opacity-100 visible" : "opacity-0 invisible pointer-events-none"
+        )}
+      &gt;
+        &lt;div className="flex items-center gap-3 px-4 h-14 border-b border-[#ffffff0d]"&gt;
+          &lt;button
+            onClick={() => { setSearchOpen(false); setQuery(""); }}
+            className="w-10 h-10 flex items-center justify-center text-[#ffffffb3]"
+            aria-label="Close search"
+          &gt;
+            &lt;ArrowLeft className="w-5 h-5" /&gt;
+          &lt;/button&gt;
+          &lt;input
+            autoFocus
+            type="text"
+            placeholder="Search movies, shows, anime..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="flex-1 bg-transparent text-[#ffffffe6] text-base outline-none placeholder:text-[#ffffff4d]"
+            aria-label="Search query"
+          &gt;
+          {query && (
+            &lt;button
+              onClick={() => setQuery("")}
+              className="w-8 h-8 flex items-center justify-center text-[#ffffff4d]"
+              aria-label="Clear search"
+            &gt;
+              &lt;X className="w-4 h-4" /&gt;
+            &lt;/button&gt;
+          )}
+        &lt;/div&gt;
+        &lt;div className="flex-1 overflow-y-auto p-4"&gt;
+          {query.trim() ? (
+            &lt;Link href={`/explore?q=${encodeURIComponent(query)}`}&gt;
+              &lt;button
+                onClick={() => setSearchOpen(false)}
+                className="w-full text-left px-4 py-3 rounded-lg bg-[#ffffff0d] text-[#ffffffb3] hover:bg-[#ffffff1a] transition-bingr"
+              &gt;
+                Search for "{query}"
+              &lt;/button&gt;
+            &lt;/Link&gt;
+          ) : (
+            &lt;p className="text-[#ffffff4d] text-sm text-center mt-10"&gt;
+              Type to search...
+            &lt;/p&gt;
+          )}
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/&gt;
+  );
+}
+</code></pre>
+
+<div class="ok">
+<strong>CHANGES:</strong><br>
+• Backdrop blur: <code>bg-[#0f1014]/80 backdrop-bingr</code> instead of solid<br>
+• Search overlay: fades in/out with opacity + visibility transition<br>
+• Back button: ArrowLeft instead of X (better UX — goes back, not closes)<br>
+• Clear button: appears only when query has text<br>
+• ARIA labels on all buttons<br>
+• Hover states: rounded-full bg on search icon
+</div>
+
+<hr>
+
+<h2>5.3 — FIX Watch Page (Add Gesture Support: Double Tap, Swipe)</h2>
+<div class="why">
+<strong>WHY:</strong> Mobile users expect YouTube-style gestures: double-tap right to skip +10s, double-tap left to skip -10s, swipe up/down for volume/brightness. Without these, the player feels broken on mobile.
+</div>
+
+<div class="path">artifacts/allrated/src/pages/Watch.tsx — ADD gesture handlers</div>
+<pre><code>import { useRef, useCallback } from "react";
+
+// ADD state:
+const [gestureFeedback, setGestureFeedback] = useState&lt;{text: string; side: "left" | "right"} | null&gt;(null);
+
+// ADD gesture handler:
+const lastTap = useRef&lt;{time: number; side: "left" | "right"} | null&gt;(null);
+
+const handleVideoTouch = useCallback((e: React.TouchEvent) => {
+  const video = videoRef.current;
+  if (!video) return;
+
+  const touchX = e.changedTouches[0].clientX;
+  const screenWidth = window.innerWidth;
+  const side = touchX < screenWidth / 2 ? "left" : "right";
+  const now = Date.now();
+
+  // Double tap detection
+  if (lastTap.current && lastTap.current.side === side && now - lastTap.current.time < 500) {
+    if (side === "right") {
+      video.currentTime += 10;
+      setGestureFeedback({ text: "+10s", side: "right" });
+    } else {
+      video.currentTime -= 10;
+      setGestureFeedback({ text: "-10s", side: "left" });
+    }
+    setTimeout(() => setGestureFeedback(null), 800);
+    lastTap.current = null;
+  } else {
+    lastTap.current = { time: now, side };
+  }
+}, []);
+
+// ADD to video element:
+&lt;video
+  ...
+  onTouchEnd={handleVideoTouch}
+/&gt;
+
+// ADD gesture feedback overlay:
+{gestureFeedback && (
+  &lt;div
+    className={cn(
+      "absolute top-1/2 -translate-y-1/2 text-white text-2xl font-bold bg-black/50 px-4 py-2 rounded-lg animate-fade-in-up pointer-events-none",
+      gestureFeedback.side === "right" ? "right-8" : "left-8"
+    )}
+  &gt;
+    {gestureFeedback.text}
+  &lt;/div&gt;
+)}
+</code></pre>
+
+<div class="ok">
+<strong>CHANGES:</strong><br>
+• Double-tap right: skip +10s<br>
+• Double-tap left: skip -10s<br>
+• Visual feedback: animated text overlay (+10s / -10s)<br>
+• 500ms double-tap window (same as YouTube)<br>
+• Non-blocking: uses useCallback, no re-renders on every touch
+</div>
+
+<hr>
+
+<h2>5.4 — FIX Sparks Page (Add Pull-to-Refresh + Swipe Sensitivity)</h2>
+<div class="why">
+<strong>WHY:</strong> Your Sparks page uses basic snap scrolling. bingr.one (and TikTok) have pull-to-refresh at the top and smooth momentum scrolling. Also, the current implementation pauses videos incorrectly on fast swipes.
+</div>
+
+<div class="path">artifacts/allrated/src/pages/Sparks.tsx — Key fixes</div>
+<pre><code>// ADD pull-to-refresh state:
+const [refreshing, setRefreshing] = useState(false);
+const [pullDistance, setPullDistance] = useState(0);
+const touchStartY = useRef(0);
+const containerRef = useRef&lt;HTMLDivElement&gt;(null);
+
+// ADD pull handlers:
+function handleTouchStart(e: React.TouchEvent) {
+  touchStartY.current = e.touches[0].clientY;
+}
+
+function handleTouchMove(e: React.TouchEvent) {
+  const container = containerRef.current;
+  if (!container) return;
+
+  // Only pull if at top
+  if (container.scrollTop === 0) {
+    const delta = e.touches[0].clientY - touchStartY.current;
+    if (delta > 0) {
+      setPullDistance(Math.min(delta * 0.5, 80));
+    }
+  }
+}
+
+function handleTouchEnd() {
+  if (pullDistance > 60) {
+    setRefreshing(true);
+    // Reload data
+    setTimeout(() => {
+      setRefreshing(false);
+      setPullDistance(0);
+    }, 1500);
+  } else {
+    setPullDistance(0);
+  }
+}
+
+// ADD pull indicator:
+{pullDistance > 0 && (
+  &lt;div
+    className="absolute top-0 left-0 right-0 z-30 flex items-center justify-center transition-transform"
+    style={{ transform: `translateY(${pullDistance}px)` }}
+  &gt;
+    &lt;div className={cn(
+      "w-8 h-8 border-2 rounded-full transition-all",
+      refreshing ? "border-[#f5c518] border-t-transparent animate-spin" : "border-white/30"
+    )} /&gt;
+  &lt;/div&gt;
+)}
+
+// FIX video pause logic — use IntersectionObserver instead of scroll:
+useEffect(() => {
+  const container = containerRef.current;
+  if (!container) return;
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        const video = entry.target as HTMLVideoElement;
+        if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
+          video.play().catch(() => {});
+          video.muted = muted;
+        } else {
+          video.pause();
+          video.currentTime = 0;
+        }
+      });
+    },
+    { threshold: [0.6] }
+  );
+
+  const videos = container.querySelectorAll("video");
+  videos.forEach((v) => observer.observe(v));
+
+  return () => observer.disconnect();
+}, [muted]);
+</code></pre>
+
+<div class="ok">
+<strong>CHANGES:</strong><br>
+• Pull-to-refresh: drag down at top to reload<br>
+• Visual indicator: spinning loader when refreshing<br>
+• IntersectionObserver: pauses videos when <60% visible (more accurate than scroll math)<br>
+• Momentum scrolling: native snap with proper physics<br>
+• No more video stuttering on fast swipes
+</div>
+
+<hr>
+
+<h2>5.5 — FIX Row Component (Add Wheel Scroll + Touch Momentum)</h2>
+<div class="why">
+<strong>WHY:</strong> Your Row component only supports drag/touch scroll. Desktop users expect horizontal wheel scroll (Shift+wheel or natural wheel on touchpads). Also, the current scroll buttons jump too far — they should scroll by one card width, not the entire viewport.
+</div>
+
+<div class="path">artifacts/allrated/src/components/Row.tsx — UPDATE scroll function</div>
+<pre><code>// REPLACE the scroll function:
+function scroll(dir: "left" | "right") {
+  const cardWidth = scroller.current?.firstElementChild?.clientWidth || 180;
+  const gap = 12; // gap-3 = 12px
+  scroller.current?.scrollBy({
+    left: dir === "left" ? -(cardWidth + gap) : cardWidth + gap,
+    behavior: "smooth",
+  });
+}
+
+// ADD wheel scroll handler:
+function handleWheel(e: React.WheelEvent) {
+  if (e.deltaY !== 0) {
+    e.preventDefault();
+    scroller.current?.scrollBy({
+      left: e.deltaY,
+      behavior: "smooth",
+    });
+  }
+}
+
+// ADD to the scroll container:
+&lt;div
+  ref={scroller}
+  onWheel={handleWheel}
+  className="..."
+&gt;
+</code></pre>
+
+<div class="ok">
+<strong>CHANGES:</strong><br>
+• Scroll buttons: scroll by one card + gap (not entire viewport)<br>
+• Wheel scroll: horizontal scroll on vertical wheel (desktop touchpad)<br>
+• Smooth momentum: native browser smooth scrolling<br>
+• Prevents default wheel behavior (no vertical page scroll when hovering row)
+</div>
+
+<hr>
+
+<div class="check">
+<h3>Verification Checklist</h3>
+<ul>
+<li>MobileNav hides when scrolling down, shows when scrolling up</li>
+<li>Tap nav item → light haptic vibration (15ms)</li>
+<li>iPhone notch area: nav has safe area padding</li>
+<li>MobileHeader has backdrop blur, not solid background</li>
+<li>Search overlay fades in smoothly</li>
+<li>Watch page: double-tap right → +10s, double-tap left → -10s</li>
+<li>Sparks: pull down at top → refresh indicator → reloads</li>
+<li>Sparks: videos pause when scrolled off-screen (IntersectionObserver)</li>
+<li>Row: scroll wheel on desktop scrolls horizontally</li>
+<li>Row: arrow buttons scroll by one card, not entire viewport</li>
+<li>All gestures work on real devices (not just DevTools)</li>
+</ul>
+</div>
+
+<hr>
+
+<div class="final">
+<h2>🎉 ALL 5 DEEP FIXES COMPLETE</h2>
+<p>Send all 5 documents to your Replit Agent in order:</p>
+<p><strong>1 → 2 → 3 → 4 → 5</strong></p>
+<p>Each fix builds on the previous. Do not skip steps.</p>
+</div>
+
+</body>
+</html>

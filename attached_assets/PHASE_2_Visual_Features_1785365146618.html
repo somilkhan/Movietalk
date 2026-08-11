@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Phase 2 — Visual Pixel-Perfection + Feature Completion | Bingr Clone Deep Fix</title>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.6;color:#1a1a1a;max-width:960px;margin:0 auto;padding:25px 15px;background:#fff;font-size:13px}
+  h1{font-size:1.7rem;border-bottom:3px solid #dc3545;padding-bottom:6px;margin-top:0}
+  h2{font-size:1.2rem;color:#0f1014;margin-top:28px;border-left:4px solid #dc3545;padding-left:12px}
+  h3{font-size:1rem;color:#333;margin-top:20px}
+  .meta{color:#666;font-size:0.85rem;margin-bottom:20px}
+  .why{background:#e7f3ff;border-left:4px solid #0066cc;padding:10px 14px;margin:12px 0;font-size:12px}
+  .why strong{color:#004499}
+  .path{background:#0f1014;color:#f5c518;font-family:"SF Mono",Monaco,monospace;font-size:0.78rem;padding:4px 12px;border-radius:5px 5px 0 0;display:inline-block;margin-top:15px}
+  pre{background:#1e1e1e;color:#d4d4d4;padding:12px 16px;border-radius:0 6px 6px 6px;overflow-x:auto;font-family:"SF Mono",Monaco,"Cascadia Code",monospace;font-size:0.75rem;line-height:1.45;margin:0 0 16px 0;white-space:pre;word-wrap:normal}
+  code{font-family:"SF Mono",Monaco,monospace;font-size:0.85em;background:#f4f4f4;padding:1px 4px;border-radius:3px}
+  pre code{background:none;padding:0}
+  .crit{background:#f8d7da;border:1px solid #dc3545;padding:10px 14px;border-radius:5px;margin:12px 0;font-size:12px}
+  .ok{background:#d4edda;border:1px solid #28a745;padding:10px 14px;border-radius:5px;margin:12px 0;font-size:12px}
+  ul,ol{padding-left:20px}
+  li{margin-bottom:4px}
+  hr{border:none;border-top:1px solid #ddd;margin:25px 0}
+  .check{background:#f8f9fa;padding:12px 16px;border-radius:5px;font-size:12px}
+  .check li{list-style:none;position:relative;padding-left:24px}
+  .check li::before{content:"☐";position:absolute;left:0;color:#dc3545;font-weight:bold}
+</style>
+</head>
+<body>
+
+<h1>🔴 PHASE 2 — Visual Pixel-Perfection + Feature Completion</h1>
+<p class="meta">Target: bingr.one clone | Scope: TitleCard, Watch, Row, TitleDetail, Explore | Priority: HIGH</p>
+
+<div class="crit">
+<strong>These fixes make your clone look and feel like the real bingr.one.</strong> Not generic. Exact.
+</div>
+
+<!-- ============================================================ -->
+<h2>2.1 — TitleCard.tsx: Exact bingr.one Dimensions + WebP + Progress Bar</h2>
+<div class="why">
+<strong>WHY:</strong> Real bingr.one uses w-[110px] on mobile. You use w-[120px]. That's 10px wider — cards overflow on small screens. Also missing WebP format and progress bar overlay for "continue watching."
+</div>
+
+<div class="path">artifacts/allrated/src/components/TitleCard.tsx — FULL REPLACEMENT</div>
+<pre><code>import { useState, useCallback, memo } from 'react';
+import { Link } from 'wouter';
+import { Bookmark, Play, Star, Volume2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+interface TitleCardProps {
+  id: number;
+  mediaType: 'movie' | 'tv';
+  title: string;
+  posterPath: string | null;
+  backdropPath?: string | null;
+  rating?: number;
+  year?: string;
+  progress?: number; // 0-100 for continue watching
+  isInWatchlist?: boolean;
+  onWatchlistToggle?: (id: number, type: string) => void;
+  index?: number;
+  isLarge?: boolean;
+}
+
+function TitleCardComponent({
+  id,
+  mediaType,
+  title,
+  posterPath,
+  backdropPath,
+  rating,
+  year,
+  progress,
+  isInWatchlist,
+  onWatchlistToggle,
+  index = 0,
+  isLarge = false,
+}: TitleCardProps) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  const handleWatchlistClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onWatchlistToggle?.(id, mediaType);
+    },
+    [id, mediaType, onWatchlistToggle]
+  );
+
+  // Exact bingr.one image dimensions
+  const baseWidth = isLarge ? 230 : 110;
+  const baseHeight = Math.round(baseWidth * 1.5);
+
+  // WebP with JPG fallback via picture element
+  const posterUrl = posterPath
+    ? `https://image.tmdb.org/t/p/w${isLarge ? '500' : '200'}${posterPath}`
+    : '/placeholder-poster.jpg';
+
+  const posterUrlWebp = posterPath
+    ? `https://image.tmdb.org/t/p/w${isLarge ? '500' : '200'}${posterPath}?format=webp`
+    : null;
+
+  // srcSet for responsive images
+  const srcSet = posterPath
+    ? [
+        `https://image.tmdb.org/t/p/w200${posterPath} 200w`,
+        `https://image.tmdb.org/t/p/w300${posterPath} 300w`,
+        `https://image.tmdb.org/t/p/w400${posterPath} 400w`,
+      ].join(', ')
+    : undefined;
+
+  return (
+    &lt;Link href={`/title/${mediaType}/${id}`}&gt;
+      &lt;div
+        className={cn(
+          "relative flex-shrink-0 cursor-pointer rounded-md overflow-hidden",
+          "transition-all duration-300 ease-out",
+          "group",
+          isLarge
+            ? "w-[185px] md:w-[200px] lg:w-[230px]"
+            : "w-[110px] sm:w-[130px] md:w-[160px] lg:w-[185px]"
+        )}
+        style={{ aspectRatio: '2/3' }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        data-testid="title-card"
+        role="article"
+        aria-label={`${title}${year ? ` (${year})` : ''}`}
+      &gt;
+        {/* Skeleton placeholder */}
+        {!imageLoaded &amp;&amp; !imageError &amp;&amp; (
+          &lt;div className="absolute inset-0 bg-[#16181f] animate-pulse rounded-md" /&gt;
+        )}
+
+        {/* Image with WebP support */}
+        {posterUrlWebp ? (
+          &lt;picture&gt;
+            &lt;source
+              srcSet={posterUrlWebp}
+              type="image/webp"
+              sizes="(max-width: 640px) 110px, (max-width: 768px) 130px, (max-width: 1024px) 160px, 185px"
+            /&gt;
+            &lt;img
+              src={posterUrl}
+              alt={title}
+              srcSet={srcSet}
+              sizes="(max-width: 640px) 110px, (max-width: 768px) 130px, (max-width: 1024px) 160px, 185px"
+              loading={index &lt; 6 ? 'eager' : 'lazy'}
+              decoding="async"
+              className={cn(
+                "absolute inset-0 w-full h-full object-cover rounded-md",
+                "transition-all duration-300",
+                imageLoaded ? "opacity-100" : "opacity-0",
+                isHovered &amp;&amp; "scale-105"
+              )}
+              onLoad={() => setImageLoaded(true)}
+              onError={() => {
+                setImageError(true);
+                setImageLoaded(true);
+              }}
+            /&gt;
+          &lt;/picture&gt;
+        ) : (
+          &lt;img
+            src={posterUrl}
+            alt={title}
+            className={cn(
+              "absolute inset-0 w-full h-full object-cover rounded-md",
+              imageLoaded ? "opacity-100" : "opacity-0"
+            )}
+            onLoad={() => setImageLoaded(true)}
+            onError={() => {
+              setImageError(true);
+              setImageLoaded(true);
+            }}
+          /&gt;
+        )}
+
+        {/* Error fallback */}
+        {imageError &amp;&amp; (
+          &lt;div className="absolute inset-0 bg-[#16181f] flex items-center justify-center rounded-md"&gt;
+            &lt;span className="text-[#8f98a2] text-xs text-center px-2"&gt;{title}&lt;/span&gt;
+          &lt;/div&gt;
+        )}
+
+        {/* Progress bar overlay */}
+        {progress !== undefined &amp;&amp; progress &gt; 0 &amp;&amp; (
+          &lt;div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 rounded-b-md overflow-hidden"&gt;
+            &lt;div
+              className="h-full bg-[#f5c518] transition-all duration-500"
+              style={{ width: `${Math.min(progress, 100)}%` }}
+            /&gt;
+          &lt;/div&gt;
+        )}
+
+        {/* Hover overlay */}
+        &lt;div
+          className={cn(
+            "absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent",
+            "rounded-md transition-opacity duration-300",
+            isHovered ? "opacity-100" : "opacity-0"
+          )}
+        /&gt;
+
+        {/* Hover content */}
+        &lt;div
+          className={cn(
+            "absolute inset-x-0 bottom-0 p-2 transition-all duration-300",
+            isHovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+          )}&gt;
+          &lt;div className="flex items-center gap-1.5 mb-1"&gt;
+            &lt;button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              className="w-7 h-7 rounded-full bg-white text-black flex items-center justify-center hover:bg-white/90 transition-colors"
+              aria-label="Play"
+            &gt;
+              &lt;Play className="w-3.5 h-3.5 fill-current" /&gt;
+            &lt;/button&gt;
+            &lt;button
+              onClick={handleWatchlistClick}
+              className={cn(
+                "w-7 h-7 rounded-full border flex items-center justify-center transition-colors",
+                isInWatchlist
+                  ? "bg-[#f5c518] border-[#f5c518] text-black"
+                  : "border-white/40 text-white hover:border-white"
+              )}
+              aria-label={isInWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
+            &gt;
+              &lt;Bookmark className={cn("w-3.5 h-3.5", isInWatchlist &amp;&amp; "fill-current")} /&gt;
+            &lt;/button&gt;
+          &lt;/div&gt;
+          &lt;p className="text-white text-[10px] font-medium leading-tight line-clamp-2"&gt;{title}&lt;/p&gt;
+          {rating !== undefined &amp;&amp; (
+            &lt;div className="flex items-center gap-0.5 mt-0.5"&gt;
+              &lt;Star className="w-2.5 h-2.5 text-[#f5c518] fill-[#f5c518]" /&gt;
+              &lt;span className="text-[#f5c518] text-[9px] font-semibold"&gt;{rating.toFixed(1)}&lt;/span&gt;
+            &lt;/div&gt;
+          )}
+        &lt;/div&gt;
+
+        {/* Watchlist indicator (always visible) */}
+        {isInWatchlist &amp;&amp; (
+          &lt;div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-[#f5c518] flex items-center justify-center shadow-lg"&gt;
+            &lt;Bookmark className="w-3 h-3 text-black fill-current" /&gt;
+          &lt;/div&gt;
+        )}
+
+        {/* Mute badge for trailers */}
+        {progress === 0 &amp;&amp; isHovered &amp;&amp; (
+          &lt;div className="absolute top-1.5 left-1.5 w-5 h-5 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center"&gt;
+            &lt;Volume2 className="w-3 h-3 text-white" /&gt;
+          &lt;/div&gt;
+        )}
+      &lt;/div&gt;
+    &lt;/Link&gt;
+  );
+}
+
+export const TitleCard = memo(TitleCardComponent);
+</code></pre>
+
+<div class="ok">
+<strong>VERIFICATION:</strong> Inspect a TitleCard on mobile. Width should be exactly 110px. WebP should load (check Network tab for .webp). Progress bar should show on "Continue Watching" items. Watchlist indicator should be a yellow circle with bookmark icon.
+</div>
+
+<!-- ============================================================ -->
+<h2>2.2 — Watch.tsx: Skip Intro + Copy Link + Double-Tap Gestures</h2>
+<div class="why">
+<strong>WHY:</strong> Real bingr.one has skip intro, copy link, and double-tap to seek +10s/-10s. Your 35KB Watch.tsx is missing all three. These are standard for any video app.
+</div>
+
+<div class="path">artifacts/allrated/src/pages/Watch.tsx — ADD THESE HOOKS AND HANDLERS</div>
+<pre><code>// ========== ADD TO IMPORTS ==========
+import { useCallback, useRef, useEffect, useState } from 'react';
+import { Copy, SkipForward } from 'lucide-react';
+import { toast } from 'sonner';
+
+// ========== ADD TO COMPONENT STATE ==========
+const [showSkipIntro, setShowSkipIntro] = useState(false);
+const [skipIntroEnd, setSkipIntroEnd] = useState(0);
+const lastTapRef = useRef&lt;{ time: number; x: number; side: 'left' | 'right' } | null&gt;(null);
+const skipTimeoutRef = useRef&lt;ReturnType&lt;typeof setTimeout&gt; | null&gt;(null);
+
+// ========== SKIP INTRO LOGIC ==========
+// Call this when metadata loads or when you know intro timestamps
+const handleMetadataLoaded = useCallback(() => {
+  if (!videoRef.current) return;
+
+  // Example: skip first 30 seconds (replace with actual intro data from API)
+  const introStart = 0;
+  const introEnd = 30;
+
+  const checkSkip = () => {
+    if (!videoRef.current) return;
+    const current = videoRef.current.currentTime;
+
+    if (current >= introStart && current < introEnd) {
+      setShowSkipIntro(true);
+      setSkipIntroEnd(introEnd);
+    } else {
+      setShowSkipIntro(false);
+    }
+  };
+
+  videoRef.current.addEventListener('timeupdate', checkSkip);
+  return () => videoRef.current?.removeEventListener('timeupdate', checkSkip);
+}, []);
+
+const handleSkipIntro = useCallback(() => {
+  if (videoRef.current && skipIntroEnd > 0) {
+    videoRef.current.currentTime = skipIntroEnd;
+    setShowSkipIntro(false);
+    toast.success('Skipped intro');
+  }
+}, [skipIntroEnd]);
+
+// ========== COPY LINK ==========
+const handleCopyLink = useCallback(async () => {
+  const url = window.location.href;
+  try {
+    await navigator.clipboard.writeText(url);
+    toast.success('Link copied to clipboard');
+  } catch {
+    // Fallback
+    const textarea = document.createElement('textarea');
+    textarea.value = url;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    toast.success('Link copied to clipboard');
+  }
+}, []);
+
+// ========== DOUBLE-TAP TO SEEK ==========
+const handleTouchStart = useCallback((e: React.TouchEvent) => {
+  const touch = e.touches[0];
+  const now = Date.now();
+  const video = videoRef.current;
+  if (!video) return;
+
+  const rect = video.getBoundingClientRect();
+  const x = touch.clientX - rect.left;
+  const side: 'left' | 'right' = x < rect.width / 2 ? 'left' : 'right';
+
+  if (lastTapRef.current) {
+    const delta = now - lastTapRef.current.time;
+    const distance = Math.abs(x - lastTapRef.current.x);
+
+    if (delta < 300 && distance < 50 && lastTapRef.current.side === side) {
+      // Double tap detected
+      e.preventDefault();
+      const seekAmount = side === 'left' ? -10 : 10;
+      video.currentTime = Math.max(0, Math.min(video.duration || Infinity, video.currentTime + seekAmount));
+
+      // Show feedback
+      toast.info(`${seekAmount > 0 ? '+' : ''}${seekAmount}s`, { duration: 800 });
+
+      lastTapRef.current = null;
+      return;
+    }
+  }
+
+  lastTapRef.current = { time: now, x, side };
+
+  // Clear after 400ms
+  setTimeout(() => {
+    if (lastTapRef.current?.time === now) {
+      lastTapRef.current = null;
+    }
+  }, 400);
+}, []);
+
+// ========== ADD TO VIDEO ELEMENT ==========
+&lt;video
+  ref={videoRef}
+  onLoadedMetadata={handleMetadataLoaded}
+  onTouchStart={handleTouchStart}
+  // ... existing props
+/&gt;
+
+// ========== ADD SKIP INTRO BUTTON TO CONTROLS OVERLAY ==========
+{showSkipIntro && (
+  &lt;button
+    onClick={handleSkipIntro}
+    className="absolute bottom-20 left-1/2 -translate-x-1/2 px-5 py-2.5 bg-white/20 backdrop-blur-md border border-white/30 rounded-full text-white text-sm font-semibold hover:bg-white/30 transition-colors flex items-center gap-2"
+    aria-label="Skip intro"
+  &gt;
+    &lt;SkipForward className="w-4 h-4" /&gt;
+    Skip Intro
+  &lt;/button&gt;
+)}
+
+// ========== ADD COPY LINK TO CONTROLS BAR ==========
+&lt;button
+  onClick={handleCopyLink}
+  className="p-2 rounded-full hover:bg-white/10 transition-colors"
+  aria-label="Copy link"
+  title="Copy link"
+&gt;
+  &lt;Copy className="w-5 h-5 text-white" /&gt;
+&lt;/button&gt;
+</code></pre>
+
+<div class="ok">
+<strong>VERIFICATION:</strong> Play a video. First 30 seconds should show "Skip Intro" button. Double-tap left side: goes back 10s. Double-tap right side: jumps forward 10s. Copy link button should copy URL to clipboard with toast.
+</div>
+
+<!-- ============================================================ -->
+<h2>2.3 — Row.tsx: Preload + IntersectionObserver + Error Fallback</h2>
+<div class="why">
+<strong>WHY:</strong> Real bingr.one uses IntersectionObserver to lazy-load rows below the fold. Your Row loads everything at mount. Also missing preload for first few images and error fallback for failed row loads.
+</div>
+
+<div class="path">artifacts/allrated/src/components/Row.tsx — ADD IntersectionObserver wrapper</div>
+<pre><code>import { useEffect, useRef, useState, useCallback } from 'react';
+
+// ========== ADD TO Row COMPONENT ==========
+const rowRef = useRef&lt;HTMLDivElement&gt;(null);
+const [isVisible, setIsVisible] = useState(false);
+const [hasError, setHasError] = useState(false);
+
+useEffect(() => {
+  if (!rowRef.current) return;
+
+  const observer = new IntersectionObserver(
+    ([entry]) => {
+      if (entry.isIntersecting) {
+        setIsVisible(true);
+        observer.disconnect();
+      }
+    },
+    { rootMargin: '200px 0px' } // Start loading 200px before visible
+  );
+
+  observer.observe(rowRef.current);
+  return () => observer.disconnect();
+}, []);
+
+// Preload first 3 images when row becomes visible
+useEffect(() => {
+  if (!isVisible || !titles) return;
+  titles.slice(0, 3).forEach((t) => {
+    if (t.posterPath) {
+      const img = new Image();
+      img.src = `https://image.tmdb.org/t/p/w200${t.posterPath}`;
+    }
+  });
+}, [isVisible, titles]);
+
+// ========== WRAP ROW CONTENT ==========
+&lt;div ref={rowRef} className="mb-8 md:mb-12"&gt;
+  {!isVisible ? (
+    // Skeleton while not visible
+    &lt;div className="px-4 md:px-12"&gt;
+      &lt;h2 className="text-white text-lg md:text-xl font-bold mb-4"&gt;{title}&lt;/h2&gt;
+      &lt;div className="flex gap-2 overflow-hidden"&gt;
+        {Array.from({ length: 6 }).map((_, i) =&gt; (
+          &lt;div
+            key={i}
+            className="flex-shrink-0 w-[110px] sm:w-[130px] md:w-[160px] lg:w-[185px] aspect-[2/3] bg-[#16181f] animate-pulse rounded-md"
+          /&gt;
+        ))}
+      &lt;/div&gt;
+    &lt;/div&gt;
+  ) : hasError ? (
+    // Error fallback
+    &lt;div className="px-4 md:px-12"&gt;
+      &lt;h2 className="text-white text-lg md:text-xl font-bold mb-4"&gt;{title}&lt;/h2&gt;
+      &lt;div className="flex items-center justify-center py-12 bg-[#16181f]/50 rounded-lg"&gt;
+        &lt;div className="text-center"&gt;
+          &lt;p className="text-[#8f98a2] text-sm mb-3"&gt;Failed to load {title}&lt;/p&gt;
+          &lt;button
+            onClick={() => { setHasError(false); refetch?.(); }}
+            className="px-4 py-2 bg-[#f5c518] text-black text-sm font-semibold rounded-md hover:bg-[#e5b518] transition-colors"
+          &gt;
+            Retry
+          &lt;/button&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  ) : (
+    // Normal content
+    ...existing JSX...
+  )}
+&lt;/div&gt;
+</code></pre>
+
+<div class="ok">
+<strong>VERIFICATION:</strong> Open DevTools → Performance. Scroll down. Rows below fold should not render until ~200px from viewport. First 3 images in each visible row should have high priority. Error state should show if API fails.
+</div>
+
+<!-- ============================================================ -->
+<h2>2.4 — Explore.tsx: Language + Quality Filters</h2>
+<div class="why">
+<strong>WHY:</strong> Real bingr.one explore has language and quality filters. Your explore is missing both.
+</div>
+
+<div class="path">artifacts/allrated/src/pages/Explore.tsx — ADD TO FILTERS</div>
+<pre><code>// ========== ADD TO FILTER STATE ==========
+const [language, setLanguage] = useState('all');
+const [quality, setQuality] = useState('all');
+
+const LANGUAGES = [
+  { value: 'all', label: 'All Languages' },
+  { value: 'en', label: 'English' },
+  { value: 'hi', label: 'Hindi' },
+  { value: 'es', label: 'Spanish' },
+  { value: 'fr', label: 'French' },
+  { value: 'ja', label: 'Japanese' },
+  { value: 'ko', label: 'Korean' },
+  { value: 'de', label: 'German' },
+  { value: 'it', label: 'Italian' },
+  { value: 'pt', label: 'Portuguese' },
+  { value: 'ru', label: 'Russian' },
+  { value: 'zh', label: 'Chinese' },
+];
+
+const QUALITIES = [
+  { value: 'all', label: 'All Qualities' },
+  { value: '4k', label: '4K' },
+  { value: '1080p', label: '1080p' },
+  { value: '720p', label: '720p' },
+];
+
+// ========== ADD TO FILTER UI ==========
+&lt;div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide"&gt;
+  {/* Existing genre, year, sort filters */}
+
+  {/* Language filter */}
+  &lt;select
+    value={language}
+    onChange={(e) => { setLanguage(e.target.value); setPage(1); }}
+    className="flex-shrink-0 px-3 py-1.5 bg-[#16181f] border border-[#ffffff1a] rounded-md text-white text-sm focus:outline-none focus:border-[#f5c518]"
+    aria-label="Filter by language"
+  &gt;
+    {LANGUAGES.map((l) =&gt; (
+      &lt;option key={l.value} value={l.value}&gt;{l.label}&lt;/option&gt;
+    ))}
+  &lt;/select&gt;
+
+  {/* Quality filter */}
+  &lt;select
+    value={quality}
+    onChange={(e) => { setQuality(e.target.value); setPage(1); }}
+    className="flex-shrink-0 px-3 py-1.5 bg-[#16181f] border border-[#ffffff1a] rounded-md text-white text-sm focus:outline-none focus:border-[#f5c518]"
+    aria-label="Filter by quality"
+  &gt;
+    {QUALITIES.map((q) =&gt; (
+      &lt;option key={q.value} value={q.value}&gt;{q.label}&lt;/option&gt;
+    ))}
+  &lt;/select&gt;
+&lt;/div&gt;
+
+// ========== ADD TO API CALL ==========
+// In your fetchExplore function, add:
+const params = new URLSearchParams();
+if (genre !== 'all') params.append('genre', genre);
+if (year !== 'all') params.append('year', year);
+if (language !== 'all') params.append('language', language);
+if (quality !== 'all') params.append('quality', quality);
+params.append('sort', sort);
+params.append('page', String(page));
+</code></pre>
+
+<div class="ok">
+<strong>VERIFICATION:</strong> Open /explore. Language dropdown should show 12 options. Quality should show 4K, 1080p, 720p. Selecting filters should update results.
+</div>
+
+<!-- ============================================================ -->
+<h2>2.5 — TitleDetail.tsx: Remove 2 `as any` Casts</h2>
+<div class="path">artifacts/allrated/src/pages/TitleDetail.tsx — LINES 187 & 190</div>
+<pre><code>// BEFORE (line 187):
+const cast = data?.credits?.cast?.slice(0, 12) as any[];
+
+// AFTER:
+const cast = data?.credits?.cast?.slice(0, 12) ?? [];
+
+// BEFORE (line 190):
+const similar = data?.similar?.results?.slice(0, 12) as any[];
+
+// AFTER:
+const similar = data?.similar?.results?.slice(0, 12) ?? [];
+</code></pre>
+
+<div class="ok">
+<strong>VERIFICATION:</strong> `npm run build` should have zero TypeScript errors. No `as any` should remain in TitleDetail.tsx.
+</div>
+
+<hr>
+
+<div class="check">
+<strong>PHASE 2 CHECKLIST:</strong>
+<ul>
+  <li>TitleCard width is 110px on mobile, WebP loads, progress bar shows</li>
+  <li>Watch page has Skip Intro button that works</li>
+  <li>Watch page has Copy Link button that copies to clipboard</li>
+  <li>Double-tap left/right on video seeks -10s/+10s</li>
+  <li>Row uses IntersectionObserver, lazy loads, preloads first 3 images</li>
+  <li>Row has error fallback with retry button</li>
+  <li>Explore has language and quality filters</li>
+  <li>Zero `as any` casts in TitleDetail.tsx</li>
+</ul>
+</div>
+
+</body>
+</html>

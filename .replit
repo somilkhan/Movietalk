@@ -1,0 +1,89 @@
+modules = ["web", "nodejs-20", "python-3.11", "postgresql-16"]
+
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "CinePro Core"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "artifacts/api-server: API Server"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "artifacts/allrated: web"
+
+[[workflows.workflow]]
+name = "CinePro Core"
+author = "agent"
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PORT=3001 HOST=0.0.0.0 node_modules/.bin/tsx artifacts/cinepro-core/src/server.ts"
+waitForPort = 3001
+
+[[workflows.workflow]]
+name = "artifacts/api-server: API Server"
+author = "agent"
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/api-server run dev"
+waitForPort = 8080
+
+[[workflows.workflow]]
+name = "artifacts/allrated: web"
+author = "agent"
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/allrated run dev"
+waitForPort = 5173
+
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
+
+[nix]
+channel = "stable-25_05"
+packages = ["gitFull", "playwright-driver"]
+
+[userenv]
+
+[userenv.shared]
+CACHE_TYPE = "memory"
+CORS_ORIGIN = "*"
+INTERNAL_DEBUG = "false"
+MCP_ENABLED = "false"
+NODE_ENV = "production"
+STREMIO_ADDON = "false"
+TMDB_CACHE_TTL = "86400"
+BASE_PATH = "/"
+CINEPRO_URL = "http://localhost:3001"
+PORT = "8080"
+TMDB_API_KEY = "b4a5e072f3a2ec6049ca2748d48b9279"

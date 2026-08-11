@@ -1,0 +1,29 @@
+{
+  "name": "workspace",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {
+    "build": "pnpm -r --filter \"./artifacts/api-server\" run build && pnpm -r --filter \"./artifacts/allrated\" run build",
+    "start": "pnpm --filter ./artifacts/api-server run start",
+    "typecheck:libs": "tsc --build",
+    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
+  },
+  "private": true,
+  "dependencies": {
+    "@replit/connectors-sdk": "^0.4.1"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.4",
+    "tsx": "^4.21.0",
+    "typescript": "~5.9.3"
+  },
+  "packageManager": "pnpm@9.0.6",
+  "pnpm": {
+    "overrides": {
+      "react": "19.1.0",
+      "react-dom": "19.1.0",
+      "@types/react": "19.2.0",
+      "@types/react-dom": "19.2.0"
+    }
+  }
+}

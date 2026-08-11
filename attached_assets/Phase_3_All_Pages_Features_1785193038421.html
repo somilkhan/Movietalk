@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Phase 3 — All Pages & Features | Bingr Clone</title>
+<style>
+  @page { size: A4; margin: 1.8cm; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; line-height: 1.65; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 30px 20px; background: #fff; }
+  h1 { font-size: 2rem; border-bottom: 3px solid #0f1014; padding-bottom: 8px; margin-top: 0; }
+  h2 { font-size: 1.35rem; color: #0f1014; margin-top: 35px; border-left: 5px solid #f5c518; padding-left: 14px; }
+  h3 { font-size: 1.05rem; color: #333; margin-top: 25px; }
+  .meta { color: #666; font-size: 0.9rem; margin-bottom: 25px; }
+  .prompt { background: #f8f9fa; border: 1px solid #e9ecef; border-left: 4px solid #f5c518; padding: 14px 18px; margin: 18px 0; border-radius: 0 8px 8px 0; }
+  .prompt strong { color: #b8860b; }
+  .path { background: #0f1014; color: #f5c518; font-family: "SF Mono",Monaco,monospace; font-size: 0.82rem; padding: 5px 14px; border-radius: 6px 6px 0 0; display: inline-block; margin-top: 18px; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 14px 18px; border-radius: 0 8px 8px 8px; overflow-x: auto; font-family: "SF Mono",Monaco,"Cascadia Code",monospace; font-size: 0.78rem; line-height: 1.5; margin: 0 0 20px 0; white-space: pre; word-wrap: normal; }
+  code { font-family: "SF Mono",Monaco,monospace; font-size: 0.85em; background: #f4f4f4; padding: 2px 5px; border-radius: 4px; }
+  pre code { background: none; padding: 0; }
+  .warn { background: #fff3cd; border: 1px solid #ffc107; padding: 10px 14px; border-radius: 6px; margin: 14px 0; }
+  .ok { background: #d4edda; border: 1px solid #28a745; padding: 10px 14px; border-radius: 6px; margin: 14px 0; }
+  ul, ol { padding-left: 22px; }
+  li { margin-bottom: 5px; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 30px 0; }
+  .check { background: #f8f9fa; padding: 14px 18px; border-radius: 6px; }
+  .check li { list-style: none; position: relative; padding-left: 26px; }
+  .check li::before { content: "☐"; position: absolute; left: 0; color: #f5c518; font-weight: bold; }
+  @media print { body { padding: 0; } pre { white-space: pre-wrap; word-wrap: break-word; } h2 { page-break-after: avoid; } .path { page-break-after: avoid; } }
+</style>
+</head>
+<body>
+
+<h1>🎬 Phase 3 — All Pages & Features Complete</h1>
+<p class="meta"><strong>Target:</strong> bingr.one clone | <strong>Project:</strong> Movietalk-main | <strong>For:</strong> Replit Agent</p>
+
+<div class="prompt">
+<strong>AGENT PROMPT — READ FIRST:</strong> This is Phase 3 of 4. You are replacing ALL placeholder pages and adding missing features. Every page must work on desktop AND mobile. No "coming soon" text anywhere. The auth system uses session-based auth (session.ts) — do NOT switch to JWT. Use the existing <code>useUserData</code> hooks and <code>session.ts</code> patterns.
+</div>
+
+<h2>3.1 — Sports Page (Full Implementation)</h2>
+<p>Replace the placeholder with a live sports grid. Each card links to a sports stream.</p>
+
+<div class="path">artifacts/allrated/src/pages/Sports.tsx</div>
+<pre><code>import { Link } from "wouter";
+import { Radio } from "lucide-react";
+
+const SPORTS = [
+  { name: "Cricket", id: "cricket", gradient: "from-emerald-600/80 to-teal-800/80" },
+  { name: "Football", id: "football", gradient: "from-blue-600/80 to-indigo-800/80" },
+  { name: "Basketball", id: "basketball", gradient: "from-orange-600/80 to-red-800/80" },
+  { name: "Tennis", id: "tennis", gradient: "from-lime-600/80 to-green-800/80" },
+  { name: "Formula 1", id: "f1", gradient: "from-red-600/80 to-rose-800/80" },
+  { name: "UFC", id: "ufc", gradient: "from-zinc-600/80 to-neutral-800/80" },
+  { name: "WWE", id: "wwe", gradient: "from-yellow-600/80 to-amber-800/80" },
+  { name: "Hockey", id: "hockey", gradient: "from-cyan-600/80 to-sky-800/80" },
+  { name: "Baseball", id: "baseball", gradient: "from-violet-600/80 to-purple-800/80" },
+];
+
+export default function Sports() {
+  return (
+    &lt;div className="pb-24 md:pb-0 min-h-screen bg-[#0f1014]" data-testid="page-sports"&gt;
+      &lt;div className="pt-20 md:pt-32 px-4 md:px-20"&gt;
+        &lt;h1 className="font-display text-4xl md:text-6xl text-white mb-2 tracking-wider"&gt;
+          Live Sports
+        &lt;/h1&gt;
+        &lt;p className="text-white/40 mb-8 md:mb-10 max-w-xl text-sm md:text-base"&gt;
+          Watch live matches, replays, and highlights from around the world.
+        &lt;/p&gt;
+
+        &lt;div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 pb-20"&gt;
+          {SPORTS.map((sport) => (
+            &lt;Link key={sport.id} href={`/watch/sports/${sport.id}`}&gt;
+              &lt;div className="relative aspect-[16/9] rounded-xl overflow-hidden bg-[#16181f] group cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98]"&gt;
+                &lt;div className={`absolute inset-0 bg-gradient-to-br ${sport.gradient}`} /&gt;
+                &lt;div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" /&gt;
+                &lt;div className="absolute inset-0 flex items-center justify-center"&gt;
+                  &lt;span className="text-2xl md:text-4xl font-display text-white tracking-widest drop-shadow-lg"&gt;
+                    {sport.name}
+                  &lt;/span&gt;
+                &lt;/div&gt;
+                &lt;div className="absolute bottom-3 left-3 flex items-center gap-2"&gt;
+                  &lt;span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /&gt;
+                  &lt;span className="text-white/70 text-[11px] font-medium uppercase tracking-wider"&gt;Live&lt;/span&gt;
+                &lt;/div&gt;
+                &lt;div className="absolute top-3 right-3"&gt;
+                  &lt;Radio className="w-4 h-4 text-white/50" /&gt;
+                &lt;/div&gt;
+              &lt;/div&gt;
+            &lt;/Link&gt;
+          ))}
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+
+<h2>3.2 — Sparks Page (Vertical Video Feed)</h2>
+<p>Replace placeholder with TikTok-style vertical video feed with snap scrolling.</p>
+
+<div class="path">artifacts/allrated/src/pages/Sparks.tsx</div>
+<pre><code>import { useState, useRef, useEffect } from "react";
+import { Heart, MessageCircle, Share2, Bookmark, Volume2, VolumeX } from "lucide-react";
+
+const SPARKS = [
+  {
+    id: 1,
+    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+    title: "Epic Movie Moments",
+    creator: "@bingr_official",
+    likes: 12400,
+    comments: 892,
+  },
+  {
+    id: 2,
+    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+    title: "Behind the Scenes",
+    creator: "@filmgeek",
+    likes: 8300,
+    comments: 421,
+  },
+  {
+    id: 3,
+    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+    title: "Top 10 Action Scenes",
+    creator: "@actiondaily",
+    likes: 25600,
+    comments: 1543,
+  },
+];
+
+export default function Sparks() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [muted, setMuted] = useState(true);
+  const containerRef = useRef&lt;HTMLDivElement&gt;(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const videos = container.querySelectorAll("video");
+    videos.forEach((v, i) => {
+      if (i === activeIndex) {
+        v.play().catch(() => {});
+        v.muted = muted;
+      } else {
+        v.pause();
+        v.currentTime = 0;
+        v.muted = true;
+      }
+    });
+  }, [activeIndex, muted]);
+
+  function handleScroll() {
+    const container = containerRef.current;
+    if (!container) return;
+    const idx = Math.round(container.scrollTop / container.clientHeight);
+    if (idx !== activeIndex) setActiveIndex(idx);
+  }
+
+  return (
+    &lt;div className="h-[100dvh] w-full bg-black relative overflow-hidden" data-testid="page-sparks"&gt;
+      &lt;div
+        ref={containerRef}
+        onScroll={handleScroll}
+        className="h-full w-full snap-y snap-mandatory overflow-y-scroll [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      &gt;
+        {SPARKS.map((spark, i) => (
+          &lt;div
+            key={spark.id}
+            className="h-full w-full snap-center relative flex items-center justify-center bg-black"
+          &gt;
+            &lt;video
+              src={spark.videoUrl}
+              className="h-full w-full object-cover"
+              loop
+              playsInline
+              muted={i !== activeIndex || muted}
+              onClick={() => setMuted(!muted)}
+            /&gt;
+
+            {/* Mute toggle */}
+            &lt;button
+              onClick={() => setMuted(!muted)}
+              className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white"
+            &gt;
+              {muted ? &lt;VolumeX className="w-5 h-5" /&gt; : &lt;Volume2 className="w-5 h-5" /&gt;}
+            &lt;/button&gt;
+
+            {/* Right-side actions */}
+            &lt;div className="absolute right-3 bottom-24 flex flex-col items-center gap-4 z-10"&gt;
+              &lt;button className="flex flex-col items-center gap-1 text-white"&gt;
+                &lt;div className="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-sm active:scale-90 transition-transform"&gt;
+                  &lt;Heart className="w-5 h-5" /&gt;
+                &lt;/div&gt;
+                &lt;span className="text-[11px] font-medium"&gt;{(spark.likes / 1000).toFixed(1)}k&lt;/span&gt;
+              &lt;/button&gt;
+              &lt;button className="flex flex-col items-center gap-1 text-white"&gt;
+                &lt;div className="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-sm active:scale-90 transition-transform"&gt;
+                  &lt;MessageCircle className="w-5 h-5" /&gt;
+                &lt;/div&gt;
+                &lt;span className="text-[11px] font-medium"&gt;{(spark.comments / 1000).toFixed(1)}k&lt;/span&gt;
+              &lt;/button&gt;
+              &lt;button className="flex flex-col items-center gap-1 text-white"&gt;
+                &lt;div className="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-sm active:scale-90 transition-transform"&gt;
+                  &lt;Bookmark className="w-5 h-5" /&gt;
+                &lt;/div&gt;
+              &lt;/button&gt;
+              &lt;button className="flex flex-col items-center gap-1 text-white"&gt;
+                &lt;div className="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-sm active:scale-90 transition-transform"&gt;
+                  &lt;Share2 className="w-5 h-5" /&gt;
+                &lt;/div&gt;
+              &lt;/button&gt;
+            &lt;/div&gt;
+
+            {/* Bottom info */}
+            &lt;div className="absolute bottom-6 left-4 right-20 z-10"&gt;
+              &lt;h3 className="text-white font-bold text-base mb-0.5"&gt;{spark.title}&lt;/h3&gt;
+              &lt;p className="text-white/70 text-sm"&gt;{spark.creator}&lt;/p&gt;
+            &lt;/div&gt;
+
+            {/* Gradient overlay */}
+            &lt;div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" /&gt;
+          &lt;/div&gt;
+        ))}
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+
+<h2>3.3 — Custom 404 Page (Match bingr.one Style)</h2>
+<p>bingr.one has a distinctive dark-humor 404 page. Recreate it exactly.</p>
+
+<div class="path">artifacts/allrated/src/pages/not-found.tsx</div>
+<pre><code>import { Link } from "wouter";
+
+export default function NotFound() {
+  return (
+    &lt;div className="min-h-screen flex flex-col items-center justify-center px-4 text-center bg-[#0f1014]"&gt;
+      &lt;div className="w-32 h-32 md:w-40 md:h-40 mb-6 md:mb-8 rounded-2xl overflow-hidden opacity-50 grayscale"&gt;
+        &lt;img
+          src={`${import.meta.env.BASE_URL}brand/logo.png`}
+          alt=""
+          className="w-full h-full object-cover"
+        /&gt;
+      &lt;/div&gt;
+      &lt;h1 className="font-display text-4xl md:text-6xl text-white mb-4 md:mb-5 tracking-wider"&gt;
+        404. Well, fuck.
+      &lt;/h1&gt;
+      &lt;p className="text-white/40 max-w-sm mb-8 md:mb-10 text-sm md:text-base leading-relaxed"&gt;
+        The page you're looking for is either dead, missing, or out banging someone's mom.
+        Don't worry, it happens to a lot of guys.
+      &lt;/p&gt;
+      &lt;Link href="/home"&gt;
+        &lt;button className="px-8 py-3 rounded-full bg-white/10 hover:bg-white/20 text-white text-sm font-semibold transition-colors border border-white/10 hover:border-white/30 active:scale-95"&gt;
+          Take me home, Daddy
+        &lt;/button&gt;
+      &lt;/Link&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+
+<h2>3.4 — Settings Page (NEW)</h2>
+<p>Create a full Settings page with Account, Playback, Parental Controls, Appearance, and About sections.</p>
+
+<div class="path">artifacts/allrated/src/pages/Settings.tsx</div>
+<pre><code>import { useState } from "react";
+import {
+  User, Play, Shield, Palette, Info, ChevronRight, LogOut, Moon, Sun,
+} from "lucide-react";
+import { Link } from "wouter";
+import { getSession } from "@/lib/session";
+
+function Section({
+  icon,
+  title,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    &lt;div className="mb-6 md:mb-8"&gt;
+      &lt;div className="flex items-center gap-3 mb-3 md:mb-4"&gt;
+        &lt;div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-white/60"&gt;
+          {icon}
+        &lt;/div&gt;
+        &lt;h2 className="text-base md:text-lg font-semibold text-white"&gt;{title}&lt;/h2&gt;
+      &lt;/div&gt;
+      &lt;div className="bg-[#16181f] rounded-xl border border-white/5 overflow-hidden"&gt;
+        {children}
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}
+
+function Row({
+  label,
+  value,
+  onClick,
+  danger,
+}: {
+  label: string;
+  value?: string;
+  onClick?: () =&gt; void;
+  danger?: boolean;
+}) {
+  return (
+    &lt;button
+      onClick={onClick}
+      className={`w-full flex items-center justify-between px-4 md:px-5 py-3.5 md:py-4 hover:bg-white/5 transition-colors text-left ${
+        danger ? "text-red-400" : "text-white"
+      }`}
+    &gt;
+      &lt;span className="text-sm font-medium"&gt;{label}&lt;/span&gt;
+      &lt;div className="flex items-center gap-2"&gt;
+        {value && &lt;span className="text-sm text-white/40"&gt;{value}&lt;/span&gt;}
+        &lt;ChevronRight className="w-4 h-4 text-white/20" /&gt;
+      &lt;/div&gt;
+    &lt;/button&gt;
+  );
+}
+
+export default function Settings() {
+  const session = getSession();
+  const [parentalPin, setParentalPin] = useState("");
+  const [darkMode, setDarkMode] = useState(true);
+  const [saved, setSaved] = useState(false);
+
+  function handleSavePin() {
+    if (parentalPin.length === 4) {
+      localStorage.setItem("bingr_parental_pin", parentalPin);
+      setSaved(true);
+      setTimeout(() =&gt; setSaved(false), 2000);
+    }
+  }
+
+  function handleLogout() {
+    localStorage.removeItem("bingr_session");
+    window.location.href = "/home";
+  }
+
+  return (
+    &lt;div className="pb-24 md:pb-0 min-h-screen bg-[#0f1014]" data-testid="page-settings"&gt;
+      &lt;div className="pt-20 md:pt-32 px-4 md:px-20 max-w-3xl"&gt;
+        &lt;h1 className="font-display text-4xl md:text-6xl text-white mb-8 md:mb-10 tracking-wider"&gt;
+          Settings
+        &lt;/h1&gt;
+
+        &lt;Section icon={&lt;User className="w-4 h-4" /&gt;} title="Account"&gt;
+          &lt;Row label="Session ID" value={session?.slice(0, 12) + "..." || "None"} /&gt;
+          &lt;div className="h-px bg-white/5" /&gt;
+          &lt;Row label="Clear Cache" onClick={() =&gt; { localStorage.clear(); window.location.reload(); }} /&gt;
+          &lt;div className="h-px bg-white/5" /&gt;
+          &lt;Row label="Sign Out" danger onClick={handleLogout} /&gt;
+        &lt;/Section&gt;
+
+        &lt;Section icon={&lt;Play className="w-4 h-4" /&gt;} title="Playback"&gt;
+          &lt;Row label="Auto-play next episode" value="On" /&gt;
+          &lt;div className="h-px bg-white/5" /&gt;
+          &lt;Row label="Default quality" value="Auto" /&gt;
+          &lt;div className="h-px bg-white/5" /&gt;
+          &lt;Row label="Subtitle language" value="English" /&gt;
+        &lt;/Section&gt;
+
+        &lt;Section icon={&lt;Shield className="w-4 h-4" /&gt;} title="Parental Controls"&gt;
+          &lt;div className="px-4 md:px-5 py-4"&gt;
+            &lt;label className="text-sm text-white/60 mb-2 block"&gt;
+              Set PIN to restrict mature content
+            &lt;/label&gt;
+            &lt;div className="flex gap-2"&gt;
+              &lt;input
+                type="password"
+                maxLength={4}
+                inputMode="numeric"
+                value={parentalPin}
+                onChange={(e) =&gt; setParentalPin(e.target.value.replace(/\D/g, ""))}
+                placeholder="4-digit PIN"
+                className="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white text-sm w-32 focus:outline-none focus:border-[#f5c518]"
+              /&gt;
+              &lt;button
+                onClick={handleSavePin}
+                className="px-4 py-2 rounded-lg bg-[#f5c518] text-black text-sm font-semibold hover:bg-[#e5b518] transition-colors active:scale-95"
+              &gt;
+                {saved ? "Saved!" : "Save"}
+              &lt;/button&gt;
+            &lt;/div&gt;
+          &lt;/div&gt;
+        &lt;/Section&gt;
+
+        &lt;Section icon={&lt;Palette className="w-4 h-4" /&gt;} title="Appearance"&gt;
+          &lt;div className="px-4 md:px-5 py-4 flex items-center justify-between"&gt;
+            &lt;span className="text-sm font-medium text-white"&gt;Dark Mode&lt;/span&gt;
+            &lt;button
+              onClick={() =&gt; setDarkMode(!darkMode)}
+              className={`w-12 h-7 rounded-full transition-colors relative ${darkMode ? "bg-[#f5c518]" : "bg-white/20"}`}
+            &gt;
+              &lt;div
+                className={`absolute top-0.5 w-6 h-6 rounded-full bg-white flex items-center justify-center transition-transform ${
+                  darkMode ? "translate-x-5" : "translate-x-0.5"
+                }`}
+              &gt;
+                {darkMode ? &lt;Moon className="w-3 h-3 text-black" /&gt; : &lt;Sun className="w-3 h-3 text-black" /&gt;}
+              &lt;/div&gt;
+            &lt;/button&gt;
+          &lt;/div&gt;
+        &lt;/Section&gt;
+
+        &lt;Section icon={&lt;Info className="w-4 h-4" /&gt;} title="About"&gt;
+          &lt;Row label="Version" value="2.0.0" /&gt;
+          &lt;div className="h-px bg-white/5" /&gt;
+          &lt;Row label="Terms of Service" /&gt;
+          &lt;div className="h-px bg-white/5" /&gt;
+          &lt;Row label="Privacy Policy" /&gt;
+          &lt;div className="h-px bg-white/5" /&gt;
+          &lt;Row label="DMCA" /&gt;
+        &lt;/Section&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+
+<h2>3.5 — Add Settings to Sidebar</h2>
+<p>Add a Settings gear icon to the NAV_ITEMS array in Sidebar.tsx.</p>
+
+<div class="path">artifacts/allrated/src/components/Sidebar.tsx</div>
+<pre><code>// FIND the NAV_ITEMS array and ADD this object BEFORE the closing ]:
+
+  {
+    href: "/settings",
+    label: "Settings",
+    svg: (
+      &lt;svg className="w-6 h-6 md:w-7 md:h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"&gt;
+        &lt;circle cx="12" cy="12" r="3" /&gt;
+        &lt;path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /&gt;
+      &lt;/svg&gt;
+    ),
+  },
+</code></pre>
+
+<h2>3.6 — Add Settings Route to App.tsx</h2>
+
+<div class="path">artifacts/allrated/src/App.tsx</div>
+<pre><code>// ADD this import at the top:
+import Settings from "@/pages/Settings";
+
+// ADD this route inside the inner Switch (standard layout):
+&lt;Route path="/settings" component={Settings} /&gt;
+</code></pre>
+
+<h2>3.7 — Space Page Login Gate</h2>
+<p>The Space page should show a friendly login prompt when no session exists, instead of empty states.</p>
+
+<div class="path">artifacts/allrated/src/pages/Space.tsx</div>
+<pre><code>// FIND the existing Space.tsx and REPLACE the top section (before the first return):
+// Keep all existing imports and the rest of the file. Only change the conditional rendering.
+
+// REPLACE this block:
+//   if (!session) {
+//     return (
+//       &lt;div className="pb-24 md:pb-0" data-testid="page-space"&gt;
+//         ...
+//       &lt;/div&gt;
+//     );
+//   }
+
+// WITH:
+
+  if (!session) {
+    return (
+      &lt;div className="pb-24 md:pb-0 min-h-screen flex flex-col items-center justify-center px-6 text-center bg-[#0f1014]" data-testid="page-space"&gt;
+        &lt;div className="w-20 h-20 mb-6 rounded-2xl bg-white/5 flex items-center justify-center"&gt;
+          &lt;svg className="w-10 h-10 text-white/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"&gt;
+            &lt;path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /&gt;
+            &lt;circle cx="12" cy="7" r="4" /&gt;
+          &lt;/svg&gt;
+        &lt;/div&gt;
+        &lt;h2 className="font-display text-3xl md:text-4xl text-white mb-3 tracking-wider"&gt;
+          Your Space
+        &lt;/h2&gt;
+        &lt;p className="text-white/40 max-w-sm mb-8 text-sm md:text-base"&gt;
+          Sign in to see your ratings, watchlist, and continue watching.
+        &lt;/p&gt;
+        &lt;button
+          onClick={() =&gt; window.location.reload()}
+          className="px-6 py-3 rounded-full bg-[#f5c518] text-black text-sm font-semibold hover:bg-[#e5b518] transition-colors active:scale-95"
+        &gt;
+          Refresh Session
+        &lt;/button&gt;
+      &lt;/div&gt;
+    );
+  }
+</code></pre>
+
+<div class="ok">
+<strong>PHASE 3 VERIFICATION:</strong> Test EVERY page on mobile (375px) and desktop:<br>
+• /sports — 9 sport cards with gradient backgrounds and LIVE pulse<br>
+• /spark — full-screen vertical video, swipe to change, tap to mute/unmute<br>
+• /settings — 5 sections (Account, Playback, Parental, Appearance, About)<br>
+• Settings gear icon in Sidebar, clicking it navigates to /settings<br>
+• 404 page shows "404. Well, fuck." with logo and humor text<br>
+• /space without session shows login gate instead of empty page<br>
+• No "coming soon" text anywhere in the app
+</div>
+
+<div class="check">
+<h3>Phase 3 Checklist</h3>
+<ul>
+<li>Sports.tsx has 9 live sport cards with gradients</li>
+<li>Sparks.tsx has vertical snap-scroll video feed</li>
+<li>not-found.tsx matches bingr.one dark humor style</li>
+<li>Settings.tsx created with all 5 sections</li>
+<li>Settings route added to App.tsx</li>
+<li>Settings icon added to Sidebar NAV_ITEMS</li>
+<li>Space page shows login gate when no session</li>
+<li>No placeholder text anywhere in the app</li>
+<li>All pages responsive on 375px mobile</li>
+</ul>
+</div>
+
+<p><strong>End of Phase 3.</strong> Complete this phase before moving to Phase 4.</p>
+
+</body>
+</html>

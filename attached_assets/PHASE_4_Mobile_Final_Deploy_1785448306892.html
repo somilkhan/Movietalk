@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Phase 4 — Mobile Deep Dive + Final Polish + Deployment | Bingr Clone Deep Fix</title>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.6;color:#1a1a1a;max-width:960px;margin:0 auto;padding:25px 15px;background:#fff;font-size:13px}
+  h1{font-size:1.7rem;border-bottom:3px solid #dc3545;padding-bottom:6px;margin-top:0}
+  h2{font-size:1.2rem;color:#0f1014;margin-top:28px;border-left:4px solid #dc3545;padding-left:12px}
+  h3{font-size:1rem;color:#333;margin-top:20px}
+  .meta{color:#666;font-size:0.85rem;margin-bottom:20px}
+  .why{background:#e7f3ff;border-left:4px solid #0066cc;padding:10px 14px;margin:12px 0;font-size:12px}
+  .why strong{color:#004499}
+  .path{background:#0f1014;color:#f5c518;font-family:"SF Mono",Monaco,monospace;font-size:0.78rem;padding:4px 12px;border-radius:5px 5px 0 0;display:inline-block;margin-top:15px}
+  pre{background:#1e1e1e;color:#d4d4d4;padding:12px 16px;border-radius:0 6px 6px 6px;overflow-x:auto;font-family:"SF Mono",Monaco,"Cascadia Code",monospace;font-size:0.75rem;line-height:1.45;margin:0 0 16px 0;white-space:pre;word-wrap:normal}
+  code{font-family:"SF Mono",Monaco,monospace;font-size:0.85em;background:#f4f4f4;padding:1px 4px;border-radius:3px}
+  pre code{background:none;padding:0}
+  .crit{background:#f8d7da;border:1px solid #dc3545;padding:10px 14px;border-radius:5px;margin:12px 0;font-size:12px}
+  .ok{background:#d4edda;border:1px solid #28a745;padding:10px 14px;border-radius:5px;margin:12px 0;font-size:12px}
+  ul,ol{padding-left:20px}
+  li{margin-bottom:4px}
+  hr{border:none;border-top:1px solid #ddd;margin:25px 0}
+  .check{background:#f8f9fa;padding:12px 16px;border-radius:5px;font-size:12px}
+  .check li{list-style:none;position:relative;padding-left:24px}
+  .check li::before{content:"☐";position:absolute;left:0;color:#dc3545;font-weight:bold}
+  .deploy{background:#e8f5e9;border:1px solid #4caf50;padding:12px 16px;border-radius:5px;margin:12px 0;font-size:12px}
+</style>
+</head>
+<body>
+
+<h1>🔴 PHASE 4 — Mobile Deep Dive + Final Polish + Deployment</h1>
+<p class="meta">Target: bingr.one clone | Scope: MobileNav, Sidebar, Safe Areas, Final Checklist, Deployment | Priority: SHIP-READY</p>
+
+<div class="crit">
+<strong>This is the final phase.</strong> After this, your clone should be indistinguishable from bingr.one on mobile. No compromises.
+</div>
+
+<!-- ============================================================ -->
+<h2>4.1 — MobileNav: Badge Counts + Gesture Swipe + Exact Tabs</h2>
+<div class="why">
+<strong>WHY:</strong> Real bingr.one mobile nav has: Home, Search, My Space, Categories. It shows badge counts for watchlist items. It supports swipe gestures between tabs. Your current nav is functional but missing the polish.
+</div>
+
+<div class="path">artifacts/allrated/src/components/MobileNav.tsx — FULL REPLACEMENT</div>
+<pre><code>import { useState, useEffect, useCallback, useRef } from 'react';
+import { Link, useLocation } from 'wouter';
+import { Home, Search, User, LayoutGrid } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+
+interface MobileNavProps {
+  watchlistCount?: number;
+}
+
+export function MobileNav({ watchlistCount = 0 }: MobileNavProps) {
+  const [location] = useLocation();
+  const { isLoggedIn } = useAuth();
+  const [hidden, setHidden] = useState(false);
+  const lastScrollY = useRef(0);
+  const touchStartX = useRef(0);
+
+  // Scroll hide/show
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      if (currentY > lastScrollY.current && currentY > 100) {
+        setHidden(true);
+      } else {
+        setHidden(false);
+      }
+      lastScrollY.current = currentY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Gesture swipe between tabs
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const SWIPE_THRESHOLD = 80;
+
+    if (Math.abs(deltaX) < SWIPE_THRESHOLD) return;
+
+    const tabs = ['/home', '/explore', '/space', '/categories'];
+    const currentIndex = tabs.findIndex((t) => location.startsWith(t));
+    if (currentIndex === -1) return;
+
+    if (deltaX < 0 && currentIndex < tabs.length - 1) {
+      // Swipe left -> next tab
+      window.location.href = tabs[currentIndex + 1];
+    } else if (deltaX > 0 && currentIndex > 0) {
+      // Swipe right -> prev tab
+      window.location.href = tabs[currentIndex - 1];
+    }
+  }, [location]);
+
+  const tabs = [
+    { href: '/home', icon: Home, label: 'Home', badge: 0 },
+    { href: '/explore', icon: Search, label: 'Search', badge: 0 },
+    { href: '/space', icon: User, label: 'My Space', badge: isLoggedIn ? watchlistCount : 0 },
+    { href: '/categories', icon: LayoutGrid, label: 'Categories', badge: 0 },
+  ];
+
+  return (
+    &lt;nav
+      className={cn(
+        "fixed bottom-0 left-0 right-0 z-50 bg-[#0f1014]/95 backdrop-blur-lg border-t border-[#ffffff1a]",
+        "transition-transform duration-300 ease-out",
+        "pb-[env(safe-area-inset-bottom)]",
+        hidden ? "translate-y-full" : "translate-y-0"
+      )}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      aria-label="Mobile navigation"
+    &gt;
+      &lt;div className="flex items-center justify-around h-14"&gt;
+        {tabs.map(({ href, icon: Icon, label, badge }) => {
+          const isActive = location === href || location.startsWith(href);
+          return (
+            &lt;Link key={href} href={href}&gt;
+              &lt;button
+                className={cn(
+                  "relative flex flex-col items-center justify-center w-16 h-full",
+                  "transition-colors duration-200",
+                  isActive ? "text-white" : "text-[#8f98a2]"
+                )}
+                aria-label={label}
+                aria-current={isActive ? 'page' : undefined}
+              &gt;
+                &lt;div className="relative"&gt;
+                  &lt;Icon
+                    className={cn(
+                      "w-5 h-5 transition-transform duration-200",
+                      isActive && "scale-110"
+                    )}
+                    strokeWidth={isActive ? 2.5 : 2}
+                  /&gt;
+                  {badge > 0 && (
+                    &lt;span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 bg-[#f5c518] text-black text-[10px] font-bold rounded-full flex items-center justify-center"&gt;
+                      {badge > 99 ? '99+' : badge}
+                    &lt;/span&gt;
+                  )}
+                &lt;/div&gt;
+                &lt;span className={cn(
+                  "text-[10px] mt-0.5 font-medium transition-all",
+                  isActive ? "opacity-100" : "opacity-70"
+                )}&gt;
+                  {label}
+                &lt;/span&gt;
+                {isActive && (
+                  &lt;span className="absolute bottom-1 w-1 h-1 rounded-full bg-[#f5c518]" /&gt;
+                )}
+              &lt;/button&gt;
+            &lt;/Link&gt;
+          );
+        })}
+      &lt;/div&gt;
+    &lt;/nav&gt;
+  );
+}
+</code></pre>
+
+<div class="ok">
+<strong>VERIFICATION:</strong> On mobile: scroll down — nav hides. Scroll up — nav shows. Swipe left/right between tabs. Badge should show watchlist count on "My Space" tab. Active tab has yellow dot indicator.
+</div>
+
+<!-- ============================================================ -->
+<h2>4.2 — Sidebar: Collapse/Expand + Tooltips + Notification Badges</h2>
+<div class="why">
+<strong>WHY:</strong> Real bingr.one sidebar on desktop is narrow by default. On hover, it expands to show text labels. It also shows notification badges (e.g., new items in My Space).
+</div>
+
+<div class="path">artifacts/allrated/src/components/Sidebar.tsx — ADD COLLAPSE/EXPAND</div>
+<pre><code>import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
+
+// ADD TO SIDEBAR COMPONENT STATE:
+const [expanded, setExpanded] = useState(false);
+const [isMobile, setIsMobile] = useState(false);
+
+useEffect(() => {
+  const check = () => setIsMobile(window.innerWidth < 1024);
+  check();
+  window.addEventListener('resize', check);
+  return () => window.removeEventListener('resize', check);
+}, []);
+
+// SIDEBAR WRAPPER — replace existing:
+&lt;aside
+  className={cn(
+    "fixed left-0 top-0 bottom-0 z-40 bg-[#0f1014] border-r border-[#ffffff1a]",
+    "transition-all duration-300 ease-out",
+    "hidden lg:flex flex-col",
+    expanded ? "w-56" : "w-20"
+  )}
+  onMouseEnter={() => setExpanded(true)}
+  onMouseLeave={() => setExpanded(false)}
+  aria-label="Main navigation"
+&gt;
+  {/* Logo */}
+  &lt;div className={cn("flex items-center h-16 px-6", expanded ? "justify-start" : "justify-center")}&gt;
+    &lt;Link href="/home"&gt;
+      &lt;img
+        src="/brand/logo.png"
+        alt="Bingr"
+        className={cn("h-8 transition-all", expanded ? "w-auto" : "w-8")}
+      /&gt;
+    &lt;/Link&gt;
+  &lt;/div&gt;
+
+  {/* Nav items */}
+  &lt;nav className="flex-1 flex flex-col py-6 gap-1 px-3"&gt;
+    {navItems.map((item) =&gt; {
+      const isActive = location === item.href;
+      return (
+        &lt;Link key={item.href} href={item.href}&gt;
+          &lt;button
+            className={cn(
+              "relative flex items-center w-full rounded-lg transition-all duration-200 group",
+              expanded ? "px-4 py-3 gap-3" : "px-0 py-3 justify-center",
+              isActive
+                ? "bg-white/10 text-white"
+                : "text-[#8f98a2] hover:bg-white/5 hover:text-white"
+            )}
+            aria-label={item.label}
+            aria-current={isActive ? 'page' : undefined}
+          &gt;
+            &lt;item.icon
+              className={cn(
+                "w-5 h-5 flex-shrink-0 transition-transform",
+                isActive && "scale-110"
+              )}
+              strokeWidth={isActive ? 2.5 : 2}
+            /&gt;
+
+            {/* Text label — slides in when expanded */}
+            &lt;span
+              className={cn(
+                "text-sm font-medium whitespace-nowrap transition-all duration-300",
+                expanded ? "opacity-100 translate-x-0 w-auto" : "opacity-0 -translate-x-2 w-0 overflow-hidden"
+              )}
+            &gt;
+              {item.label}
+            &lt;/span&gt;
+
+            {/* Active indicator */}
+            {isActive && (
+              &lt;span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#f5c518] rounded-r-full" /&gt;
+            )}
+
+            {/* Badge */}
+            {item.badge > 0 && (
+              &lt;span className={cn(
+                "min-w-[18px] h-[18px] px-1 bg-[#f5c518] text-black text-[10px] font-bold rounded-full flex items-center justify-center",
+                expanded ? "ml-auto" : "absolute -top-1 -right-1"
+              )}&gt;
+                {item.badge > 99 ? '99+' : item.badge}
+              &lt;/span&gt;
+            )}
+
+            {/* Tooltip when collapsed */}
+            {!expanded && (
+              &lt;div className="absolute left-full ml-2 px-2 py-1 bg-[#16181f] text-white text-xs rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-[#ffffff1a] z-50"&gt;
+                {item.label}
+              &lt;/div&gt;
+            )}
+          &lt;/button&gt;
+        &lt;/Link&gt;
+      );
+    })}
+  &lt;/nav&gt;
+&lt;/aside&gt;
+
+// MAIN CONTENT MARGIN — update in App.tsx or layout:
+// expanded ? "lg:ml-56" : "lg:ml-20"
+</code></pre>
+
+<div class="ok">
+<strong>VERIFICATION:</strong> On desktop: hover sidebar — it expands to 224px (w-56), text labels slide in. Move mouse away — collapses to 80px (w-20). Tooltip appears on hover when collapsed. Active item has yellow left border.
+</div>
+
+<!-- ============================================================ -->
+<h2>4.3 — Safe Area Insets for iPhone Notch</h2>
+<div class="why">
+<strong>WHY:</strong> iPhones with notches (X, 11, 12, 13, 14, 15) need `env(safe-area-inset-*)` padding. Without it, the notch covers your header and the home indicator covers your bottom nav.
+</div>
+
+<div class="path">artifacts/allrated/index.html — VERIFY meta viewport</div>
+<pre><code>&lt;meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" /&gt;</code></pre>
+
+<div class="path">artifacts/allrated/src/index.css — ADD SAFE AREA UTILITIES</div>
+<pre><code>/* Safe area utilities */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Mobile header safe area */
+.mobile-header {
+  padding-top: max(env(safe-area-inset-top), 0.5rem);
+}
+
+/* Content padding for mobile nav */
+.mobile-content {
+  padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
+}
+</code></pre>
+
+<div class="path">MobileHeader.tsx — ADD safe-top</div>
+<pre><code>&lt;header className="fixed top-0 left-0 right-0 z-50 bg-[#0f1014]/95 backdrop-blur-lg safe-top lg:hidden"&gt;
+  ...
+&lt;/header&gt;</code></pre>
+
+<div class="path">App.tsx / Layout — ADD mobile-content to main</div>
+<pre><code>&lt;main className="min-h-screen bg-[#0f1014] text-white mobile-content lg:pb-0"&gt;
+  ...
+&lt;/main&gt;</code></pre>
+
+<div class="ok">
+<strong>VERIFICATION:</strong> Open DevTools → Device Toolbar → iPhone 14 Pro. Header should have extra padding at top (notch area). Bottom content should not be hidden by home indicator.
+</div>
+
+<!-- ============================================================ -->
+<h2>4.4 — TitleCard Touch Scroll Fix (No Flash on Scroll)</h2>
+<div class="why">
+<strong>WHY:</strong> On mobile, touching a card to scroll triggers the hover state, causing a flash. Real bingr.one prevents this by detecting scroll intent vs. tap intent.
+</div>
+
+<div class="path">artifacts/allrated/src/components/TitleCard.tsx — ADD TOUCH HANDLING</div>
+<pre><code>// ADD TO STATE:
+const [touchStartY, setTouchStartY] = useState(0);
+const [isTouching, setIsTouching] = useState(false);
+
+// ADD HANDLERS:
+const handleTouchStart = useCallback((e: React.TouchEvent) => {
+  setTouchStartY(e.touches[0].clientY);
+  setIsTouching(true);
+}, []);
+
+const handleTouchMove = useCallback((e: React.TouchEvent) => {
+  if (!isTouching) return;
+  const deltaY = Math.abs(e.touches[0].clientY - touchStartY);
+  if (deltaY > 10) {
+    // User is scrolling, disable hover
+    setIsHovered(false);
+    setIsTouching(false);
+  }
+}, [isTouching, touchStartY]);
+
+const handleTouchEnd = useCallback(() => {
+  setIsTouching(false);
+}, []);
+
+// ADD TO CARD DIV:
+&lt;div
+  ...
+  onTouchStart={handleTouchStart}
+  onTouchMove={handleTouchMove}
+  onTouchEnd={handleTouchEnd}
+  onMouseEnter={() => !('ontouchstart' in window) && setIsHovered(true)}
+  onMouseLeave={() => setIsHovered(false)}
+&gt;</code></pre>
+
+<div class="ok">
+<strong>VERIFICATION:</strong> On mobile (DevTools touch mode): touch a card and scroll vertically. Card should NOT expand/flash. Tap and hold — card should expand.
+</div>
+
+<!-- ============================================================ -->
+<h2>4.5 — Final Deployment Checklist</h2>
+
+<div class="deploy">
+<strong>PRE-DEPLOY CHECKLIST — Run every item:</strong>
+<ol>
+  <li><strong>Build passes:</strong> <code>npm run build</code> — zero TypeScript errors, zero ESLint errors</li>
+  <li><strong>No console logs:</strong> <code>grep -r "console\." src/</code> — returns nothing</li>
+  <li><strong>No <code>as any</code>:</strong> <code>grep -r "as any" src/</code> — returns nothing</li>
+  <li><strong>Lighthouse score ≥ 90:</strong> Run Chrome DevTools Lighthouse on mobile. Target: Performance 90+, Accessibility 90+, Best Practices 90+, SEO 90+</li>
+  <li><strong>PWA check:</strong> DevTools → Application → Manifest → "Installable" should be green</li>
+  <li><strong>Service Worker active:</strong> DevTools → Application → Service Workers → shows "bingr-v1"</li>
+  <li><strong>Offline works:</strong> Set network to Offline, refresh — app shell renders</li>
+  <li><strong>Auth flow works:</strong> Register → Login → Watchlist → Logout → Login again</li>
+  <li><strong>Video player works:</strong> Play, pause, seek, fullscreen, PiP, theatre mode, speed, skip intro, double-tap</li>
+  <li><strong>Mobile nav works:</strong> All 4 tabs, scroll hide/show, swipe between tabs, badge counts</li>
+  <li><strong>Sidebar works:</strong> Expand/collapse, tooltips, active indicator, keyboard nav</li>
+  <li><strong>Responsive:</strong> Test on iPhone SE (375px), iPhone 14 Pro (393px), iPad (768px), Desktop (1440px)</li>
+  <li><strong>Dark mode:</strong> System dark mode should match app (already dark, but verify no flash)</li>
+  <li><strong>Reduced motion:</strong> System prefers-reduced-motion should disable animations</li>
+  <li><strong>Screen reader:</strong> Turn on VoiceOver/TalkBack. Navigate sidebar, cards, video controls. All should have labels.</li>
+  <li><strong>Analytics firing:</strong> Network tab shows Umami events on pageview, play, watchlist, rating</li>
+  <li><strong>API health:</strong> <code>/api/health</code> returns 200 OK</li>
+  <li><strong>Database:</strong> All tables exist, migrations run, seed data present</li>
+  <li><strong>Environment variables:</strong> All VITE_* and server env vars set in production</li>
+</ol>
+</div>
+
+<div class="deploy">
+<strong>REPLIT DEPLOYMENT STEPS:</strong>
+<ol>
+  <li>Run <code>npm run build</code> in frontend</li>
+  <li>Ensure <code>dist/</code> folder has index.html, assets, sw.js, manifest.json</li>
+  <li>Set Replit environment variables: <code>DATABASE_URL</code>, <code>TMDB_API_KEY</code>, <code>NODE_ENV=production</code></li>
+  <li>Run database migrations: <code>npx drizzle-kit migrate</code></li>
+  <li>Start all 3 services via <code>.replit</code> workflows</li>
+  <li>Verify <code>https://your-repl.replit.app</code> loads</li>
+  <li>Test on real mobile device (not just DevTools)</li>
+</ol>
+</div>
+
+<hr>
+
+<div class="check">
+<strong>PHASE 4 CHECKLIST — FINAL SHIP CHECK:</strong>
+<ul>
+  <li>MobileNav has 4 tabs: Home, Search, My Space, Categories</li>
+  <li>MobileNav shows badge count on My Space</li>
+  <li>MobileNav hides on scroll down, shows on scroll up</li>
+  <li>Swipe left/right switches tabs</li>
+  <li>Sidebar expands on hover, collapses on leave</li>
+  <li>Sidebar tooltips appear when collapsed</li>
+  <li>Active sidebar item has yellow left border</li>
+  <li>iPhone notch doesn't cover header (safe-top padding)</li>
+  <li>Home indicator doesn't cover content (safe-bottom padding)</li>
+  <li>TitleCard doesn't flash on touch scroll</li>
+  <li>Lighthouse score ≥ 90 on all categories</li>
+  <li>PWA installable (green check in DevTools)</li>
+  <li>Service Worker active and caching</li>
+  <li>Offline mode shows app shell</li>
+  <li>All 20 deployment checklist items passed</li>
+</ul>
+</div>
+
+<div class="ok" style="margin-top:30px">
+<strong>🎉 YOU ARE DONE.</strong> If all 4 phases are implemented and all checklists are checked, your bingr.one clone is production-ready. It will be indistinguishable from the real site on desktop and mobile.
+</div>
+
+</body>
+</html>

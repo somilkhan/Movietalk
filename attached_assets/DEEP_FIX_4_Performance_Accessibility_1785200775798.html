@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DEEP FIX 4 — Performance & Accessibility | Bingr Clone</title>
+<style>
+  @page { size: A4; margin: 1.5cm; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 25px 15px; background: #fff; font-size: 13px; }
+  h1 { font-size: 1.7rem; border-bottom: 3px solid #28a745; padding-bottom: 6px; margin-top: 0; }
+  h2 { font-size: 1.2rem; color: #0f1014; margin-top: 28px; border-left: 4px solid #28a745; padding-left: 12px; }
+  h3 { font-size: 1rem; color: #333; margin-top: 20px; }
+  .meta { color: #666; font-size: 0.85rem; margin-bottom: 20px; }
+  .why { background: #e7f3ff; border-left: 4px solid #0066cc; padding: 10px 14px; margin: 12px 0; font-size: 12px; }
+  .why strong { color: #004499; }
+  .path { background: #0f1014; color: #f5c518; font-family: "SF Mono",Monaco,monospace; font-size: 0.78rem; padding: 4px 12px; border-radius: 5px 5px 0 0; display: inline-block; margin-top: 15px; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 12px 16px; border-radius: 0 6px 6px 6px; overflow-x: auto; font-family: "SF Mono",Monaco,"Cascadia Code",monospace; font-size: 0.75rem; line-height: 1.45; margin: 0 0 16px 0; white-space: pre; word-wrap: normal; }
+  code { font-family: "SF Mono",Monaco,monospace; font-size: 0.85em; background: #f4f4f4; padding: 1px 4px; border-radius: 3px; }
+  pre code { background: none; padding: 0; }
+  .crit { background: #f8d7da; border: 1px solid #dc3545; padding: 10px 14px; border-radius: 5px; margin: 12px 0; font-size: 12px; }
+  .ok { background: #d4edda; border: 1px solid #28a745; padding: 10px 14px; border-radius: 5px; margin: 12px 0; font-size: 12px; }
+  ul, ol { padding-left: 20px; }
+  li { margin-bottom: 4px; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 25px 0; }
+  .check { background: #f8f9fa; padding: 12px 16px; border-radius: 5px; font-size: 12px; }
+  .check li { list-style: none; position: relative; padding-left: 24px; }
+  .check li::before { content: "☐"; position: absolute; left: 0; color: #28a745; font-weight: bold; }
+  @media print { body { padding: 0; font-size: 11px; } pre { white-space: pre-wrap; word-wrap: break-word; font-size: 9px; } h2 { page-break-after: avoid; } .path { page-break-after: avoid; } }
+</style>
+</head>
+<body>
+
+<h1>🚀 DEEP FIX 4 — Performance & Accessibility</h1>
+<p class="meta"><strong>Target:</strong> bingr.one clone | <strong>Scope:</strong> Lazy Loading, Error Boundaries, Retry Logic, Keyboard Nav, ARIA, Dead Code</p>
+
+<div class="crit">
+<strong>Your app has 12 console.log statements, :any types, and zero ARIA labels.</strong> A senior engineer ships clean, accessible, performant code.
+</div>
+
+<hr>
+
+<h2>4.1 — CLEAN UP Dead Code (console.log, :any, TODO, FIXME)</h2>
+<div class="why">
+<strong>WHY:</strong> console.log statements leak internal data in production. :any types disable TypeScript's safety net. TODO/FIXME comments indicate unfinished work. A 20-year engineer never ships code with these issues.
+</div>
+
+<div class="path">Run this cleanup across ALL files</div>
+<pre><code>// REMOVE all console.log statements:
+// Find: console\.log\(.*\);
+// Replace with: nothing (delete the line)
+
+// REMOVE all console.error used for debugging:
+// Find: console\.error\(.*\);
+// Replace with: proper error handling or nothing
+
+// REPLACE all :any types with proper types:
+// Find: :\s*any
+// Replace with: : unknown (if type is truly unknown) or proper interface
+
+// REMOVE all TODO/FIXME comments:
+// Find: (TODO|FIXME).*
+// Replace with: nothing (or create an issue in your tracker)
+
+// REMOVE all @ts-ignore:
+// Find: @ts-ignore
+// Replace with: proper type fix or @ts-expect-error with explanation
+
+// REMOVE all eslint-disable without specific rule:
+// Find: eslint-disable\s*$
+// Replace with: eslint-disable-next-line specific-rule-name
+</code></pre>
+
+<div class="ok">
+<strong>FILES TO CLEAN:</strong><br>
+• TitleDetail.tsx — remove console.log, fix :any types<br>
+• Explore.tsx — remove console.log, fix :any types<br>
+• Categories.tsx — remove console.log<br>
+• Catalog.tsx — remove console.log<br>
+• TitleCard.tsx — remove TODO comment<br>
+• All files with @ts-ignore — fix the underlying type issue
+</div>
+
+<hr>
+
+<h2>4.2 — ADD ARIA Labels to ALL Interactive Elements</h2>
+<div class="why">
+<strong>WHY:</strong> Screen readers (used by blind users) rely on ARIA labels to describe interactive elements. Without them, a blind user hears "button, button, button" with no context. This is a legal accessibility requirement (WCAG 2.1 AA) and a moral obligation.
+</div>
+
+<div class="path">Apply to ALL components — examples:</div>
+<pre><code>// Sidebar nav items:
+&lt;button aria-label={item.label} aria-current={isActive ? "page" : undefined}&gt;
+
+// TitleCard:
+&lt;div role="button" aria-label={`${title.title} — ${title.mediaType}`}&gt;
+
+// Play button:
+&lt;button aria-label={`Play ${title.title}`}&gt;
+
+// Add to watchlist:
+&lt;button aria-label="Add to watchlist" aria-pressed={isInWatchlist}&gt;
+
+// Search input:
+&lt;input aria-label="Search movies and shows" role="searchbox"&gt;
+
+// Row scroll buttons:
+&lt;button aria-label="Scroll left"&gt;
+&lt;button aria-label="Scroll right"&gt;
+
+// HeroBanner thumbnails:
+&lt;button aria-label={`Show ${t.title}`}&gt;
+
+// Mobile nav items:
+&lt;a aria-label={item.label} aria-current={isActive ? "page" : undefined}&gt;
+
+// Settings toggle:
+&lt;button aria-label="Toggle dark mode" aria-pressed={darkMode}&gt;
+
+// Volume slider:
+&lt;input type="range" aria-label="Volume" aria-valuemin={0} aria-valuemax={100}&gt;
+
+// Playback speed:
+&lt;button aria-label="Playback speed" aria-haspopup="listbox"&gt;
+
+// Share button:
+&lt;button aria-label="Share this title"&gt;
+
+// Copy link:
+&lt;button aria-label="Copy link to clipboard"&gt;
+
+// Close modal:
+&lt;button aria-label="Close dialog"&gt;
+
+// Loading spinner:
+&lt;div role="status" aria-label="Loading"&gt;
+  &lt;span className="sr-only"&gt;Loading...&lt;/span&gt;
+&lt;/div&gt;
+</code></pre>
+
+<div class="ok">
+<strong>ADD sr-only utility to index.css:</strong>
+<pre><code>.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}</code></pre>
+</div>
+
+<hr>
+
+<h2>4.3 — ADD Keyboard Navigation (Global Shortcuts)</h2>
+<div class="why">
+<strong>WHY:</strong> Power users expect keyboard shortcuts. Netflix, YouTube, and every major streaming app support: Space (play/pause), F (fullscreen), M (mute), Arrow keys (seek/volume), K (play/pause). Without these, your app feels amateur.
+</div>
+
+<div class="path">artifacts/allrated/src/hooks/useKeyboardShortcuts.ts (NEW)</div>
+<pre><code>import { useEffect } from "react";
+
+interface Shortcuts {
+  onPlayPause?: () => void;
+  onFullscreen?: () => void;
+  onMute?: () => void;
+  onSeekForward?: () => void;
+  onSeekBackward?: () => void;
+  onVolumeUp?: () => void;
+  onVolumeDown?: () => void;
+  onNext?: () => void;
+  onPrev?: () => void;
+}
+
+export function useKeyboardShortcuts(shortcuts: Shortcuts) {
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      // Ignore if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      switch (e.key.toLowerCase()) {
+        case " ":
+        case "k":
+          e.preventDefault();
+          shortcuts.onPlayPause?.();
+          break;
+        case "f":
+          e.preventDefault();
+          shortcuts.onFullscreen?.();
+          break;
+        case "m":
+          e.preventDefault();
+          shortcuts.onMute?.();
+          break;
+        case "arrowright":
+        case "l":
+          e.preventDefault();
+          shortcuts.onSeekForward?.();
+          break;
+        case "arrowleft":
+        case "j":
+          e.preventDefault();
+          shortcuts.onSeekBackward?.();
+          break;
+        case "arrowup":
+          e.preventDefault();
+          shortcuts.onVolumeUp?.();
+          break;
+        case "arrowdown":
+          e.preventDefault();
+          shortcuts.onVolumeDown?.();
+          break;
+        case "n":
+          e.preventDefault();
+          shortcuts.onNext?.();
+          break;
+        case "p":
+          e.preventDefault();
+          shortcuts.onPrev?.();
+          break;
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [shortcuts]);
+}
+</code></pre>
+
+<div class="path">Use in Watch.tsx:</div>
+<pre><code>import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+
+// Inside Watch component:
+useKeyboardShortcuts({
+  onPlayPause: () => {
+    if (videoRef.current) {
+      videoRef.current.paused ? videoRef.current.play() : videoRef.current.pause();
+    }
+  },
+  onFullscreen: () => {
+    if (containerRef.current) {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else {
+        containerRef.current.requestFullscreen();
+      }
+    }
+  },
+  onMute: () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !videoRef.current.muted;
+    }
+  },
+  onSeekForward: () => {
+    if (videoRef.current) videoRef.current.currentTime += 10;
+  },
+  onSeekBackward: () => {
+    if (videoRef.current) videoRef.current.currentTime -= 10;
+  },
+  onVolumeUp: () => {
+    if (videoRef.current) videoRef.current.volume = Math.min(1, videoRef.current.volume + 0.1);
+  },
+  onVolumeDown: () => {
+    if (videoRef.current) videoRef.current.volume = Math.max(0, videoRef.current.volume - 0.1);
+  },
+});
+</code></pre>
+
+<div class="ok">
+<strong>KEYBOARD SHORTCUTS ADDED:</strong><br>
+• Space / K — Play/Pause<br>
+• F — Fullscreen toggle<br>
+• M — Mute toggle<br>
+• Arrow Right / L — Seek +10s<br>
+• Arrow Left / J — Seek -10s<br>
+• Arrow Up — Volume +10%<br>
+• Arrow Down — Volume -10%<br>
+• N — Next episode<br>
+• P — Previous episode<br>
+• Ignores keys when typing in inputs
+</div>
+
+<hr>
+
+<h2>4.4 — ADD Error States + Retry Logic to ALL Data Fetching</h2>
+<div class="why">
+<strong>WHY:</strong> Your current code shows "Could not load" as plain text. A senior engineer shows a proper error UI with a retry button, error details, and graceful degradation. Users should never be stuck.
+</div>
+
+<div class="path">Create ErrorState component</div>
+<pre><code>import { AlertCircle, RotateCcw } from "lucide-react";
+
+interface ErrorStateProps {
+  message?: string;
+  onRetry?: () => void;
+  compact?: boolean;
+}
+
+export function ErrorState({ message = "Failed to load content", onRetry, compact }: ErrorStateProps) {
+  if (compact) {
+    return (
+      &lt;div className="flex items-center gap-2 text-[#ffffff4d] text-sm py-4"&gt;
+        &lt;AlertCircle className="w-4 h-4" /&gt;
+        &lt;span&gt;{message}&lt;/span&gt;
+        {onRetry && (
+          &lt;button onClick={onRetry} className="text-[#f5c518] hover:underline ml-2"&gt;
+            Retry
+          &lt;/button&gt;
+        )}
+      &lt;/div&gt;
+    );
+  }
+
+  return (
+    &lt;div className="flex flex-col items-center justify-center py-20 px-6 text-center"&gt;
+      &lt;div className="w-16 h-16 rounded-full bg-[#ffffff0d] flex items-center justify-center mb-4"&gt;
+        &lt;AlertCircle className="w-8 h-8 text-[#ffffff4d]" /&gt;
+      &lt;/div&gt;
+      &lt;h3 className="text-lg font-semibold text-[#ffffffe6] mb-2"&gt;Something went wrong&lt;/h3&gt;
+      &lt;p className="text-[#ffffff4d] text-sm max-w-sm mb-6"&gt;{message}&lt;/p&gt;
+      {onRetry && (
+        &lt;button
+          onClick={onRetry}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#f5c518] text-black font-semibold hover:bg-[#e5b518] transition-bingr"
+        &gt;
+          &lt;RotateCcw className="w-4 h-4" /&gt;
+          Try Again
+        &lt;/button&gt;
+      )}
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+
+<div class="path">Use in TitleDetail.tsx — replace error states:</div>
+<pre><code>// REPLACE:
+// if (isError) return &lt;div className="pb-24 md:pb-0"&gt;Could not load TV show details.&lt;/div&gt;;
+
+// WITH:
+if (isError) {
+  return (
+    &lt;div className="pb-24 md:pb-0 min-h-screen bg-[#0f1014]" data-testid="page-title-detail"&gt;
+      &lt;div className="pt-24 md:pt-32 px-6 md:px-20"&gt;
+        &lt;ErrorState
+          message="Could not load title details. The server may be unavailable."
+          onRetry={() => window.location.reload()}
+        /&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}
+
+// ALSO add skeleton loading state:
+if (isLoading || !detail) {
+  return (
+    &lt;div className="pb-24 md:pb-0 min-h-screen bg-[#0f1014]" data-testid="page-title-detail"&gt;
+      &lt;div className="pt-24 md:pt-32 px-6 md:px-20"&gt;
+        &lt;div className="animate-shimmer rounded-xl aspect-[21/9] mb-8" /&gt;
+        &lt;div className="animate-shimmer h-10 w-2/3 rounded mb-4" /&gt;
+        &lt;div className="animate-shimmer h-4 w-1/2 rounded mb-2" /&gt;
+        &lt;div className="animate-shimmer h-4 w-full rounded mb-2" /&gt;
+        &lt;div className="animate-shimmer h-4 w-3/4 rounded" /&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+
+<div class="ok">
+<strong>CHANGES:</strong><br>
+• ErrorState component: consistent error UI across all pages<br>
+• Compact mode for inline errors (inside rows)<br>
+• Full mode for page-level errors with retry button<br>
+• Shimmer skeleton loading (from index.css) instead of blank screen<br>
+• Applied to TitleDetail, Catalog, Explore, and all data-fetching pages
+</div>
+
+<hr>
+
+<h2>4.5 — ADD srcset + WebP Support to Images</h2>
+<div class="why">
+<strong>WHY:</strong> Your images load the full 500px poster on mobile where 200px is enough. This wastes bandwidth and slows LCP. srcset serves the right size. WebP reduces file size by 30%.
+</div>
+
+<div class="path">Update TitleCard image:</div>
+<pre><code>&lt;img
+  src={title.posterPath?.replace("/w500/", "/w300/") || `${import.meta.env.BASE_URL}brand/logo.png`}
+  srcSet={`
+    ${title.posterPath?.replace("/w500/", "/w200/")} 200w,
+    ${title.posterPath?.replace("/w500/", "/w300/")} 300w,
+    ${title.posterPath} 500w
+  `}
+  sizes="(max-width: 640px) 120px, (max-width: 1024px) 160px, 180px"
+  alt={title.title}
+  loading="lazy"
+  decoding="async"
+  className="w-full h-full object-cover"
+  onError={(e) => {
+    (e.target as HTMLImageElement).src = `${import.meta.env.BASE_URL}brand/logo.png`;
+  }}
+/&gt;
+</code></pre>
+
+<div class="ok">
+<strong>CHANGES:</strong><br>
+• srcSet: serves 200w on mobile, 300w on tablet, 500w on desktop<br>
+• sizes: tells browser the display size at each breakpoint<br>
+• loading="lazy" + decoding="async": non-blocking image decode<br>
+• onError fallback: shows logo if TMDB image fails<br>
+• Apply to ALL images: TitleCard, HeroBanner, TitleDetail, Cast, etc.
+</div>
+
+<hr>
+
+<div class="check">
+<h3>Verification Checklist</h3>
+<ul>
+<li>Zero console.log statements in production build</li>
+<li>Zero :any types (use proper interfaces or unknown)</li>
+<li>All interactive elements have aria-label</li>
+<li>Screen reader announces page changes</li>
+<li>Keyboard shortcuts work in Watch page (Space, F, M, arrows)</li>
+<li>Error pages show retry button, not plain text</li>
+<li>Skeleton loading shows shimmer animation</li>
+<li>Images load appropriate size (check Network tab)</li>
+<li>Lighthouse accessibility score > 90</li>
+<li>Lighthouse performance score > 80</li>
+</ul>
+</div>
+
+</body>
+</html>

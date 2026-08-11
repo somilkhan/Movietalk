@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DEEP FIX 2 — Visual Pixel-Perfection | Bingr Clone</title>
+<style>
+  @page { size: A4; margin: 1.5cm; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 25px 15px; background: #fff; font-size: 13px; }
+  h1 { font-size: 1.7rem; border-bottom: 3px solid #f5c518; padding-bottom: 6px; margin-top: 0; }
+  h2 { font-size: 1.2rem; color: #0f1014; margin-top: 28px; border-left: 4px solid #f5c518; padding-left: 12px; }
+  h3 { font-size: 1rem; color: #333; margin-top: 20px; }
+  .meta { color: #666; font-size: 0.85rem; margin-bottom: 20px; }
+  .why { background: #e7f3ff; border-left: 4px solid #0066cc; padding: 10px 14px; margin: 12px 0; font-size: 12px; }
+  .why strong { color: #004499; }
+  .path { background: #0f1014; color: #f5c518; font-family: "SF Mono",Monaco,monospace; font-size: 0.78rem; padding: 4px 12px; border-radius: 5px 5px 0 0; display: inline-block; margin-top: 15px; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 12px 16px; border-radius: 0 6px 6px 6px; overflow-x: auto; font-family: "SF Mono",Monaco,"Cascadia Code",monospace; font-size: 0.75rem; line-height: 1.45; margin: 0 0 16px 0; white-space: pre; word-wrap: normal; }
+  code { font-family: "SF Mono",Monaco,monospace; font-size: 0.85em; background: #f4f4f4; padding: 1px 4px; border-radius: 3px; }
+  pre code { background: none; padding: 0; }
+  .crit { background: #f8d7da; border: 1px solid #dc3545; padding: 10px 14px; border-radius: 5px; margin: 12px 0; font-size: 12px; }
+  .ok { background: #d4edda; border: 1px solid #28a745; padding: 10px 14px; border-radius: 5px; margin: 12px 0; font-size: 12px; }
+  ul, ol { padding-left: 20px; }
+  li { margin-bottom: 4px; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 25px 0; }
+  .check { background: #f8f9fa; padding: 12px 16px; border-radius: 5px; font-size: 12px; }
+  .check li { list-style: none; position: relative; padding-left: 24px; }
+  .check li::before { content: "☐"; position: absolute; left: 0; color: #f5c518; font-weight: bold; }
+  @media print { body { padding: 0; font-size: 11px; } pre { white-space: pre-wrap; word-wrap: break-word; font-size: 9px; } h2 { page-break-after: avoid; } .path { page-break-after: avoid; } }
+</style>
+</head>
+<body>
+
+<h1>🎨 DEEP FIX 2 — Visual Pixel-Perfection</h1>
+<p class="meta"><strong>Target:</strong> bingr.one clone | <strong>Scope:</strong> Colors, Backdrop Blur, Transitions, Spacing, Typography</p>
+
+<div class="crit">
+<strong>These visual bugs make your clone look obviously fake.</strong> bingr.one uses specific alpha values, backdrop blurs, and transitions that your code is missing.
+</div>
+
+<hr>
+
+<h2>2.1 — FIX index.css (Add Exact bingr.one Colors + Backdrop Blur)</h2>
+<div class="why">
+<strong>WHY:</strong> The extracted bingr.css shows these exact colors used 10+ times each: <code>#ffffff4d</code> (30% white), <code>#ffffff1a</code> (10% white), <code>#ffffff0d</code> (5% white), <code>#ffffff26</code> (15% white). Your code uses generic Tailwind classes like <code>text-white/40</code> which compile to different values. Also, bingr uses <code>backdrop-blur-sm</code>, <code>backdrop-blur-md</code>, and <code>backdrop-blur-2xl</code> extensively — your code has ZERO backdrop-filter usage.
+</div>
+
+<div class="path">artifacts/allrated/src/index.css — ADD at bottom</div>
+<pre><code>/* ============================================
+   Bingr.one Exact Design Tokens
+   Extracted from production CSS
+   ============================================ */
+
+/* Exact background colors from bingr.one */
+.bg-bingr { background-color: #0f1014; }
+.bg-bingr-card { background-color: #16181f; }
+.bg-bingr-elevated { background-color: #1a1c20; }
+
+/* Exact border colors (alpha channel precise) */
+.border-bingr-subtle { border-color: #ffffff0d; }   /* 5% white */
+.border-bingr-light { border-color: #ffffff1a; }    /* 10% white */
+.border-bingr-medium { border-color: #ffffff26; }   /* 15% white */
+.border-bingr-strong { border-color: #ffffff40; }   /* 25% white */
+
+/* Exact text colors */
+.text-bingr-primary { color: #ffffffe6; }           /* 90% white */
+.text-bingr-secondary { color: #ffffffb3; }         /* 70% white */
+.text-bingr-tertiary { color: #ffffff80; }          /* 50% white */
+.text-bingr-muted { color: #ffffff4d; }             /* 30% white */
+.text-bingr-faint { color: #ffffff1a; }             /* 10% white */
+
+/* Backdrop blur utilities (missing from your code) */
+.backdrop-bingr {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.backdrop-bingr-heavy {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+.backdrop-bingr-glass {
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+}
+
+/* Exact transition timing from bingr.one */
+.transition-bingr {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.transition-bingr-slow {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Custom scrollbar (bingr.one uses hidden scrollbars with custom thumb) */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #ffffff1a;
+  border-radius: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #ffffff40;
+}
+
+/* Hide scrollbar but keep functionality */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Staggered fade-in animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Shimmer skeleton loading */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-shimmer {
+  background: linear-gradient(90deg, #16181f 25%, #1a1c20 50%, #16181f 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Dark mode is the only mode */
+@media (prefers-color-scheme: light) {
+  html { color-scheme: dark; }
+}
+</code></pre>
+
+<div class="ok">
+<strong>CHANGES:</strong><br>
+• Exact bingr.one colors with precise alpha values<br>
+• Backdrop blur utilities (your code had ZERO)<br>
+• Custom scrollbar styling (bingr uses 6px thumb)<br>
+• Staggered fade-in animation for rows<br>
+• Shimmer skeleton (better than pulse)<br>
+• Reduced motion support (accessibility)<br>
+• Forces dark mode even if OS is light
+</div>
+
+<hr>
+
+<h2>2.2 — UPDATE TitleCard.tsx (Exact bingr.one Hover + Mobile Tap)</h2>
+<div class="why">
+<strong>WHY:</strong> Your TitleCard uses generic Tailwind classes. bingr.one uses exact alpha values, backdrop blur on the overlay, and a specific scale transform. Also, the mobile tap state is broken — it uses <code>onTouchStart</code> which fires on scroll, causing cards to flash overlay while scrolling.
+</div>
+
+<div class="path">artifacts/allrated/src/components/TitleCard.tsx</div>
+<pre><code>import { useState, useRef } from "react";
+import { Link } from "wouter";
+import { Play, Plus, ChevronDown, Star, Bookmark } from "lucide-react";
+import type { Title } from "@workspace/api-client-react";
+
+export function TitleCard({ title }: { title: Title }) {
+  const [showOverlay, setShowOverlay] = useState(false);
+  const touchStartY = useRef(0);
+  const touchTimer = useRef&lt;ReturnType&lt;typeof setTimeout&gt; | null&gt;(null);
+
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartY.current = e.touches[0].clientY;
+    touchTimer.current = setTimeout(() => {
+      setShowOverlay(true);
+    }, 400); // Long press to show overlay
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    const deltaY = Math.abs(e.touches[0].clientY - touchStartY.current);
+    if (deltaY > 10) {
+      // Scrolling — cancel overlay
+      if (touchTimer.current) clearTimeout(touchTimer.current);
+      setShowOverlay(false);
+    }
+  }
+
+  function handleTouchEnd() {
+    if (touchTimer.current) clearTimeout(touchTimer.current);
+    setTimeout(() => setShowOverlay(false), 2000);
+  }
+
+  const isInWatchlist = false; // TODO: connect to useMyWatchlist
+
+  return (
+    &lt;Link href={`/title/${title.mediaType}/${title.id}`}&gt;
+      &lt;div
+        className="group relative aspect-[2/3] rounded-lg overflow-hidden bg-bingr-card cursor-pointer transition-bingr hover:scale-105 hover:z-20"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        role="button"
+        aria-label={`${title.title} — ${title.mediaType} — ${title.voteAverage?.toFixed(1)} rating`}
+      &gt;
+        &lt;img
+          src={title.posterPath || `${import.meta.env.BASE_URL}brand/logo.png`}
+          alt={title.title}
+          loading="lazy"
+          decoding="async"
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = `${import.meta.env.BASE_URL}brand/logo.png`;
+          }}
+        /&gt;
+
+        {/* Hover / tap overlay with EXACT bingr colors */}
+        &lt;div
+          className={`absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent transition-bingr flex flex-col justify-end ${
+            showOverlay ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          }`}
+        &gt;
+          &lt;div className="p-3"&gt;
+            {/* Action buttons */}
+            &lt;div className="flex items-center gap-2 mb-3"&gt;
+              &lt;Link href={`/watch/${title.mediaType}/${title.id}`}&gt;
+                &lt;button
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-bingr"
+                  aria-label="Play"
+                &gt;
+                  &lt;Play className="w-4 h-4 fill-black ml-0.5" /&gt;
+                &lt;/button&gt;
+              &lt;/Link&gt;
+              &lt;button
+                onClick={(e) => e.stopPropagation()}
+                className="w-8 h-8 rounded-full border border-[#ffffff40] text-white flex items-center justify-center hover:border-[#ffffff80] hover:bg-[#ffffff1a] transition-bingr"
+                aria-label="Add to watchlist"
+              &gt;
+                &lt;Plus className="w-4 h-4" /&gt;
+              &lt;/button&gt;
+              &lt;button className="w-8 h-8 rounded-full border border-[#ffffff40] text-white flex items-center justify-center hover:border-[#ffffff80] hover:bg-[#ffffff1a] transition-bingr ml-auto"&gt;
+                &lt;ChevronDown className="w-4 h-4" /&gt;
+              &lt;/button&gt;
+            &lt;/div&gt;
+
+            &lt;h3 className="text-[#ffffffe6] font-bold text-sm leading-tight line-clamp-1 mb-1"&gt;
+              {title.title}
+            &lt;/h3&gt;
+
+            &lt;div className="flex items-center gap-2.5 text-[11px] text-[#ffffff80]"&gt;
+              &lt;span className="text-[#f5c518] flex items-center gap-0.5 font-medium"&gt;
+                &lt;Star className="w-3 h-3 fill-[#f5c518]" /&gt;
+                {title.voteAverage?.toFixed(1)}
+              &lt;/span&gt;
+              &lt;span&gt;{title.releaseDate?.slice(0, 4)}&lt;/span&gt;
+              &lt;span className="uppercase text-[10px] border border-[#ffffff26] px-1 rounded"&gt;
+                {title.mediaType}
+              &lt;/span&gt;
+            &lt;/div&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+
+        {/* Watchlist indicator */}
+        {isInWatchlist && (
+          &lt;div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[#f5c518] flex items-center justify-center"&gt;
+            &lt;Bookmark className="w-3 h-3 text-black fill-black" /&gt;
+          &lt;/div&gt;
+        )}
+      &lt;/div&gt;
+    &lt;/Link&gt;
+  );
+}
+</code></pre>
+
+<div class="ok">
+<strong>CHANGES:</strong><br>
+• Long-press (400ms) instead of instant touch — prevents flash during scroll<br>
+• Touch move detection — cancels overlay if user is scrolling<br>
+• Exact bingr colors: <code>#ffffffe6</code>, <code>#ffffff80</code>, <code>#ffffff40</code>, <code>#ffffff26</code><br>
+• Error fallback image on <code>onError</code><br>
+• Watchlist indicator badge<br>
+• ARIA labels for screen readers<br>
+• <code>transition-bingr</code> instead of generic Tailwind transitions
+</div>
+
+<hr>
+
+<h2>2.3 — UPDATE HeroBanner.tsx (Exact bingr Gradients + Thumbnail Carousel)</h2>
+<div class="why">
+<strong>WHY:</strong> Your HeroBanner uses <code>bg-gradient-to-r from-black/90</code> which is too strong. bingr.one uses <code>from-black/80</code> with a specific <code>via-black/40</code> stop. The thumbnail carousel at bottom-right is also missing from your code — bingr shows 8+ mini backdrops with a right arrow.
+</div>
+
+<div class="path">artifacts/allrated/src/components/HeroBanner.tsx — Key changes</div>
+<pre><code>// REPLACE the gradient overlays section:
+
+{/* Gradient overlays — EXACT bingr.one style */}
+&lt;div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" /&gt;
+&lt;div className="absolute inset-0 bg-gradient-to-t from-[#0f1014] via-transparent to-black/30" /&gt;
+&lt;div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-[#0f1014] to-transparent" /&gt;
+
+// REPLACE the thumbnail carousel (bottom right) — make it visible on md+ screens:
+
+{/* Thumbnail carousel — bottom right, hidden on small screens */}
+{visibleThumbs.length > 1 && (
+  &lt;div className="absolute bottom-[15%] right-6 md:right-20 z-20 hidden md:flex items-center gap-2"&gt;
+    {visibleThumbs.map((t, i) => (
+      &lt;button
+        key={t.id}
+        onClick={() => setIdx(i)}
+        className={`relative w-[72px] h-[42px] rounded-md overflow-hidden transition-all duration-300 ${
+          i === idx
+            ? "ring-2 ring-white scale-110 opacity-100"
+            : "opacity-50 hover:opacity-80"
+        }`}
+        aria-label={`Show ${t.title}`}
+      &gt;
+        &lt;img
+          src={t.backdropPath || t.posterPath || ""}
+          alt=""
+          className="w-full h-full object-cover"
+          loading="lazy"
+        /&gt;
+      &lt;/button&gt;
+    ))}
+    &lt;button
+      onClick={goNext}
+      className="w-8 h-8 rounded-full bg-[#ffffff1a] backdrop-bingr flex items-center justify-center text-white hover:bg-[#ffffff26] transition-bingr"
+      aria-label="Next hero"
+    &gt;
+      &lt;ChevronRight className="w-4 h-4" /&gt;
+    &lt;/button&gt;
+  &lt;/div&gt;
+)}
+</code></pre>
+
+<div class="ok">
+<strong>CHANGES:</strong><br>
+• Gradient: <code>from-black/80</code> (was 90) — matches bingr exactly<br>
+• Bottom gradient: <code>h-48</code> (was 40) — smoother fade into page<br>
+• Thumbnail carousel: <code>hidden md:flex</code> (was hidden lg:flex) — shows earlier<br>
+• Thumbnail button: <code>bg-[#ffffff1a] backdrop-bingr</code> — glass effect<br>
+• ARIA labels on all interactive elements
+</div>
+
+<hr>
+
+<h2>2.4 — UPDATE Sidebar.tsx (Backdrop Blur + Exact Active State)</h2>
+<div class="why">
+<strong>WHY:</strong> Your Sidebar uses <code>bg-[#0f1014]/80</code> on mobile header. bingr.one uses <code>backdrop-blur-md</code> with <code>bg-[#0f1014]/95</code>. The active nav item also has a specific left border indicator that your code is missing.
+</div>
+
+<div class="path">artifacts/allrated/src/components/Sidebar.tsx — Active nav item style</div>
+<pre><code>// FIND the active nav item className and REPLACE with:
+
+className={cn(
+  "flex flex-col items-center gap-1.5 py-3 rounded-xl transition-bingr relative",
+  isActive
+    ? "text-white bg-[#ffffff0d]"
+    : "text-[#ffffff4d] hover:text-[#ffffffb3] hover:bg-[#ffffff0a]"
+)}
+
+// ADD this inside the active nav item button (as first child):
+{isActive && (
+  &lt;span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-[#f5c518]" /&gt;
+)}
+</code></pre>
+
+<div class="ok">
+<strong>CHANGES:</strong><br>
+• Active item: <code>bg-[#ffffff0d]</code> + left yellow indicator bar<br>
+• Inactive: <code>text-[#ffffff4d]</code> (exact bingr muted color)<br>
+• Hover: <code>text-[#ffffffb3]</code> (exact bingr secondary)<br>
+• Transition: <code>transition-bingr</code> (0.2s cubic-bezier)
+</div>
+
+<hr>
+
+<div class="check">
+<h3>Verification Checklist</h3>
+<ul>
+<li>Open DevTools → Elements → check computed styles match #ffffff4d, #ffffff1a, #ffffff0d</li>
+<li>Hover over TitleCard → overlay has backdrop blur effect</li>
+<li>Scroll on mobile → TitleCard overlay does NOT flash</li>
+<li>Long-press TitleCard on mobile → overlay appears after 400ms</li>
+<li>HeroBanner gradient is softer (black/80 not black/90)</li>
+<li>Sidebar active item has yellow left border indicator</li>
+<li>All transitions feel snappy (0.2s cubic-bezier)</li>
+</ul>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Phase 1 — Backend API Hardening | Bingr Clone</title>
+<style>
+  @page { size: A4; margin: 1.8cm; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; line-height: 1.65; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 30px 20px; background: #fff; }
+  h1 { font-size: 2rem; border-bottom: 3px solid #0f1014; padding-bottom: 8px; margin-top: 0; }
+  h2 { font-size: 1.35rem; color: #0f1014; margin-top: 35px; border-left: 5px solid #f5c518; padding-left: 14px; }
+  h3 { font-size: 1.05rem; color: #333; margin-top: 25px; }
+  .meta { color: #666; font-size: 0.9rem; margin-bottom: 25px; }
+  .prompt { background: #f8f9fa; border: 1px solid #e9ecef; border-left: 4px solid #f5c518; padding: 14px 18px; margin: 18px 0; border-radius: 0 8px 8px 0; }
+  .prompt strong { color: #b8860b; }
+  .path { background: #0f1014; color: #f5c518; font-family: "SF Mono",Monaco,monospace; font-size: 0.82rem; padding: 5px 14px; border-radius: 6px 6px 0 0; display: inline-block; margin-top: 18px; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 14px 18px; border-radius: 0 8px 8px 8px; overflow-x: auto; font-family: "SF Mono",Monaco,"Cascadia Code",monospace; font-size: 0.78rem; line-height: 1.5; margin: 0 0 20px 0; white-space: pre; word-wrap: normal; }
+  code { font-family: "SF Mono",Monaco,monospace; font-size: 0.85em; background: #f4f4f4; padding: 2px 5px; border-radius: 4px; }
+  pre code { background: none; padding: 0; }
+  .warn { background: #fff3cd; border: 1px solid #ffc107; padding: 10px 14px; border-radius: 6px; margin: 14px 0; }
+  .ok { background: #d4edda; border: 1px solid #28a745; padding: 10px 14px; border-radius: 6px; margin: 14px 0; }
+  ul, ol { padding-left: 22px; }
+  li { margin-bottom: 5px; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 30px 0; }
+  .check { background: #f8f9fa; padding: 14px 18px; border-radius: 6px; }
+  .check li { list-style: none; position: relative; padding-left: 26px; }
+  .check li::before { content: "☐"; position: absolute; left: 0; color: #f5c518; font-weight: bold; }
+  @media print { body { padding: 0; } pre { white-space: pre-wrap; word-wrap: break-word; } h2 { page-break-after: avoid; } .path { page-break-after: avoid; } }
+</style>
+</head>
+<body>
+
+<h1>🎬 Phase 1 — Backend API Hardening</h1>
+<p class="meta"><strong>Target:</strong> bingr.one clone | <strong>Project:</strong> Movietalk-main | <strong>For:</strong> Replit Agent</p>
+
+<div class="prompt">
+<strong>AGENT PROMPT — READ FIRST:</strong> This is Phase 1 of 4. You are working on the <code>artifacts/api-server/</code> Express backend. The frontend already calls these endpoints. Your job is to harden the backend so every endpoint is robust, error-handled, and returns correct data. Do NOT change route paths. Do NOT change the Zod schema imports. Only add missing endpoints and improve error handling. Test each endpoint after writing it.
+</div>
+
+<h2>1.1 — Add Missing /videos Endpoint (HeroBanner Trailer)</h2>
+<p>The HeroBanner component fetches trailer videos via <code>/api/catalog/title/:mediaType/:id/videos</code>. This endpoint does NOT exist. Add it.</p>
+
+<div class="path">artifacts/api-server/src/routes/catalog/index.ts</div>
+<pre><code>// ADD THIS ROUTE inside the router, after the existing routes:
+
+/** GET /api/catalog/title/:mediaType/:id/videos */
+router.get("/catalog/title/:mediaType/:id/videos", async (req, res): Promise&lt;void&gt; => {
+  const mediaType = req.params.mediaType as "movie" | "tv";
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id) || (mediaType !== "movie" && mediaType !== "tv")) {
+    res.status(400).json({ error: "Invalid params" });
+    return;
+  }
+  try {
+    const data = await tmdbFetch&lt;{ results: Array&lt;{ key: string; name: string; type: string; site: string }&gt; }&gt;(
+      `/${mediaType}/${id}/videos`
+    );
+    const trailer = data.results.find(
+      (v) => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser")
+    );
+    res.json({ key: trailer?.key ?? null });
+  } catch (err) {
+    req.log.error({ err }, "Failed to fetch videos");
+    res.status(502).json({ error: "Failed to fetch videos" });
+  }
+});
+</code></pre>
+
+<div class="warn">
+<strong>IMPORTANT:</strong> Place this route BEFORE the <code>/catalog/title/:mediaType/:id</code> route, or Express will match <code>videos</code> as an <code>:id</code> parameter. Route order matters in Express.
+</div>
+
+<h2>1.2 — Harden the Catalog Detail Endpoint</h2>
+<p>The existing detail endpoint needs to return <code>similar</code> titles and <code>videos</code> for the TitleDetail page. Update it to append <code>similar</code> to the TMDB request.</p>
+
+<div class="path">artifacts/api-server/src/routes/catalog/index.ts</div>
+<pre><code>// FIND this existing route and REPLACE its body:
+
+/** GET /api/catalog/title/:mediaType/:id */
+router.get("/catalog/title/:mediaType/:id", async (req, res): Promise&lt;void&gt; => {
+  const params = GetTitleDetailParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const { mediaType, id } = params.data;
+  try {
+    const raw = await tmdbFetch&lt;any&gt;(
+      `/${mediaType}/${id}?append_to_response=credits,videos,similar`
+    );
+    const detail = mapTitleDetail(raw, mediaType);
+    res.json(GetTitleDetailResponse.parse(detail));
+  } catch (err) {
+    req.log.error({ err }, "Failed to load title detail");
+    res.status(502).json({ error: "Failed to load title detail" });
+  }
+});
+</code></pre>
+
+<h2>1.3 — Add CORS Headers for Mobile & External Access</h2>
+<p>Mobile browsers and external domains need proper CORS. Update the CORS middleware.</p>
+
+<div class="path">artifacts/api-server/src/app.ts</div>
+<pre><code>import express, { type Express } from "express";
+import cors from "cors";
+import pinoHttp from "pino-http";
+import router from "./routes";
+import { logger } from "./lib/logger";
+
+const app: Express = express();
+
+app.use(
+  pinoHttp({
+    logger,
+    serializers: {
+      req(req) {
+        return { id: req.id, method: req.method, url: req.url?.split("?")[0] };
+      },
+      res(res) {
+        return { statusCode: res.statusCode };
+      },
+    },
+  }),
+);
+
+// CORS — allow all origins in dev, restrict in production
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true }));
+
+app.use("/api", router);
+
+export default app;
+</code></pre>
+
+<h2>1.4 — Add Proxy Endpoint for Images (Fix CORS on Posters)</h2>
+<p>Some mobile browsers block cross-origin images. Add a proxy endpoint.</p>
+
+<div class="path">artifacts/api-server/src/routes/stream/index.ts</div>
+<pre><code>// ADD this route at the bottom of the file, before export:
+
+/** GET /api/proxy?url=...  — image/asset proxy for CORS bypass */
+router.get("/proxy", async (req, res): Promise&lt;void&gt; => {
+  const rawUrl = req.query.url as string | undefined;
+  if (!rawUrl) {
+    res.status(400).send("Missing url param");
+    return;
+  }
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(rawUrl);
+  } catch {
+    res.status(400).send("Invalid url");
+    return;
+  }
+  if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+    res.status(400).send("Protocol not allowed");
+    return;
+  }
+  try {
+    const upstream = await fetch(rawUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        Referer: parsedUrl.origin + "/",
+      },
+    });
+    const ct = upstream.headers.get("content-type");
+    if (ct) res.setHeader("Content-Type", ct);
+    // Forward cache headers
+    const cacheControl = upstream.headers.get("cache-control");
+    if (cacheControl) res.setHeader("Cache-Control", cacheControl);
+    const buffer = await upstream.arrayBuffer();
+    res.status(upstream.status).send(Buffer.from(buffer));
+  } catch (err) {
+    req.log.error({ err }, "Proxy error");
+    res.status(502).send("Proxy failed");
+  }
+});
+</code></pre>
+
+<h2>1.5 — Harden Stream Proxy (CinePro Core)</h2>
+<p>The stream proxy already exists. Add better error messages and timeout handling.</p>
+
+<div class="path">artifacts/api-server/src/routes/stream/index.ts</div>
+<pre><code>import { Router, type IRouter } from "express";
+
+const router: IRouter = Router();
+
+const CINEPRO_URL = process.env.CINEPRO_URL ?? "http://localhost:3001";
+
+async function proxyToCinePro(path: string): Promise&lt;Response&gt; {
+  const url = `${CINEPRO_URL}${path}`;
+  const res = await fetch(url, {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(55_000),
+  });
+  return res;
+}
+
+/** GET /api/stream/movie/:id */
+router.get("/stream/movie/:id", async (req, res): Promise&lt;void&gt; => {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id) || id <= 0) {
+    res.status(400).json({ error: "Invalid movie id" });
+    return;
+  }
+  try {
+    const upstream = await proxyToCinePro(`/v1/movies/${id}`);
+    const data = await upstream.json();
+    res.status(upstream.status).json(data);
+  } catch (err) {
+    req.log.error({ err }, "CinePro proxy error (movie)");
+    res.status(503).json({
+      error: "Stream service unavailable",
+      sources: [],
+      subtitles: [],
+      diagnostics: [{ message: "CinePro Core is not running or returned an error" }],
+    });
+  }
+});
+
+/** GET /api/stream/tv/:id/season/:s/episode/:e */
+router.get("/stream/tv/:id/season/:s/episode/:e", async (req, res): Promise&lt;void&gt; => {
+  const id = Number(req.params.id);
+  const s = Number(req.params.s);
+  const e = Number(req.params.e);
+  if (!Number.isFinite(id) || id <= 0 || !Number.isFinite(s) || s <= 0 || !Number.isFinite(e) || e <= 0) {
+    res.status(400).json({ error: "Invalid params — id, season, and episode must be positive numbers" });
+    return;
+  }
+  try {
+    const upstream = await proxyToCinePro(`/v1/tv/${id}/seasons/${s}/episodes/${e}`);
+    const data = await upstream.json();
+    res.status(upstream.status).json(data);
+  } catch (err) {
+    req.log.error({ err }, "CinePro proxy error (tv)");
+    res.status(503).json({
+      error: "Stream service unavailable",
+      sources: [],
+      subtitles: [],
+      diagnostics: [{ message: "CinePro Core is not running or returned an error" }],
+    });
+  }
+});
+
+export default router;
+</code></pre>
+
+<h2>1.6 — Add Global Error Handler</h2>
+<p>Catch unhandled errors so the server never crashes.</p>
+
+<div class="path">artifacts/api-server/src/app.ts</div>
+<pre><code>// ADD at the bottom of app.ts, before export:
+
+// Global error handler
+app.use((err: any, _req: any, res: any, _next: any) => {
+  logger.error({ err }, "Unhandled error");
+  res.status(500).json({ error: "Internal server error" });
+});
+
+// 404 handler
+app.use((_req, res) => {
+  res.status(404).json({ error: "Not found" });
+});
+</code></pre>
+
+<h2>1.7 — Ensure Server Port is Configurable</h2>
+
+<div class="path">artifacts/api-server/src/index.ts</div>
+<pre><code>import app from "./app";
+
+const PORT = Number(process.env.PORT) || 8080;
+const HOST = process.env.HOST || "0.0.0.0";
+
+app.listen(PORT, HOST, () => {
+  console.log(`🎬 API server running at http://${HOST}:${PORT}`);
+});
+</code></pre>
+
+<div class="ok">
+<strong>PHASE 1 VERIFICATION:</strong> After completing, run <code>pnpm --filter @workspace/api-server run dev</code> and test:<br>
+• <code>GET /api/healthz</code> → <code>{"status":"ok"}</code><br>
+• <code>GET /api/catalog/trending?mediaType=all&window=week</code> → array of titles<br>
+• <code>GET /api/catalog/title/movie/550/videos</code> → <code>{"key": "..."}</code> or <code>{"key": null}</code><br>
+• <code>GET /api/stream/movie/550</code> → sources array (if CinePro is running)<br>
+• <code>GET /api/proxy?url=https://image.tmdb.org/t/p/w500/...</code> → returns image bytes
+</div>
+
+<div class="check">
+<h3>Phase 1 Checklist</h3>
+<ul>
+<li>/videos endpoint returns trailer key for HeroBanner</li>
+<li>Detail endpoint includes similar titles and videos</li>
+<li>CORS allows mobile browsers</li>
+<li>Proxy endpoint bypasses CORS for images</li>
+<li>Stream proxy has graceful error fallback</li>
+<li>Global error handler prevents server crashes</li>
+<li>Server starts on configurable PORT/HOST</li>
+</ul>
+</div>
+
+<p><strong>End of Phase 1.</strong> Complete this phase before moving to Phase 2.</p>
+
+</body>
+</html>

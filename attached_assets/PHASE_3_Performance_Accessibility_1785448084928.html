@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Phase 3 — Performance + Accessibility + Analytics + Offline | Bingr Clone Deep Fix</title>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.6;color:#1a1a1a;max-width:960px;margin:0 auto;padding:25px 15px;background:#fff;font-size:13px}
+  h1{font-size:1.7rem;border-bottom:3px solid #dc3545;padding-bottom:6px;margin-top:0}
+  h2{font-size:1.2rem;color:#0f1014;margin-top:28px;border-left:4px solid #dc3545;padding-left:12px}
+  h3{font-size:1rem;color:#333;margin-top:20px}
+  .meta{color:#666;font-size:0.85rem;margin-bottom:20px}
+  .why{background:#e7f3ff;border-left:4px solid #0066cc;padding:10px 14px;margin:12px 0;font-size:12px}
+  .why strong{color:#004499}
+  .path{background:#0f1014;color:#f5c518;font-family:"SF Mono",Monaco,monospace;font-size:0.78rem;padding:4px 12px;border-radius:5px 5px 0 0;display:inline-block;margin-top:15px}
+  pre{background:#1e1e1e;color:#d4d4d4;padding:12px 16px;border-radius:0 6px 6px 6px;overflow-x:auto;font-family:"SF Mono",Monaco,"Cascadia Code",monospace;font-size:0.75rem;line-height:1.45;margin:0 0 16px 0;white-space:pre;word-wrap:normal}
+  code{font-family:"SF Mono",Monaco,monospace;font-size:0.85em;background:#f4f4f4;padding:1px 4px;border-radius:3px}
+  pre code{background:none;padding:0}
+  .crit{background:#f8d7da;border:1px solid #dc3545;padding:10px 14px;border-radius:5px;margin:12px 0;font-size:12px}
+  .ok{background:#d4edda;border:1px solid #28a745;padding:10px 14px;border-radius:5px;margin:12px 0;font-size:12px}
+  ul,ol{padding-left:20px}
+  li{margin-bottom:4px}
+  hr{border:none;border-top:1px solid #ddd;margin:25px 0}
+  .check{background:#f8f9fa;padding:12px 16px;border-radius:5px;font-size:12px}
+  .check li{list-style:none;position:relative;padding-left:24px}
+  .check li::before{content:"☐";position:absolute;left:0;color:#dc3545;font-weight:bold}
+</style>
+</head>
+<body>
+
+<h1>🔴 PHASE 3 — Performance + Accessibility + Analytics + Offline</h1>
+<p class="meta">Target: bingr.one clone | Scope: Analytics, Offline Detection, Focus Management, Preconnect, Prefetch | Priority: HIGH</p>
+
+<div class="crit">
+<strong>You cannot ship without analytics.</strong> You cannot measure what you cannot see. And users on spotty connections need to know when they're offline.
+</div>
+
+<!-- ============================================================ -->
+<h2>3.1 — Add Analytics (Umami — Privacy-First, Self-Hosted)</h2>
+<div class="why">
+<strong>WHY:</strong> Real bingr.one likely uses analytics. You have zero. Umami is the industry standard for privacy-first analytics. It's 1KB, GDPR-compliant, and self-hostable. Google Analytics is bloated and blocked by ad blockers.
+</div>
+
+<div class="path">artifacts/allrated/src/hooks/useAnalytics.ts — CREATE</div>
+<pre><code>import { useEffect, useCallback } from 'react';
+import { useLocation } from 'wouter';
+
+const UMAMI_SCRIPT_URL = import.meta.env.VITE_UMAMI_SCRIPT_URL || '';
+const UMAMI_WEBSITE_ID = import.meta.env.VITE_UMAMI_WEBSITE_ID || '';
+
+declare global {
+  interface Window {
+    umami?: {
+      track: (event: string, data?: Record&lt;string, unknown&gt;) => void;
+    };
+  }
+}
+
+export function useAnalytics() {
+  const [location] = useLocation();
+
+  // Track page views
+  useEffect(() => {
+    if (window.umami) {
+      window.umami.track('pageview', { path: location });
+    }
+  }, [location]);
+
+  const trackEvent = useCallback((event: string, data?: Record&lt;string, unknown&gt;) => {
+    if (window.umami) {
+      window.umami.track(event, data);
+    }
+  }, []);
+
+  return { trackEvent };
+}
+
+export function initAnalytics() {
+  if (!UMAMI_SCRIPT_URL || !UMAMI_WEBSITE_ID) return;
+
+  // Check if already loaded
+  if (document.querySelector(`script[data-website-id="${UMAMI_WEBSITE_ID}"]`)) return;
+
+  const script = document.createElement('script');
+  script.defer = true;
+  script.src = UMAMI_SCRIPT_URL;
+  script.setAttribute('data-website-id', UMAMI_WEBSITE_ID);
+  script.setAttribute('data-auto-track', 'false'); // We handle tracking manually
+  document.head.appendChild(script);
+}
+</code></pre>
+
+<div class="path">artifacts/allrated/src/main.tsx — ADD INIT</div>
+<pre><code>import { createRoot } from 'react-dom/client';
+import App from './App';
+import './index.css';
+import { initAnalytics } from '@/hooks/useAnalytics';
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then((reg) => console.log('SW registered:', reg.scope))
+      .catch((err) => console.error('SW registration failed:', err));
+  });
+}
+
+// Initialize analytics
+initAnalytics();
+
+createRoot(document.getElementById('root')!).render(&lt;App /&gt;);
+</code></pre>
+
+<div class="path">artifacts/allrated/.env.example — ADD</div>
+<pre><code>VITE_UMAMI_SCRIPT_URL=https://your-umami-instance.com/script.js
+VITE_UMAMI_WEBSITE_ID=your-website-uuid-here
+</code></pre>
+
+<div class="path">Track key events in components — EXAMPLE in TitleDetail.tsx</div>
+<pre><code>import { useAnalytics } from '@/hooks/useAnalytics';
+
+// Inside TitleDetail component:
+const { trackEvent } = useAnalytics();
+
+// On play click:
+trackEvent('play_title', { id: String(id), mediaType, title: data?.title || data?.name });
+
+// On watchlist toggle:
+trackEvent('watchlist_toggle', { id: String(id), mediaType, action: isInWatchlist ? 'remove' : 'add' });
+
+// On rating:
+trackEvent('rate_title', { id: String(id), mediaType, rating: r });
+
+// On share:
+trackEvent('share_title', { id: String(id), mediaType, method: 'native' });
+</code></pre>
+
+<div class="ok">
+<strong>VERIFICATION:</strong> Open DevTools → Network. Filter for "umami". You should see script.js load and pageview events fire on navigation. If no Umami instance, the code silently does nothing — safe to deploy.
+</div>
+
+<!-- ============================================================ -->
+<h2>3.2 — Online/Offline Detection with Toast Banner</h2>
+<div class="why">
+<strong>WHY:</strong> Users on mobile with spotty connections need to know when they're offline. Without this, they see infinite spinners and think your app is broken. Real bingr.one likely handles this gracefully.
+</div>
+
+<div class="path">artifacts/allrated/src/hooks/useNetworkStatus.ts — CREATE</div>
+<pre><code>import { useState, useEffect, useCallback } from 'react';
+
+export function useNetworkStatus() {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [wasOffline, setWasOffline] = useState(false);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      setWasOffline(true);
+      // Reset after 3 seconds
+      setTimeout(() => setWasOffline(false), 3000);
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  return { isOnline, wasOffline };
+}
+</code></pre>
+
+<div class="path">artifacts/allrated/src/components/NetworkStatus.tsx — CREATE</div>
+<pre><code>import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { Wifi, WifiOff } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+export function NetworkStatus() {
+  const { isOnline, wasOffline } = useNetworkStatus();
+
+  return (
+    &lt;&gt;
+      {/* Offline banner */}
+      &lt;div
+        className={cn(
+          "fixed top-0 left-0 right-0 z-[100] flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium transition-transform duration-300",
+          isOnline ? "-translate-y-full" : "translate-y-0",
+          "bg-red-600 text-white"
+        )}
+        role="alert"
+        aria-live="polite"
+      &gt;
+        &lt;WifiOff className="w-4 h-4" /&gt;
+        You are offline. Some features may not work.
+      &lt;/div&gt;
+
+      {/* Back online toast */}
+      &lt;div
+        className={cn(
+          "fixed top-4 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-500",
+          wasOffline ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4",
+          "bg-green-600 text-white shadow-lg"
+        )}
+        role="status"
+        aria-live="polite"
+      &gt;
+        &lt;Wifi className="w-4 h-4" /&gt;
+        Back online
+      &lt;/div&gt;
+    &lt;/&gt;
+  );
+}
+</code></pre>
+
+<div class="path">artifacts/allrated/src/App.tsx — ADD NetworkStatus</div>
+<pre><code>import { NetworkStatus } from '@/components/NetworkStatus';
+
+// Inside App component return, at the TOP:
+return (
+  &lt;ErrorBoundary&gt;
+    &lt;QueryClientProvider client={queryClient}&gt;
+      &lt;NetworkStatus /&gt;
+      &lt;Router&gt;
+        &lt;ScrollToTop /&gt;
+        ...
+      &lt;/Router&gt;
+    &lt;/QueryClientProvider&gt;
+  &lt;/ErrorBoundary&gt;
+);
+</code></pre>
+
+<div class="ok">
+<strong>VERIFICATION:</strong> Open DevTools → Network → set to "Offline". Red banner should appear at top. Set back to "No throttling". Green "Back online" toast should appear for 3 seconds.
+</div>
+
+<!-- ============================================================ -->
+<h2>3.3 — Focus Management (Trap + Restore for Modals)</h2>
+<div class="why">
+<strong>WHY:</strong> Accessibility violation. When LoginDialog opens, keyboard focus must trap inside the modal. When it closes, focus must return to the trigger element. Screen reader users are lost otherwise.
+</div>
+
+<div class="path">artifacts/allrated/src/hooks/useFocusTrap.ts — CREATE</div>
+<pre><code>import { useEffect, useRef } from 'react';
+
+const FOCUSABLE_SELECTORS = [
+  'button:not([disabled])',
+  'a[href]',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(', ');
+
+export function useFocusTrap(isActive: boolean) {
+  const containerRef = useRef&lt;HTMLDivElement&gt;(null);
+  const previouslyFocusedRef = useRef&lt;HTMLElement | null&gt;(null);
+
+  useEffect(() => {
+    if (isActive) {
+      previouslyFocusedRef.current = document.activeElement as HTMLElement;
+
+      // Focus first focusable element
+      const container = containerRef.current;
+      if (container) {
+        const focusable = container.querySelectorAll(FOCUSABLE_SELECTORS);
+        const first = focusable[0] as HTMLElement | undefined;
+        first?.focus();
+      }
+    } else {
+      // Restore focus
+      previouslyFocusedRef.current?.focus();
+    }
+  }, [isActive]);
+
+  useEffect(() => {
+    if (!isActive) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+
+      const container = containerRef.current;
+      if (!container) return;
+
+      const focusable = Array.from(container.querySelectorAll(FOCUSABLE_SELECTORS)) as HTMLElement[];
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isActive]);
+
+  return containerRef;
+}
+</code></pre>
+
+<div class="path">LoginDialog.tsx — INTEGRATE useFocusTrap</div>
+<pre><code>import { useFocusTrap } from '@/hooks/useFocusTrap';
+
+// Inside LoginDialog:
+const trapRef = useFocusTrap(open);
+
+// Wrap DialogContent:
+&lt;DialogContent
+  ref={trapRef}
+  className="bg-[#16181f] border-[#ffffff1a] text-white max-w-sm"
+  onOpenAutoFocus={(e) => e.preventDefault()}
+&gt;
+  ...
+&lt;/DialogContent&gt;
+</code></pre>
+
+<div class="ok">
+<strong>VERIFICATION:</strong> Open LoginDialog. Press Tab repeatedly. Focus should cycle within the modal, never escaping to the page behind. Press Escape — dialog should close and focus returns to the trigger button.
+</div>
+
+<!-- ============================================================ -->
+<h2>3.4 — Preconnect + DNS Prefetch for Performance</h2>
+<div class="why">
+<strong>WHY:</strong> TMDB images load from image.tmdb.org. Without preconnect, each image does a DNS lookup + TLS handshake. With preconnect, it's zero overhead. This is a 200-500ms win on first paint.
+</div>
+
+<div class="path">artifacts/allrated/index.html — ADD IN &lt;head&gt;</div>
+<pre><code>&lt;!-- Preconnect to image CDN --&gt;
+&lt;link rel="preconnect" href="https://image.tmdb.org" crossorigin /&gt;
+&lt;link rel="dns-prefetch" href="https://image.tmdb.org" /&gt;
+
+&lt;!-- Preconnect to API --&gt;
+&lt;link rel="preconnect" href="https://api.themoviedb.org" crossorigin /&gt;
+&lt;link rel="dns-prefetch" href="https://api.themoviedb.org" /&gt;
+
+&lt;!-- Preload critical font if using custom font --&gt;
+&lt;link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin /&gt;
+
+&lt;!-- Prefetch likely next routes --&gt;
+&lt;link rel="prefetch" href="/explore" /&gt;
+</code></pre>
+
+<div class="ok">
+<strong>VERIFICATION:</strong> Open DevTools → Network. First image request to image.tmdb.org should show 0ms DNS and 0ms SSL. The connection is already warm.
+</div>
+
+<!-- ============================================================ -->
+<h2>3.5 — Remove Remaining `console.log` from API Server</h2>
+<div class="path">artifacts/api-server/src/app.ts — FIND AND REMOVE</div>
+<pre><code>// Search for any console.log, console.error, console.warn in API server
+// Replace with a proper logger or remove entirely
+
+// BEFORE:
+console.log('Server running on port', port);
+
+// AFTER (if you want logging):
+import { logger } from './utils/logger';
+logger.info('Server running on port', port);
+
+// OR just remove it entirely for production
+</code></pre>
+
+<div class="ok">
+<strong>VERIFICATION:</strong> Run `grep -r "console\." artifacts/api-server/src/` — should return nothing.
+</div>
+
+<hr>
+
+<div class="check">
+<strong>PHASE 3 CHECKLIST:</strong>
+<ul>
+  <li>Umami script loads on page open (check Network tab)</li>
+  <li>Pageview events fire on route change</li>
+  <li>Offline banner appears when network disconnected</li>
+  <li>"Back online" toast appears when reconnected</li>
+  <li>LoginDialog traps focus (Tab cycles within modal)</li>
+  <li>Escape key closes LoginDialog and restores focus</li>
+  <li>index.html has preconnect to image.tmdb.org</li>
+  <li>First image loads with 0ms DNS/SSL</li>
+  <li>Zero console statements in API server</li>
+</ul>
+</div>
+
+</body>
+</html>

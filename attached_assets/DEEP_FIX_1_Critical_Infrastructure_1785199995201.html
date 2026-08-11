@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DEEP FIX 1 — Critical Infrastructure | Bingr Clone</title>
+<style>
+  @page { size: A4; margin: 1.5cm; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 25px 15px; background: #fff; font-size: 13px; }
+  h1 { font-size: 1.7rem; border-bottom: 3px solid #dc3545; padding-bottom: 6px; margin-top: 0; }
+  h2 { font-size: 1.2rem; color: #0f1014; margin-top: 28px; border-left: 4px solid #dc3545; padding-left: 12px; }
+  h3 { font-size: 1rem; color: #333; margin-top: 20px; }
+  .meta { color: #666; font-size: 0.85rem; margin-bottom: 20px; }
+  .why { background: #e7f3ff; border-left: 4px solid #0066cc; padding: 10px 14px; margin: 12px 0; font-size: 12px; }
+  .why strong { color: #004499; }
+  .path { background: #0f1014; color: #f5c518; font-family: "SF Mono",Monaco,monospace; font-size: 0.78rem; padding: 4px 12px; border-radius: 5px 5px 0 0; display: inline-block; margin-top: 15px; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 12px 16px; border-radius: 0 6px 6px 6px; overflow-x: auto; font-family: "SF Mono",Monaco,"Cascadia Code",monospace; font-size: 0.75rem; line-height: 1.45; margin: 0 0 16px 0; white-space: pre; word-wrap: normal; }
+  code { font-family: "SF Mono",Monaco,monospace; font-size: 0.85em; background: #f4f4f4; padding: 1px 4px; border-radius: 3px; }
+  pre code { background: none; padding: 0; }
+  .crit { background: #f8d7da; border: 1px solid #dc3545; padding: 10px 14px; border-radius: 5px; margin: 12px 0; font-size: 12px; }
+  .ok { background: #d4edda; border: 1px solid #28a745; padding: 10px 14px; border-radius: 5px; margin: 12px 0; font-size: 12px; }
+  ul, ol { padding-left: 20px; }
+  li { margin-bottom: 4px; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 25px 0; }
+  .check { background: #f8f9fa; padding: 12px 16px; border-radius: 5px; font-size: 12px; }
+  .check li { list-style: none; position: relative; padding-left: 24px; }
+  .check li::before { content: "☐"; position: absolute; left: 0; color: #dc3545; font-weight: bold; }
+  @media print { body { padding: 0; font-size: 11px; } pre { white-space: pre-wrap; word-wrap: break-word; font-size: 9px; } h2 { page-break-after: avoid; } .path { page-break-after: avoid; } }
+</style>
+</head>
+<body>
+
+<h1>🔴 DEEP FIX 1 — Critical Infrastructure</h1>
+<p class="meta"><strong>Target:</strong> bingr.one clone | <strong>Scope:</strong> Vite, Replit, API Server, React Architecture</p>
+
+<div class="crit">
+<strong>These 5 bugs will BREAK your app in production.</strong> Fix them first before anything else.
+</div>
+
+<hr>
+
+<h2>1.1 — FIX vite.config.ts (Add /api Proxy + Resilient Env)</h2>
+<div class="why">
+<strong>WHY:</strong> Without the /api proxy, the frontend cannot talk to the backend during development. Every API call returns 404. The current config also crashes if PORT or BASE_PATH env vars are missing because it uses <code>Number(process.env.PORT)</code> which returns NaN if undefined, and Vite rejects NaN as a port.
+</div>
+
+<div class="path">artifacts/allrated/vite.config.ts</div>
+<pre><code>import path from "path";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from "vite";
+import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+
+const rawPort = process.env.PORT;
+const port = rawPort ? Number(rawPort) : 5173;
+
+const basePath = process.env.BASE_PATH ?? "/";
+
+export default defineConfig({
+  base: basePath,
+  plugins: [
+    react(),
+    tailwindcss(),
+    runtimeErrorOverlay(),
+    ...(process.env.NODE_ENV !== "production" &&
+    process.env.REPL_ID !== undefined
+      ? [
+          await import("@replit/vite-plugin-cartographer").then((m) =>
+            m.cartographer({ root: path.resolve(import.meta.dirname, "..") }),
+          ),
+          await import("@replit/vite-plugin-dev-banner").then((m) =>
+            m.devBanner(),
+          ),
+        ]
+      : []),
+  ],
+  resolve: {
+    alias: {
+      "@": path.resolve(import.meta.dirname, "src"),
+      "@assets": path.resolve(import.meta.dirname, "..", "..", "attached_assets"),
+    },
+    dedupe: ["react", "react-dom"],
+  },
+  root: path.resolve(import.meta.dirname),
+  build: {
+    outDir: path.resolve(import.meta.dirname, "dist/public"),
+    emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom"],
+          query: ["@tanstack/react-query"],
+        },
+      },
+    },
+  },
+  server: {
+    port,
+    strictPort: false,
+    host: "0.0.0.0",
+    allowedHosts: true,
+    proxy: {
+      "/api": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+      },
+    },
+    fs: { strict: true },
+  },
+  preview: {
+    port,
+    host: "0.0.0.0",
+    allowedHosts: true,
+  },
+});
+</code></pre>
+
+<div class="ok">
+<strong>CHANGES:</strong><br>
+• Added <code>proxy: {"/api": {target: "http://localhost:8080"}}</code> — frontend now talks to backend<br>
+• <code>const port = rawPort ? Number(rawPort) : 5173;</code> — no more NaN crash<br>
+• <code>const basePath = process.env.BASE_PATH ?? "/";</code> — no more undefined crash
+</div>
+
+<hr>
+
+<h2>1.2 — FIX .replit (Start ALL 3 Services)</h2>
+<div class="why">
+<strong>WHY:</strong> The current .replit only starts CinePro Core. The API server (port 8080) and Frontend (port 5173) never start. Clicking Run does nothing useful. You need 3 parallel workflows.
+</div>
+
+<div class="path">.replit (project root)</div>
+<pre><code>modules = ["web", "nodejs-20", "python-3.11"]
+
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "CinePro Core"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "API Server"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Frontend"
+
+[[workflows.workflow]]
+name = "CinePro Core"
+author = "agent"
+[workflows.workflow.metadata]
+outputType = "console"
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd artifacts/cinepro-core && PORT=3001 HOST=0.0.0.0 ./node_modules/.bin/tsx src/server.ts"
+waitForPort = 3001
+
+[[workflows.workflow]]
+name = "API Server"
+author = "agent"
+[workflows.workflow.metadata]
+outputType = "console"
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd artifacts/api-server && PORT=8080 pnpm run dev"
+waitForPort = 8080
+
+[[workflows.workflow]]
+name = "Frontend"
+author = "agent"
+[workflows.workflow.metadata]
+outputType = "console"
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd artifacts/allrated && PORT=5173 BASE_PATH=/ pnpm run dev"
+waitForPort = 5173
+
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
+
+[nix]
+channel = "stable-25_05"
+packages = ["gitFull", "playwright-driver"]
+
+[userenv]
+
+[userenv.shared]
+CACHE_TYPE = "memory"
+CORS_ORIGIN = "*"
+INTERNAL_DEBUG = "false"
+MCP_ENABLED = "false"
+NODE_ENV = "production"
+STREMIO_ADDON = "false"
+TMDB_CACHE_TTL = "86400"
+BASE_PATH = "/"
+CINEPRO_URL = "http://localhost:3001"
+PORT = "8080"
+</code></pre>
+
+<div class="ok">
+<strong>CHANGES:</strong><br>
+• Added "API Server" workflow on port 8080<br>
+• Added "Frontend" workflow on port 5173<br>
+• Added <code>PORT = "8080"</code> to shared env so API server gets a default<br>
+• All 3 services now start in parallel when you click Run
+</div>
+
+<hr>
+
+<h2>1.3 — FIX api-server/src/index.ts (Add PORT Fallback)</h2>
+<div class="why">
+<strong>WHY:</strong> The current index.ts throws <code>"PORT environment variable is required"</code> if PORT is not set. This crashes the server on Replit if the env var is missing. A senior engineer always provides sensible defaults.
+</div>
+
+<div class="path">artifacts/api-server/src/index.ts</div>
+<pre><code>import app from "./app";
+import { logger } from "./lib/logger";
+
+const rawPort = process.env["PORT"];
+const port = rawPort ? Number(rawPort) : 8080;
+
+if (Number.isNaN(port) || port <= 0) {
+  throw new Error(`Invalid PORT value: "${rawPort}"`);
+}
+
+app.listen(port, "0.0.0.0", () => {
+  logger.info({ port }, "API server listening");
+});
+</code></pre>
+
+<div class="ok">
+<strong>CHANGES:</strong><br>
+• <code>const port = rawPort ? Number(rawPort) : 8080;</code> — fallback instead of crash<br>
+• Added <code>"0.0.0.0"</code> host — accepts external connections (required for Replit proxy)
+</div>
+
+<hr>
+
+<h2>1.4 — CREATE ErrorBoundary.tsx (App-Wide Crash Protection)</h2>
+<div class="why">
+<strong>WHY:</strong> Currently, if ANY component throws an error, the entire app crashes to a white screen. A senior engineer never lets unhandled errors kill the UX. ErrorBoundary catches errors and shows a fallback UI.
+</div>
+
+<div class="path">artifacts/allrated/src/components/ErrorBoundary.tsx</div>
+<pre><code>import { Component, type ReactNode } from "react";
+
+interface Props {
+  children: ReactNode;
+  fallback?: ReactNode;
+}
+
+interface State {
+  hasError: boolean;
+  error?: Error;
+}
+
+export class ErrorBoundary extends Component&lt;Props, State&gt; {
+  state: State = { hasError: false };
+
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("ErrorBoundary caught:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        this.props.fallback || (
+          &lt;div className="min-h-screen flex flex-col items-center justify-center bg-[#0f1014] text-white px-6 text-center"&gt;
+            &lt;h1 className="font-display text-4xl mb-4"&gt;Something went wrong&lt;/h1&gt;
+            &lt;p className="text-white/50 mb-6 max-w-md"&gt;
+              {this.state.error?.message || "An unexpected error occurred."}
+            &lt;/p&gt;
+            &lt;button
+              onClick={() => window.location.reload()}
+              className="px-6 py-3 rounded-full bg-[#f5c518] text-black font-semibold hover:bg-[#e5b518] transition-colors"
+            &gt;
+              Reload Page
+            &lt;/button&gt;
+          &lt;/div&gt;
+        )
+      );
+    }
+    return this.props.children;
+  }
+}
+</code></pre>
+
+<div class="path">artifacts/allrated/src/App.tsx — WRAP the router</div>
+<pre><code>import { ErrorBoundary } from "@/components/ErrorBoundary";
+
+// In the App component return, wrap everything:
+function App() {
+  return (
+    &lt;ErrorBoundary&gt;
+      &lt;QueryClientProvider client={queryClient}&gt;
+        &lt;TooltipProvider&gt;
+          &lt;WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}&gt;
+            &lt;Router /&gt;
+          &lt;/WouterRouter&gt;
+          &lt;Toaster /&gt;
+        &lt;/TooltipProvider&gt;
+      &lt;/QueryClientProvider&gt;
+    &lt;/ErrorBoundary&gt;
+  );
+}
+</code></pre>
+
+<hr>
+
+<h2>1.5 — ADD Lazy Loading + Scroll Restoration to App.tsx</h2>
+<div class="why">
+<strong>WHY:</strong> The current App.tsx imports all pages synchronously. This means the initial bundle includes EVERY page component even though the user only sees one. Lazy loading splits the bundle so each page loads on demand. Scroll restoration ensures the page scrolls to top on navigation.
+</div>
+
+<div class="path">artifacts/allrated/src/App.tsx — REPLACE imports with lazy</div>
+<pre><code>import { lazy, Suspense, useEffect } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Route, Switch, Router as WouterRouter, Redirect, useLocation } from "wouter";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { Sidebar } from "@/components/Sidebar";
+import { MobileNav } from "@/components/MobileNav";
+import { MobileHeader } from "@/components/MobileHeader";
+import { Footer } from "@/components/Footer";
+
+// Eagerly load critical pages
+import Home from "@/pages/Home";
+import NotFound from "@/pages/not-found";
+
+// Lazy load non-critical pages
+const Movies = lazy(() => import("@/pages/Movies"));
+const Tv = lazy(() => import("@/pages/Tv"));
+const Anime = lazy(() => import("@/pages/Anime"));
+const Explore = lazy(() => import("@/pages/Explore"));
+const Categories = lazy(() => import("@/pages/Categories"));
+const Space = lazy(() => import("@/pages/Space"));
+const Sports = lazy(() => import("@/pages/Sports"));
+const Sparks = lazy(() => import("@/pages/Sparks"));
+const TitleDetail = lazy(() => import("@/pages/TitleDetail"));
+const Catalog = lazy(() => import("@/pages/Catalog"));
+const Watch = lazy(() => import("@/pages/Watch"));
+const Settings = lazy(() => import("@/pages/Settings"));
+
+function ScrollToTop() {
+  const [location] = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location]);
+  return null;
+}
+
+function PageLoader() {
+  return (
+    &lt;div className="min-h-screen flex items-center justify-center bg-[#0f1014]"&gt;
+      &lt;div className="w-10 h-10 border-2 border-white/10 border-t-[#f5c518] rounded-full animate-spin" /&gt;
+    &lt;/div&gt;
+  );
+}
+
+// Wrap lazy routes in Suspense:
+// &lt;Suspense fallback={&lt;PageLoader /&gt;}&gt;&lt;Movies /&gt;&lt;/Suspense&gt;
+</code></pre>
+
+<div class="ok">
+<strong>CHANGES:</strong><br>
+• All non-critical pages use <code>React.lazy()</code> — code splitting reduces initial bundle<br>
+• <code>ScrollToTop</code> component — scrolls to top on every route change<br>
+• <code>PageLoader</code> — consistent loading spinner for Suspense fallback<br>
+• Home and NotFound stay eager (always needed)
+</div>
+
+<hr>
+
+<div class="check">
+<h3>Verification Checklist</h3>
+<ul>
+<li>Click Run → 3 services start: CinePro (3001), API (8080), Frontend (5173)</li>
+<li>Frontend console shows no 404 errors for /api/* calls</li>
+<li>API server starts even if PORT env var is missing</li>
+<li>Throw an error in any component → ErrorBoundary shows fallback instead of white screen</li>
+<li>Navigate between pages → scroll resets to top</li>
+<li>Network tab shows JS chunks loading on demand (lazy routes)</li>
+</ul>
+</div>
+
+</body>
+</html>

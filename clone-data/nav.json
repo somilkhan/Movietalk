@@ -1,0 +1,68 @@
+{
+  "outerHTML": "<nav class=\"flex flex-col py-10 w-full z-10\"><div class=\"flex flex-col no-scrollbar\"><a class=\"group relative flex items-center px-8 py-4 cursor-pointer\" href=\"/home\" data-discover=\"true\"><span class=\"flex-shrink-0 flex items-center justify-center transition-all duration-300 rounded-full w-5 h-5 md:w-[22px] md:h-[22px] text-white scale-125\"><svg width=\"24px\" height=\"24px\" stroke-width=\"1.5\" viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\" color=\"currentColor\" class=\"w-6 h-6 md:w-7 md:h-7\"><path d=\"M9 21H7C4.79086 21 3 19.2091 3 17V10.7076C3 9.30887 3.73061 8.01175 4.92679 7.28679L9.92679 4.25649C11.2011 3.48421 12.7989 3.48421 14.0732 4.25649L19.0732 7.28679C20.2694 8.01175 21 9.30887 21 10.7076V17C21 19.2091 19.2091 21 17 21H15M9 21V17C9 15.3431 10.3431 14 12 14V14C13.6569 14 15 15.3431 15 17V21M9 21H15\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"></path></svg></span><span class=\"ml-6 text-[16px] tracking-wide whitespace-nowrap transition-all duration-300 font-extrabold text-white opacity-0 -translate-x-4 pointer-events-none\">Home</span></a><a class=\"group relative flex items-center px-8 py-4 cursor-pointer\" href=\"/explore\" data-discover=\"true\"><span class=\"flex-shrink-0 flex items-center justify-center transition-all duration-300 rounded-full w-5 h-5 md:w-[22px] md:h-[22px] text-[#8f98a2] group-hover:text-white group-hover:scale-110\"><svg width=\"24px\" height=\"24px\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\" color=\"currentColor\" class=\"w-6 h-6 md:w-7 md:h-7\"><path d=\"M17 17L21 21\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"></path><path d=\"M3 11C3 15.4183 6.58172 19 11 19C13.213 19 15.2161 18.1015 16.6644 16.6493C18.1077 15.2022 19 13.2053 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11Z\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"></path></svg></span><span class=\"ml-6 text-[16px] tracking-wide whitespace-nowrap transition-all duration-300 font-bold text-[#8f98a2] group-hover:text-white opacity-0 -translate-x-4 pointer-events-none\">Search</span></a><a class=\"group relative flex items-center px-8 py-4 cursor-pointer\" href=\"/tv\" data-discover=\"true\"><span class=\"flex-shrink-0 flex items-center justify-center transition-all duration-300 rounded-full w-5 h-5 md:w-[22px] md:h-[22px] text-[#8f98a2] group-hover:text-white group-hover:scale-110\"><svg width=\"24px\" height=\"24px\" stroke-width=\"1.5\" viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\" color=\"currentColor\" class=\"w-6 h-6 md:w-7 md:h-7\"><path d=\"M7 21L17 21\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"></path><path d=\"M2 16.4V3.6C2 3.26863 2.26863 3 2.6 3H21.4C21.7314 3 22 3.26863 22 3.6V16.4C22 16.7314 21.7314 17 21.4 17H2.6C2.26863 17 2 16.7314 2 16.4Z\" stroke=\"currentColor\" stroke-width=\"1.5\"></path></svg></span><span class=\"ml-6 text-[16px] tracking-wide whitespace-nowrap transition-all duration-300 font-bold text-[#8f98a2] group-hover:text-white opacity-0 -translate-x-4 pointer-events-none\">TV</span></a><a class=\"group relative flex items-center px-8 py-4 cursor-pointer\" href=\"/anime\" data-discover=\"true\"><span class=\"flex-shrink-0 flex items-center justify-center transition-all duration-300 rounded-full w-5 h-5 md:w-[22px] md:h-[22px] text-[#8f98a2] group-hover:text-white group-hover:scale-110\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 192 192\" fill=\"none\" class=\"w-6 h-6 md:w-7 md:h-7\"><path fill=\"currentColor\" d=\"M163.649 83.141a6 6 0 0 0 11.591-3.105l-11.591 3.105Zm-11.909-33.41 4.379-4.102-4.379 4.102ZM51.343 41.498l-3.653-4.76 3.653 4.76ZM22.16 105.905l5.987-.392-5.987.392Zm11.149 34.7 5.095-3.168-5.095 3.168Zm23.19 30.543a6 6 0 1 0 6-10.392l-6 10.392Zm118.74-91.112a81.002 81.002 0 0 0-19.121-34.407l-8.758 8.203a69.009 69.009 0 0 1 16.288 29.31l11.591-3.106Zm-19.121-34.407a81.004 81.004 0 0 0-33.082-21.33l-3.858 11.363a69.004 69.004 0 0 1 28.182 18.17l8.758-8.203Zm-33.082-21.33a81 81 0 0 0-39.232-3.217l1.955 11.84a68.999 68.999 0 0 1 33.419 2.74l3.858-11.363Zm-39.232-3.217A81 81 0 0 0 47.69 36.738l7.306 9.52A69 69 0 0 1 85.76 32.923l-1.955-11.84ZM47.69 36.738a80.999 80.999 0 0 0-24.47 30.833l10.93 4.952A69 69 0 0 1 54.996 46.26l-7.306-9.52ZM23.22 67.571a81 81 0 0 0-7.047 38.727l11.975-.785a69.001 69.001 0 0 1 6.002-32.99l-10.93-4.952Zm-7.047 38.727a80.994 80.994 0 0 0 12.042 37.475l10.19-6.336a69 69 0 0 1-10.257-31.924l-11.975.785Zm12.042 37.475A80.998 80.998 0 0 0 56.5 171.148l6-10.392a69.003 69.003 0 0 1-24.095-23.319l-10.19 6.336Z\"></path><path stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"12\" d=\"M154.201 99.466a51.502 51.502 0 0 1-26.891 54.699 51.497 51.497 0 0 1-69.453-69.519 51.5 51.5 0 0 1 54.725-26.839\"></path><path stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"12\" d=\"M154.125 99.377a29.502 29.502 0 0 1-39.486-2.02 29.498 29.498 0 0 1-2.013-39.486\"></path></svg></span><span class=\"ml-6 text-[16px] tracking-wide whitespace-nowrap transition-all duration-300 font-bold text-[#8f98a2] group-hover:text-white opacity-0 -translate-x-4 pointer-events-none\">Anime</span></a><a class=\"group relative flex items-center px-8 py-4 cursor-pointer\" href=\"/movies\" data-discover=\"true\"><span class=\"flex-shrink-0 flex items-center justify-center transition-all duration-300 rounded-full w-5 h-5 md:w-[22px] md:h-[22px] text-[#8f98a2] group-hover:text-white group-hover:scale-110\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24px\" height=\"24px\" fill=\"currentColor\" viewBox=\"0 0 256 256\" class=\"w-6 h-6 md:w-[26px] md:h-[26px]\"><path d=\"M229.52,74.21a8,8,0,0,0-7.13-2A44,44,0,0,0,168,41.67a44,44,0,0,0-80,0,44,44,0,0,0-54.4,30.51,8,8,0,0,0-9.4,9.65L54.76,211.67A16,16,0,0,0,70.34,224H185.66a16,16,0,0,0,15.58-12.33L231.79,81.83A8,8,0,0,0,229.52,74.21ZM76,56a27.68,27.68,0,0,1,13.11,3.26,8,8,0,0,0,11.56-5.34",
+  "items": [
+    {
+      "tag": "A",
+      "href": "/home",
+      "text": "Home",
+      "title": null,
+      "html": "<a class=\"group relative flex items-center px-8 py-4 cursor-pointer\" href=\"/home\" data-discover=\"true\"><span class=\"flex-shrink-0 flex items-center justify-center transition-all duration-300 rounded-full w-5 h-5 md:w-[22px] md:h-[22px] text-white scale-125\"><svg width=\"24px\" height=\"24px\" stroke-width=\"1.5\" viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\" color=\"currentColor\" cla"
+    },
+    {
+      "tag": "A",
+      "href": "/explore",
+      "text": "Search",
+      "title": null,
+      "html": "<a class=\"group relative flex items-center px-8 py-4 cursor-pointer\" href=\"/explore\" data-discover=\"true\"><span class=\"flex-shrink-0 flex items-center justify-center transition-all duration-300 rounded-full w-5 h-5 md:w-[22px] md:h-[22px] text-[#8f98a2] group-hover:text-white group-hover:scale-110\"><svg width=\"24px\" height=\"24px\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" fill=\"none\" xmlns=\"http://www"
+    },
+    {
+      "tag": "A",
+      "href": "/tv",
+      "text": "TV",
+      "title": null,
+      "html": "<a class=\"group relative flex items-center px-8 py-4 cursor-pointer\" href=\"/tv\" data-discover=\"true\"><span class=\"flex-shrink-0 flex items-center justify-center transition-all duration-300 rounded-full w-5 h-5 md:w-[22px] md:h-[22px] text-[#8f98a2] group-hover:text-white group-hover:scale-110\"><svg width=\"24px\" height=\"24px\" stroke-width=\"1.5\" viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.o"
+    },
+    {
+      "tag": "A",
+      "href": "/anime",
+      "text": "Anime",
+      "title": null,
+      "html": "<a class=\"group relative flex items-center px-8 py-4 cursor-pointer\" href=\"/anime\" data-discover=\"true\"><span class=\"flex-shrink-0 flex items-center justify-center transition-all duration-300 rounded-full w-5 h-5 md:w-[22px] md:h-[22px] text-[#8f98a2] group-hover:text-white group-hover:scale-110\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 192 192\" fill=\"none\" class=\"w-6 h-6 md:w-7 md:h-7"
+    },
+    {
+      "tag": "A",
+      "href": "/movies",
+      "text": "Movies",
+      "title": null,
+      "html": "<a class=\"group relative flex items-center px-8 py-4 cursor-pointer\" href=\"/movies\" data-discover=\"true\"><span class=\"flex-shrink-0 flex items-center justify-center transition-all duration-300 rounded-full w-5 h-5 md:w-[22px] md:h-[22px] text-[#8f98a2] group-hover:text-white group-hover:scale-110\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24px\" height=\"24px\" fill=\"currentColor\" viewBox=\"0 0 2"
+    },
+    {
+      "tag": "A",
+      "href": "/sports",
+      "text": "Sports",
+      "title": null,
+      "html": "<a class=\"group relative flex items-center px-8 py-4 cursor-pointer\" href=\"/sports\" data-discover=\"true\"><span class=\"flex-shrink-0 flex items-center justify-center transition-all duration-300 rounded-full w-5 h-5 md:w-[22px] md:h-[22px] text-[#8f98a2] group-hover:text-white group-hover:scale-110\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24px\" height=\"24px\" viewBox=\"0 0 256 256\" class=\"w-6 h"
+    },
+    {
+      "tag": "A",
+      "href": "/spark",
+      "text": "Sparks",
+      "title": null,
+      "html": "<a class=\"group relative flex items-center px-8 py-4 cursor-pointer\" href=\"/spark\" data-discover=\"true\"><span class=\"flex-shrink-0 flex items-center justify-center transition-all duration-300 rounded-full w-5 h-5 md:w-[22px] md:h-[22px] text-[#8f98a2] group-hover:text-white group-hover:scale-110\"><svg width=\"24px\" height=\"24px\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2."
+    },
+    {
+      "tag": "A",
+      "href": "/categories",
+      "text": "Categories",
+      "title": null,
+      "html": "<a class=\"group relative flex items-center px-8 py-4 cursor-pointer\" href=\"/categories\" data-discover=\"true\"><span class=\"flex-shrink-0 flex items-center justify-center transition-all duration-300 rounded-full w-5 h-5 md:w-[22px] md:h-[22px] text-[#8f98a2] group-hover:text-white group-hover:scale-110\"><svg width=\"24px\" height=\"24px\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-widt"
+    },
+    {
+      "tag": "A",
+      "href": "/space",
+      "text": "My Space",
+      "title": null,
+      "html": "<a class=\"group relative flex items-center px-8 py-4 cursor-pointer\" href=\"/space\" data-discover=\"true\"><span class=\"flex-shrink-0 flex items-center justify-center transition-all duration-300 rounded-full w-7 h-7 -ml-0.5 overflow-hidden text-[#8f98a2] group-hover:text-white group-hover:scale-110\"><span class=\"flex w-full h-full items-center justify-center rounded-full bg-white/10 text-white border"
+    }
+  ]
+}

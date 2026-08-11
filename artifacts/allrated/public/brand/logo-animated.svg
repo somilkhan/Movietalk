@@ -1,0 +1,35 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <title>Movie Talk — Animated Cat Mark</title>
+  <style>
+    .eye-left, .eye-right {
+      animation: blink 4s ease-in-out infinite;
+      transform-box: fill-box;
+    }
+    .eye-left { transform-origin: 50% 50%; }
+    .eye-right { transform-origin: 50% 50%; }
+
+    @keyframes blink {
+      0%, 45%, 55%, 100% { transform: scaleY(1); }
+      48%, 52% { transform: scaleY(0.05); }
+    }
+  </style>
+
+  <!-- Head + ears silhouette -->
+  <path fill="#FFFFFF" d="M100 60 C100 60, 95 20, 65 15 C45 12, 40 35, 55 60
+     C35 68, 25 90, 28 115 C32 148, 62 170, 100 170
+     C138 170, 168 148, 172 115 C175 90, 165 68, 145 60
+     C160 35, 155 12, 135 15 C105 20, 100 60, 100 60 Z"/>
+
+  <!-- Left eye -->
+  <g class="eye-left">
+    <ellipse cx="72" cy="118" rx="18" ry="12" fill="#000000"/>
+  </g>
+
+  <!-- Right eye -->
+  <g class="eye-right">
+    <ellipse cx="128" cy="118" rx="18" ry="12" fill="#000000"/>
+  </g>
+
+  <!-- Nose -->
+  <path fill="#FFFFFF" d="M100 128 L96 134 L100 140 L104 134 Z"/>
+</svg>

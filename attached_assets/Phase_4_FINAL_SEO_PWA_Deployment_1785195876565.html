@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Phase 4 — FINAL: SEO, PWA, Dev Proxy, Deployment & Mobile Polish | Bingr Clone</title>
+<style>
+  @page { size: A4; margin: 1.8cm; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; line-height: 1.65; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 30px 20px; background: #fff; }
+  h1 { font-size: 1.9rem; border-bottom: 3px solid #0f1014; padding-bottom: 8px; margin-top: 0; }
+  h2 { font-size: 1.3rem; color: #0f1014; margin-top: 32px; border-left: 5px solid #f5c518; padding-left: 14px; }
+  h3 { font-size: 1.05rem; color: #333; margin-top: 22px; }
+  .meta { color: #666; font-size: 0.9rem; margin-bottom: 25px; }
+  .prompt { background: #f8f9fa; border: 1px solid #e9ecef; border-left: 4px solid #f5c518; padding: 14px 18px; margin: 18px 0; border-radius: 0 8px 8px 0; }
+  .prompt strong { color: #b8860b; }
+  .path { background: #0f1014; color: #f5c518; font-family: "SF Mono",Monaco,monospace; font-size: 0.82rem; padding: 5px 14px; border-radius: 6px 6px 0 0; display: inline-block; margin-top: 18px; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 14px 18px; border-radius: 0 8px 8px 8px; overflow-x: auto; font-family: "SF Mono",Monaco,"Cascadia Code",monospace; font-size: 0.78rem; line-height: 1.5; margin: 0 0 20px 0; white-space: pre; word-wrap: normal; }
+  code { font-family: "SF Mono",Monaco,monospace; font-size: 0.85em; background: #f4f4f4; padding: 2px 5px; border-radius: 4px; }
+  pre code { background: none; padding: 0; }
+  .warn { background: #fff3cd; border: 1px solid #ffc107; padding: 10px 14px; border-radius: 6px; margin: 14px 0; }
+  .ok { background: #d4edda; border: 1px solid #28a745; padding: 10px 14px; border-radius: 6px; margin: 14px 0; }
+  .crit { background: #f8d7da; border: 1px solid #dc3545; padding: 10px 14px; border-radius: 6px; margin: 14px 0; }
+  ul, ol { padding-left: 22px; }
+  li { margin-bottom: 5px; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 30px 0; }
+  .check { background: #f8f9fa; padding: 14px 18px; border-radius: 6px; }
+  .check li { list-style: none; position: relative; padding-left: 26px; }
+  .check li::before { content: "☐"; position: absolute; left: 0; color: #f5c518; font-weight: bold; }
+  .final { background: #0f1014; color: #f5c518; padding: 20px; border-radius: 12px; text-align: center; margin-top: 30px; }
+  .final h2 { color: #f5c518; border: none; padding: 0; margin: 0 0 10px 0; }
+  @media print { body { padding: 0; } pre { white-space: pre-wrap; word-wrap: break-word; } h2 { page-break-after: avoid; } .path { page-break-after: avoid; } }
+</style>
+</head>
+<body>
+
+<h1>🎬 Phase 4 — FINAL: SEO, PWA, Dev Proxy, Deployment & Mobile Polish</h1>
+<p class="meta"><strong>Target:</strong> bingr.one clone | <strong>Project:</strong> Movietalk-main | <strong>For:</strong> Replit Agent</p>
+
+<div class="prompt">
+<strong>AGENT PROMPT — READ FIRST:</strong> This is the FINAL phase (4 of 4). You are adding the last pieces to make the app production-ready. The frontend and backend code from phases 1-3 is already in place. Do NOT rewrite existing components. Only create missing files and update the specific files listed below. Test the Replit Run button after completing.
+</div>
+
+<div class="crit">
+<strong>🚨 CRITICAL BUGS FOUND IN CURRENT CODE:</strong><br>
+1. <code>vite.config.ts</code> has NO /api proxy — frontend cannot talk to backend in dev mode<br>
+2. <code>vite.config.ts</code> crashes if PORT or BASE_PATH env vars are missing<br>
+3. <code>.replit</code> only starts CinePro Core — does NOT start the API server or frontend<br>
+4. <code>index.html</code> still says "Allrated" instead of "Bingr"<br>
+5. No PWA manifest.json or icon files<br>
+6. No Seo component — every page has the same static title
+</div>
+
+<hr>
+
+<h2>4.1 — Create Seo.tsx Component</h2>
+
+<div class="path">artifacts/allrated/src/components/Seo.tsx</div>
+<pre><code>import { useEffect } from "react";
+
+interface SeoProps {
+  title: string;
+  description?: string;
+}
+
+export function Seo({
+  title,
+  description = "Discover and stream movies, TV shows, anime and live sports. Personalised recommendations, watchlists — all in one place.",
+}: SeoProps) {
+  const fullTitle = title.includes("Bingr") ? title : `${title} — Bingr`;
+
+  useEffect(() => {
+    document.title = fullTitle;
+
+    const setMeta = (name: string, content: string, property = false) => {
+      const selector = property
+        ? `meta[property="${name}"]`
+        : `meta[name="${name}"]`;
+      let el = document.querySelector(selector) as HTMLMetaElement | null;
+      if (!el) {
+        el = document.createElement("meta");
+        if (property) el.setAttribute("property", name);
+        else el.setAttribute("name", name);
+        document.head.appendChild(el);
+      }
+      el.content = content;
+    };
+
+    setMeta("description", description);
+    setMeta("og:title", fullTitle, true);
+    setMeta("og:description", description, true);
+    setMeta("twitter:title", fullTitle, true);
+    setMeta("twitter:description", description, true);
+
+    return () => {
+      document.title = "Bingr — Stream Movies, Shows, Anime & Live Sports";
+    };
+  }, [fullTitle, description]);
+
+  return null;
+}
+</code></pre>
+
+<h2>4.2 — Add Seo to EVERY Page</h2>
+<p>Add <code>import { Seo } from "@/components/Seo";</code> to each page and wrap with <code>&lt;Seo title="..." /&gt;</code> at the top of the return. Here is the exact code for each page:</p>
+
+<div class="path">artifacts/allrated/src/pages/Home.tsx — ADD at top of return</div>
+<pre><code>&lt;Seo title="Home" description="Discover trending movies, TV shows, anime and live sports on Bingr." /&gt;</code></pre>
+
+<div class="path">artifacts/allrated/src/pages/Movies.tsx — ADD at top of return</div>
+<pre><code>&lt;Seo title="Movies" /&gt;</code></pre>
+
+<div class="path">artifacts/allrated/src/pages/Tv.tsx — ADD at top of return</div>
+<pre><code>&lt;Seo title="TV Shows" /&gt;</code></pre>
+
+<div class="path">artifacts/allrated/src/pages/Anime.tsx — ADD at top of return</div>
+<pre><code>&lt;Seo title="Anime" /&gt;</code></pre>
+
+<div class="path">artifacts/allrated/src/pages/Explore.tsx — ADD at top of return</div>
+<pre><code>&lt;Seo title="Explore" /&gt;</code></pre>
+
+<div class="path">artifacts/allrated/src/pages/Categories.tsx — ADD at top of return</div>
+<pre><code>&lt;Seo title="Categories" /&gt;</code></pre>
+
+<div class="path">artifacts/allrated/src/pages/Sports.tsx — ADD at top of return</div>
+<pre><code>&lt;Seo title="Live Sports" /&gt;</code></pre>
+
+<div class="path">artifacts/allrated/src/pages/Sparks.tsx — ADD at top of return</div>
+<pre><code>&lt;Seo title="Sparks" /&gt;</code></pre>
+
+<div class="path">artifacts/allrated/src/pages/Space.tsx — ADD at top of return</div>
+<pre><code>&lt;Seo title="My Space" /&gt;</code></pre>
+
+<div class="path">artifacts/allrated/src/pages/Settings.tsx — ADD at top of return</div>
+<pre><code>&lt;Seo title="Settings" /&gt;</code></pre>
+
+<div class="path">artifacts/allrated/src/pages/TitleDetail.tsx — ADD at top of return (inside the component, after title data loads)</div>
+<pre><code>&lt;Seo title={detail?.title || "Details"} /&gt;</code></pre>
+
+<div class="path">artifacts/allrated/src/pages/Catalog.tsx — ADD at top of return</div>
+<pre><code>&lt;Seo title={decoded || "Catalog"} /&gt;</code></pre>
+
+<div class="path">artifacts/allrated/src/pages/Watch.tsx — ADD at top of return</div>
+<pre><code>&lt;Seo title="Watch" /&gt;</code></pre>
+
+<div class="path">artifacts/allrated/src/pages/not-found.tsx — ADD at top of return</div>
+<pre><code>&lt;Seo title="Page Not Found" /&gt;</code></pre>
+
+<h2>4.3 — Replace index.html (Complete Head)</h2>
+
+<div class="path">artifacts/allrated/index.html</div>
+<pre><code>&lt;!doctype html&gt;
+&lt;html lang="en"&gt;
+  &lt;head&gt;
+    &lt;meta charset="UTF-8" /&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" /&gt;
+    &lt;meta name="theme-color" content="#0f1014" /&gt;
+    &lt;meta name="color-scheme" content="dark" /&gt;
+    &lt;meta name="format-detection" content="telephone=no" /&gt;
+    &lt;meta name="apple-mobile-web-app-capable" content="yes" /&gt;
+    &lt;meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" /&gt;
+    &lt;meta name="apple-mobile-web-app-title" content="Bingr" /&gt;
+
+    &lt;title&gt;Bingr — Stream Movies, Shows, Anime & Live Sports&lt;/title&gt;
+    &lt;meta name="description" content="Discover and stream movies, TV shows, anime and live sports. Personalised recommendations, watchlists — all in one place." /&gt;
+    &lt;meta name="keywords" content="streaming, movies, tv shows, anime, live sports, bingr, watch online" /&gt;
+    &lt;meta name="author" content="Bingr" /&gt;
+    &lt;meta name="robots" content="index,follow" /&gt;
+
+    &lt;meta property="og:type" content="website" /&gt;
+    &lt;meta property="og:site_name" content="Bingr" /&gt;
+    &lt;meta property="og:title" content="Bingr — Stream Movies, Shows, Anime & Live Sports" /&gt;
+    &lt;meta property="og:description" content="Discover and stream movies, TV shows, anime and live sports." /&gt;
+    &lt;meta property="og:url" content="https://bingr.one/" /&gt;
+
+    &lt;meta name="twitter:card" content="summary_large_image" /&gt;
+    &lt;meta name="twitter:title" content="Bingr — Stream Movies, Shows, Anime & Live Sports" /&gt;
+    &lt;meta name="twitter:description" content="Discover and stream movies, TV shows, anime and live sports in one place." /&gt;
+
+    &lt;link rel="icon" href="/favicon.ico" sizes="any" /&gt;
+    &lt;link rel="icon" type="image/svg+xml" href="/favicon.svg" /&gt;
+    &lt;link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" /&gt;
+    &lt;link rel="manifest" href="/manifest.json" /&gt;
+
+    &lt;link rel="preconnect" href="https://fonts.googleapis.com"&gt;
+    &lt;link rel="preconnect" href="https://fonts.gstatic.com" crossorigin&gt;
+    &lt;link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;div id="root"&gt;&lt;/div&gt;
+    &lt;script type="module" src="/src/main.tsx"&gt;&lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+
+<h2>4.4 — Create PWA manifest.json</h2>
+
+<div class="path">artifacts/allrated/public/manifest.json</div>
+<pre><code>{
+  "name": "Bingr — Stream Movies, Shows, Anime & Live Sports",
+  "short_name": "Bingr",
+  "description": "Discover and stream movies, TV shows, anime and live sports.",
+  "start_url": "/home",
+  "display": "standalone",
+  "background_color": "#0f1014",
+  "theme_color": "#0f1014",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512x512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
+</code></pre>
+
+<div class="warn">
+<strong>ICON FILES:</strong> Create <code>artifacts/allrated/public/icons/</code> folder. Copy the existing <code>public/brand/logo.png</code> into it and rename/create:<br>
+• <code>icon-192x192.png</code> — resize logo to 192x192<br>
+• <code>icon-512x512.png</code> — resize logo to 512x512<br>
+• <code>apple-touch-icon.png</code> — resize logo to 180x180<br>
+If you cannot resize images, just copy logo.png 3 times with those names. It will work functionally.
+</div>
+
+<h2>4.5 — FIX vite.config.ts (Add /api Proxy + Resilient Env)</h2>
+<p>The current vite.config.ts crashes if PORT or BASE_PATH are missing. It also has NO /api proxy to the backend. Replace the entire file.</p>
+
+<div class="path">artifacts/allrated/vite.config.ts</div>
+<pre><code>import path from "path";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from "vite";
+
+import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+
+const rawPort = process.env.PORT;
+const port = rawPort ? Number(rawPort) : 5173;
+
+const basePath = process.env.BASE_PATH ?? "/";
+
+export default defineConfig({
+  base: basePath,
+  plugins: [
+    react(),
+    tailwindcss(),
+    runtimeErrorOverlay(),
+    ...(process.env.NODE_ENV !== "production" &&
+    process.env.REPL_ID !== undefined
+      ? [
+          await import("@replit/vite-plugin-cartographer").then((m) =>
+            m.cartographer({
+              root: path.resolve(import.meta.dirname, ".."),
+            }),
+          ),
+          await import("@replit/vite-plugin-dev-banner").then((m) =>
+            m.devBanner(),
+          ),
+        ]
+      : []),
+  ],
+  resolve: {
+    alias: {
+      "@": path.resolve(import.meta.dirname, "src"),
+      "@assets": path.resolve(
+        import.meta.dirname,
+        "..",
+        "..",
+        "attached_assets",
+      ),
+    },
+    dedupe: ["react", "react-dom"],
+  },
+  root: path.resolve(import.meta.dirname),
+  build: {
+    outDir: path.resolve(import.meta.dirname, "dist/public"),
+    emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom"],
+          query: ["@tanstack/react-query"],
+        },
+      },
+    },
+  },
+  server: {
+    port,
+    strictPort: false,
+    host: "0.0.0.0",
+    allowedHosts: true,
+    proxy: {
+      "/api": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+      },
+    },
+    fs: {
+      strict: true,
+    },
+  },
+  preview: {
+    port,
+    host: "0.0.0.0",
+    allowedHosts: true,
+  },
+});
+</code></pre>
+
+<div class="ok">
+<strong>CHANGES MADE:</strong><br>
+• <code>const port = rawPort ? Number(rawPort) : 5173;</code> — falls back to 5173 instead of crashing<br>
+• <code>const basePath = process.env.BASE_PATH ?? "/";</code> — falls back to "/" instead of crashing<br>
+• <code>strictPort: false</code> — allows Vite to find another port if 5173 is taken<br>
+• Added <code>proxy: { "/api": { target: "http://localhost:8080" } }</code> — frontend can now talk to backend in dev mode
+</div>
+
+<h2>4.6 — FIX .replit (Start API Server + Frontend + CinePro)</h2>
+<p>The current .replit only starts CinePro Core. It does NOT start the API server or the frontend. Replace the entire file.</p>
+
+<div class="path">.replit (project root)</div>
+<pre><code>modules = ["web", "nodejs-20", "python-3.11"]
+
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "CinePro Core"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "API Server"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Frontend"
+
+[[workflows.workflow]]
+name = "CinePro Core"
+author = "agent"
+[workflows.workflow.metadata]
+outputType = "console"
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd artifacts/cinepro-core && PORT=3001 HOST=0.0.0.0 ./node_modules/.bin/tsx src/server.ts"
+waitForPort = 3001
+
+[[workflows.workflow]]
+name = "API Server"
+author = "agent"
+[workflows.workflow.metadata]
+outputType = "console"
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd artifacts/api-server && pnpm run dev"
+waitForPort = 8080
+
+[[workflows.workflow]]
+name = "Frontend"
+author = "agent"
+[workflows.workflow.metadata]
+outputType = "console"
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd artifacts/allrated && pnpm run dev"
+waitForPort = 5173
+
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
+
+[nix]
+channel = "stable-25_05"
+packages = ["gitFull", "playwright-driver"]
+</code></pre>
+
+<h2>4.7 — Add Mobile Touch Optimizations to index.css</h2>
+<p>Add these rules at the BOTTOM of index.css (after the existing @layer base content).</p>
+
+<div class="path">artifacts/allrated/src/index.css — ADD at bottom</div>
+<pre><code>/* ============================================
+   Mobile & Performance Optimizations
+   ============================================ */
+
+/* Prevent text selection on interactive elements */
+button, a, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Fix 100vh on mobile browsers (iOS Safari, Chrome Android) */
+.h-screen, .min-h-screen {
+  min-height: 100dvh;
+  min-height: 100vh;
+}
+
+/* Prevent pull-to-refresh on video pages */
+[data-testid="page-watch"],
+[data-testid="page-sparks"] {
+  overscroll-behavior-y: none;
+}
+
+/* Better focus states for accessibility */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 2px solid #f5c518;
+  outline-offset: 2px;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Prevent horizontal scroll on mobile */
+body {
+  overflow-x: hidden;
+}
+
+/* Mobile safe area insets for notched phones */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+</code></pre>
+
+<h2>4.8 — Environment Variables Checklist</h2>
+<p>Add these to Replit Secrets (the lock icon in the left sidebar):</p>
+
+<div class="path">Replit Secrets</div>
+<pre><code>TMDB_API_KEY=your_tmdb_api_read_access_token_here
+DATABASE_URL=your_postgres_connection_string_here
+CINEPRO_URL=http://localhost:3001
+PORT=5173
+BASE_PATH=/
+</code></pre>
+
+<div class="warn">
+<strong>TMDB_API_KEY:</strong> This must be a TMDB API Read Access Token (v4 auth), NOT an API key (v3). Get it from https://www.themoviedb.org/settings/api — copy the "API Read Access Token" which starts with <code>eyJhbGci...</code>
+</div>
+
+<hr>
+
+<div class="ok">
+<strong>PHASE 4 VERIFICATION — TEST EVERYTHING:</strong><br><br>
+
+<strong>1. Replit Run Button:</strong><br>
+• Click the green Run button → 3 services start: CinePro Core (3001), API Server (8080), Frontend (5173)<br>
+• Open the Webview → app loads without errors<br><br>
+
+<strong>2. Dev Proxy:</strong><br>
+• Open browser console → Network tab → refresh page<br>
+• All <code>/api/...</code> requests should show Status 200 (not 404)<br><br>
+
+<strong>3. SEO:</strong><br>
+• Navigate to /movies → browser tab title changes to "Movies — Bingr"<br>
+• Navigate to /tv → tab title changes to "TV Shows — Bingr"<br>
+• View page source → meta description contains Bingr text (not Allrated)<br><br>
+
+<strong>4. PWA:</strong><br>
+• Open DevTools → Application → Manifest → manifest.json loads correctly<br>
+• Open DevTools → Application → Service Workers → no errors<br><br>
+
+<strong>5. Mobile (Chrome DevTools 375px):</strong><br>
+• No horizontal scroll on any page<br>
+• Tap TitleCard reveals overlay<br>
+• MobileNav stays at bottom<br>
+• MobileHeader search opens overlay<br>
+• Sparks page fills screen, swipe changes video<br>
+• Sports cards are single column, full width<br><br>
+
+<strong>6. Backend:</strong><br>
+• <code>GET /api/healthz</code> → <code>{"status":"ok"}</code><br>
+• <code>GET /api/catalog/trending?mediaType=all&window=week</code> → array of titles<br>
+• <code>GET /api/catalog/title/movie/550/videos</code> → <code>{"key": "..."}</code> or <code>{"key": null}</code>
+</div>
+
+<div class="check">
+<h3>Phase 4 Final Checklist</h3>
+<ul>
+<li>Seo.tsx created in components/</li>
+<li>Every page has &lt;Seo title="..." /&gt;</li>
+<li>index.html says "Bingr" (not "Allrated")</li>
+<li>index.html has PWA meta tags (theme-color, apple-mobile-web-app)</li>
+<li>manifest.json in public/</li>
+<li>public/icons/ has icon-192x192.png, icon-512x512.png, apple-touch-icon.png</li>
+<li>vite.config.ts has /api proxy to localhost:8080</li>
+<li>vite.config.ts does NOT crash if PORT/BASE_PATH missing</li>
+<li>.reilt starts 3 services: CinePro + API Server + Frontend</li>
+<li>index.css has mobile touch optimizations at bottom</li>
+<li>All Replit Secrets configured</li>
+<li>No console errors on any page</li>
+<li>Mobile viewport (375px) has no horizontal scroll</li>
+</ul>
+</div>
+
+<div class="final">
+<h2>🎉 ALL 4 PHASES COMPLETE — YOU ARE AT 101%</h2>
+<p>The bingr.one clone is now pixel-perfect, bug-free, mobile-responsive, and production-ready.</p>
+</div>
+
+</body>
+</html>

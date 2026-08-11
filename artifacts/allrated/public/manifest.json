@@ -1,0 +1,14 @@
+{
+  "name": "Bingr — Stream Movies, Shows, Anime & Live Sports",
+  "short_name": "Bingr",
+  "description": "Discover and stream movies, TV shows, anime and live sports.",
+  "start_url": "/home",
+  "display": "standalone",
+  "background_color": "#0f1014",
+  "theme_color": "#0f1014",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512x512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

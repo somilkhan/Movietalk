@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Phase 2 — Frontend Core Components | Bingr Clone</title>
+<style>
+  @page { size: A4; margin: 1.8cm; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; line-height: 1.65; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 30px 20px; background: #fff; }
+  h1 { font-size: 2rem; border-bottom: 3px solid #0f1014; padding-bottom: 8px; margin-top: 0; }
+  h2 { font-size: 1.35rem; color: #0f1014; margin-top: 35px; border-left: 5px solid #f5c518; padding-left: 14px; }
+  h3 { font-size: 1.05rem; color: #333; margin-top: 25px; }
+  .meta { color: #666; font-size: 0.9rem; margin-bottom: 25px; }
+  .prompt { background: #f8f9fa; border: 1px solid #e9ecef; border-left: 4px solid #f5c518; padding: 14px 18px; margin: 18px 0; border-radius: 0 8px 8px 0; }
+  .prompt strong { color: #b8860b; }
+  .path { background: #0f1014; color: #f5c518; font-family: "SF Mono",Monaco,monospace; font-size: 0.82rem; padding: 5px 14px; border-radius: 6px 6px 0 0; display: inline-block; margin-top: 18px; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 14px 18px; border-radius: 0 8px 8px 8px; overflow-x: auto; font-family: "SF Mono",Monaco,"Cascadia Code",monospace; font-size: 0.78rem; line-height: 1.5; margin: 0 0 20px 0; white-space: pre; word-wrap: normal; }
+  code { font-family: "SF Mono",Monaco,monospace; font-size: 0.85em; background: #f4f4f4; padding: 2px 5px; border-radius: 4px; }
+  pre code { background: none; padding: 0; }
+  .warn { background: #fff3cd; border: 1px solid #ffc107; padding: 10px 14px; border-radius: 6px; margin: 14px 0; }
+  .ok { background: #d4edda; border: 1px solid #28a745; padding: 10px 14px; border-radius: 6px; margin: 14px 0; }
+  ul, ol { padding-left: 22px; }
+  li { margin-bottom: 5px; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 30px 0; }
+  .check { background: #f8f9fa; padding: 14px 18px; border-radius: 6px; }
+  .check li { list-style: none; position: relative; padding-left: 26px; }
+  .check li::before { content: "☐"; position: absolute; left: 0; color: #f5c518; font-weight: bold; }
+  @media print { body { padding: 0; } pre { white-space: pre-wrap; word-wrap: break-word; } h2 { page-break-after: avoid; } .path { page-break-after: avoid; } }
+</style>
+</head>
+<body>
+
+<h1>🎬 Phase 2 — Frontend Core Components</h1>
+<p class="meta"><strong>Target:</strong> bingr.one clone | <strong>Project:</strong> Movietalk-main | <strong>For:</strong> Replit Agent</p>
+
+<div class="prompt">
+<strong>AGENT PROMPT — READ FIRST:</strong> This is Phase 2 of 4. You are working on <code>artifacts/allrated/src/</code>. These are the CORE components that appear on EVERY page. They must be pixel-perfect on both desktop AND mobile. Do NOT change existing imports unless instructed. Do NOT break working routes. Every component must handle mobile touch events, not just hover. Test on mobile viewport (375px width) after each file.
+</div>
+
+<h2>2.1 — Footer Component (NEW)</h2>
+<p>bingr.one has a footer with DMCA text. It must appear on every page except the fullscreen Watch page.</p>
+
+<div class="path">artifacts/allrated/src/components/Footer.tsx</div>
+<pre><code>export function Footer() {
+  return (
+    &lt;footer className="py-10 px-6 md:px-20 text-center border-t border-white/5 mt-auto bg-[#0f1014]"&gt;
+      &lt;p className="text-white/30 text-xs mb-2"&gt;
+        For removal or DMCA requests, please contact us:{" "}
+        &lt;a
+          href="mailto:support@bingr.one"
+          className="underline hover:text-white/60 transition-colors"
+        &gt;
+          support@bingr.one
+        &lt;/a&gt;
+      &lt;/p&gt;
+      &lt;p className="text-white/20 text-xs"&gt;
+        © {new Date().getFullYear()} Bingr. All rights reserved.
+      &lt;/p&gt;
+    &lt;/footer&gt;
+  );
+}
+</code></pre>
+
+<h2>2.2 — Update App.tsx to Include Footer</h2>
+<p>Add Footer import and place it inside the standard layout (NOT inside the /watch route).</p>
+
+<div class="path">artifacts/allrated/src/App.tsx</div>
+<pre><code>import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Route, Switch, Router as WouterRouter, Redirect } from "wouter";
+import { Sidebar } from "@/components/Sidebar";
+import { MobileNav } from "@/components/MobileNav";
+import { MobileHeader } from "@/components/MobileHeader";
+import { Footer } from "@/components/Footer";
+import Home from "@/pages/Home";
+import Movies from "@/pages/Movies";
+import Tv from "@/pages/Tv";
+import Anime from "@/pages/Anime";
+import Explore from "@/pages/Explore";
+import Categories from "@/pages/Categories";
+import Space from "@/pages/Space";
+import Sports from "@/pages/Sports";
+import Sparks from "@/pages/Sparks";
+import TitleDetail from "@/pages/TitleDetail";
+import Catalog from "@/pages/Catalog";
+import Watch from "@/pages/Watch";
+import NotFound from "@/pages/not-found";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { staleTime: 5 * 60 * 1000, retry: 2 },
+  },
+});
+
+function Router() {
+  return (
+    &lt;Switch&gt;
+      {/* Full-screen watch — NO sidebar, nav, or footer */}
+      &lt;Route path="/watch/:mediaType/:id" component={Watch} /&gt;
+
+      {/* Standard layout */}
+      &lt;Route&gt;
+        &lt;div className="min-h-screen bg-[#0f1014] text-white flex flex-col"&gt;
+          &lt;Sidebar /&gt;
+          &lt;MobileHeader /&gt;
+          &lt;main className="md:pl-[80px] flex-1"&gt;
+            &lt;Switch&gt;
+              &lt;Route path="/"&gt;&lt;Redirect to="/home" /&gt;&lt;/Route&gt;
+              &lt;Route path="/home" component={Home} /&gt;
+              &lt;Route path="/movies" component={Movies} /&gt;
+              &lt;Route path="/tv" component={Tv} /&gt;
+              &lt;Route path="/anime" component={Anime} /&gt;
+              &lt;Route path="/explore" component={Explore} /&gt;
+              &lt;Route path="/categories" component={Categories} /&gt;
+              &lt;Route path="/sports" component={Sports} /&gt;
+              &lt;Route path="/spark" component={Sparks} /&gt;
+              &lt;Route path="/space" component={Space} /&gt;
+              &lt;Route path="/title/:mediaType/:id" component={TitleDetail} /&gt;
+              &lt;Route path="/category/:name" component={Catalog} /&gt;
+              &lt;Route component={NotFound} /&gt;
+            &lt;/Switch&gt;
+          &lt;/main&gt;
+          &lt;Footer /&gt;
+          &lt;MobileNav /&gt;
+        &lt;/div&gt;
+      &lt;/Route&gt;
+    &lt;/Switch&gt;
+  );
+}
+
+function App() {
+  return (
+    &lt;QueryClientProvider client={queryClient}&gt;
+      &lt;TooltipProvider&gt;
+        &lt;WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}&gt;
+          &lt;Router /&gt;
+        &lt;/WouterRouter&gt;
+        &lt;Toaster /&gt;
+      &lt;/TooltipProvider&gt;
+    &lt;/QueryClientProvider&gt;
+  );
+}
+
+export default App;
+</code></pre>
+
+<h2>2.3 — TitleCard with Mobile Touch Support</h2>
+<p>The existing TitleCard works but needs mobile tap-to-reveal and better hover states. Keep the existing structure but enhance it.</p>
+
+<div class="path">artifacts/allrated/src/components/TitleCard.tsx</div>
+<pre><code>import { useState } from "react";
+import { Link } from "wouter";
+import { Play, Plus, ChevronDown, Star } from "lucide-react";
+import type { Title } from "@workspace/api-client-react";
+
+export function TitleCard({ title }: { title: Title }) {
+  const [tapped, setTapped] = useState(false);
+
+  return (
+    &lt;Link href={`/title/${title.mediaType}/${title.id}`}&gt;
+      &lt;div
+        className="group relative aspect-[2/3] rounded-lg overflow-hidden bg-[#16181f] cursor-pointer transition-all duration-300 hover:scale-105 hover:z-20 hover:shadow-2xl active:scale-95"
+        onTouchStart={() => setTapped(true)}
+        onTouchEnd={() => setTimeout(() => setTapped(false), 2000)}
+      &gt;
+        &lt;img
+          src={title.posterPath || `${import.meta.env.BASE_URL}brand/logo.png`}
+          alt={title.title}
+          loading="lazy"
+          decoding="async"
+          className="w-full h-full object-cover"
+        /&gt;
+
+        {/* Hover / tap overlay */}
+        &lt;div
+          className={`absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent transition-opacity duration-300 flex flex-col justify-end ${
+            tapped ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          }`}
+        &gt;
+          &lt;div className="p-3"&gt;
+            {/* Action buttons */}
+            &lt;div className="flex items-center gap-2 mb-3"&gt;
+              &lt;Link href={`/watch/${title.mediaType}/${title.id}`}&gt;
+                &lt;button
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform"
+                &gt;
+                  &lt;Play className="w-4 h-4 fill-black ml-0.5" /&gt;
+                &lt;/button&gt;
+              &lt;/Link&gt;
+              &lt;button
+                onClick={(e) => e.stopPropagation()}
+                className="w-8 h-8 rounded-full border border-white/40 text-white flex items-center justify-center hover:border-white hover:bg-white/10 transition-all"
+              &gt;
+                &lt;Plus className="w-4 h-4" /&gt;
+              &lt;/button&gt;
+              &lt;button className="w-8 h-8 rounded-full border border-white/40 text-white flex items-center justify-center hover:border-white hover:bg-white/10 transition-all ml-auto"&gt;
+                &lt;ChevronDown className="w-4 h-4" /&gt;
+              &lt;/button&gt;
+            &lt;/div&gt;
+
+            &lt;h3 className="text-white font-bold text-sm leading-tight line-clamp-1 mb-1"&gt;
+              {title.title}
+            &lt;/h3&gt;
+
+            &lt;div className="flex items-center gap-2.5 text-[11px] text-white/60"&gt;
+              &lt;span className="text-amber-400 flex items-center gap-0.5 font-medium"&gt;
+                &lt;Star className="w-3 h-3 fill-amber-400" /&gt;
+                {title.voteAverage?.toFixed(1)}
+              &lt;/span&gt;
+              &lt;span&gt;{title.releaseDate?.slice(0, 4)}&lt;/span&gt;
+              &lt;span className="uppercase text-[10px] border border-white/30 px-1 rounded"&gt;
+                {title.mediaType}
+              &lt;/span&gt;
+            &lt;/div&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/Link&gt;
+  );
+}
+</code></pre>
+
+<h2>2.4 — Row Component with Mobile Scroll & Skeleton</h2>
+<p>Enhance the Row with proper mobile horizontal scroll, snap points, and skeleton loading states.</p>
+
+<div class="path">artifacts/allrated/src/components/Row.tsx</div>
+<pre><code>import { useRef } from "react";
+import { Link } from "wouter";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { TitleCard } from "./TitleCard";
+import type { Title } from "@workspace/api-client-react";
+
+interface RowProps {
+  heading: string;
+  titles?: Title[];
+  loading?: boolean;
+  numbered?: boolean;
+  viewAllHref?: string;
+}
+
+export function Row({ heading, titles, loading, numbered, viewAllHref }: RowProps) {
+  const scroller = useRef&lt;HTMLDivElement&gt;(null);
+
+  function scroll(dir: "left" | "right") {
+    scroller.current?.scrollBy({
+      left: dir === "left" ? -window.innerWidth * 0.8 : window.innerWidth * 0.8,
+      behavior: "smooth",
+    });
+  }
+
+  const skeletonCount = 6;
+
+  return (
+    &lt;div className="w-full relative px-4 md:px-6 lg:px-20 pt-6 mb-8 md:mb-10"&gt;
+      {/* Header */}
+      &lt;div className="flex items-center justify-between mb-3 md:mb-4 pr-2 md:pr-0"&gt;
+        &lt;h2 className="text-[16px] md:text-[20px] font-semibold text-white/90 tracking-wide"&gt;
+          {heading}
+        &lt;/h2&gt;
+        {viewAllHref && (
+          &lt;Link href={viewAllHref}&gt;
+            &lt;button className="flex items-center text-[12px] md:text-[13px] font-medium text-white/40 hover:text-white transition-colors group/btn"&gt;
+              View All
+              &lt;ChevronRight className="w-4 h-4 ml-0.5 opacity-40 group-hover/btn:opacity-100 transition-opacity" /&gt;
+            &lt;/button&gt;
+          &lt;/Link&gt;
+        )}
+      &lt;/div&gt;
+
+      {/* Scroll container */}
+      &lt;div className="relative group"&gt;
+        {/* Left arrow — desktop only */}
+        &lt;button
+          onClick={() => scroll("left")}
+          className="hidden md:flex absolute left-0 top-0 bottom-0 z-30 w-12 bg-gradient-to-r from-[#0f1014] via-[#0f1014]/80 to-transparent items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300"
+        &gt;
+          &lt;ChevronLeft className="w-6 h-6 text-white" /&gt;
+        &lt;/button&gt;
+
+        {/* Cards */}
+        &lt;div
+          ref={scroller}
+          className="flex overflow-x-auto gap-2.5 md:gap-3 py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-smooth snap-x snap-mandatory touch-pan-x"
+        &gt;
+          {loading &&
+            Array.from({ length: skeletonCount }).map((_, i) => (
+              &lt;div
+                key={i}
+                className="snap-start flex-none w-[110px] md:w-[160px] lg:w-[180px] aspect-[2/3] rounded-lg bg-[#16181f] animate-pulse"
+              /&gt;
+            ))}
+
+          {!loading &&
+            titles?.map((title, i) => (
+              &lt;div
+                key={`${title.mediaType}-${title.id}`}
+                className="snap-start flex-none w-[110px] md:w-[160px] lg:w-[180px]"
+              &gt;
+                {numbered ? (
+                  &lt;div className="flex items-center gap-1.5 md:gap-2"&gt;
+                    &lt;span className="font-display text-4xl md:text-6xl text-white/10 leading-none select-none w-6 md:w-10 text-right"&gt;
+                      {i + 1}
+                    &lt;/span&gt;
+                    &lt;div className="flex-1"&gt;
+                      &lt;TitleCard title={title} /&gt;
+                    &lt;/div&gt;
+                  &lt;/div&gt;
+                ) : (
+                  &lt;TitleCard title={title} /&gt;
+                )}
+              &lt;/div&gt;
+            ))}
+        &lt;/div&gt;
+
+        {/* Right arrow — desktop only */}
+        &lt;button
+          onClick={() => scroll("right")}
+          className="hidden md:flex absolute right-0 top-0 bottom-0 z-30 w-12 bg-gradient-to-l from-[#0f1014] via-[#0f1014]/80 to-transparent items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300"
+        &gt;
+          &lt;ChevronRight className="w-6 h-6 text-white" /&gt;
+        &lt;/button&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+
+<h2>2.5 — MobileHeader with Search</h2>
+<p>The MobileHeader needs a search icon that opens the search overlay (same as Explore page).</p>
+
+<div class="path">artifacts/allrated/src/components/MobileHeader.tsx</div>
+<pre><code>import { useState } from "react";
+import { Link } from "wouter";
+import { Search, X } from "lucide-react";
+
+export function MobileHeader() {
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState("");
+
+  return (
+    &lt;&gt;
+      &lt;header className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[#0f1014]/95 backdrop-blur-md border-b border-white/5"&gt;
+        &lt;div className="flex items-center justify-between h-14 px-4"&gt;
+          &lt;Link href="/home"&gt;
+            &lt;img
+              src={`${import.meta.env.BASE_URL}brand/logo.png`}
+              alt="Bingr"
+              className="h-8 w-auto invert"
+            /&gt;
+          &lt;/Link&gt;
+          &lt;button
+            onClick={() => setSearchOpen(true)}
+            className="w-10 h-10 flex items-center justify-center text-white/70 hover:text-white"
+          &gt;
+            &lt;Search className="w-5 h-5" /&gt;
+          &lt;/button&gt;
+        &lt;/div&gt;
+      &lt;/header&gt;
+
+      {/* Mobile search overlay */}
+      {searchOpen && (
+        &lt;div className="md:hidden fixed inset-0 z-[60] bg-[#0f1014] flex flex-col"&gt;
+          &lt;div className="flex items-center gap-3 px-4 h-14 border-b border-white/10"&gt;
+            &lt;button onClick={() => setSearchOpen(false)}&gt;
+              &lt;X className="w-6 h-6 text-white" /&gt;
+            &lt;/button&gt;
+            &lt;input
+              autoFocus
+              type="text"
+              placeholder="Search movies, shows, anime..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="flex-1 bg-transparent text-white text-base outline-none placeholder:text-white/30"
+            /&gt;
+          &lt;/div&gt;
+          &lt;div className="flex-1 overflow-y-auto p-4"&gt;
+            {query.trim() ? (
+              &lt;Link href={`/explore?q=${encodeURIComponent(query)}`}&gt;
+                &lt;button
+                  onClick={() => setSearchOpen(false)}
+                  className="w-full text-left px-4 py-3 rounded-lg bg-white/5 text-white hover:bg-white/10 transition-colors"
+                &gt;
+                  Search for "{query}"
+                &lt;/button&gt;
+              &lt;/Link&gt;
+            ) : (
+              &lt;p className="text-white/30 text-sm text-center mt-10"&gt;
+                Type to search...
+              &lt;/p&gt;
+            )}
+          &lt;/div&gt;
+        &lt;/div&gt;
+      )}
+    &lt;/&gt;
+  );
+}
+</code></pre>
+
+<h2>2.6 — HeroBanner Mobile Responsiveness</h2>
+<p>The existing HeroBanner is good. Add mobile-specific text sizing and touch handling.</p>
+
+<div class="path">artifacts/allrated/src/components/HeroBanner.tsx</div>
+<pre><code>// FIND the h1 inside HeroBanner and REPLACE it with this responsive version:
+
+&lt;h1 className="font-display text-3xl sm:text-4xl md:text-6xl lg:text-7xl text-white leading-[0.92] tracking-wider mb-4 md:mb-5 drop-shadow-2xl"&gt;
+  {hero.title}
+&lt;/h1&gt;
+
+// FIND the meta row and REPLACE:
+
+&lt;div className="flex items-center gap-2 md:gap-3 text-xs md:text-base text-white/80 mb-3 md:mb-4 flex-wrap"&gt;
+  &lt;span className="flex items-center gap-1 text-amber-400 font-semibold"&gt;
+    &lt;svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="md:w-4 md:h-4"&gt;
+      &lt;path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /&gt;
+    &lt;/svg&gt;
+    {hero.voteAverage?.toFixed(1)}
+  &lt;/span&gt;
+  &lt;span className="text-white/40 hidden sm:inline"&gt;•&lt;/span&gt;
+  &lt;span&gt;{hero.releaseDate?.slice(0, 4) || "N/A"}&lt;/span&gt;
+  &lt;span className="text-white/40 hidden sm:inline"&gt;•&lt;/span&gt;
+  &lt;span className="text-white/60 hidden sm:inline"&gt;{hero.genreIds?.slice(0, 3).join(", ")}&lt;/span&gt;
+&lt;/div&gt;
+
+// FIND the overview paragraph and REPLACE:
+
+&lt;p className="text-white/70 text-xs md:text-base line-clamp-2 md:line-clamp-3 mb-6 md:mb-8 max-w-lg leading-relaxed"&gt;
+  {hero.overview}
+&lt;/p&gt;
+
+// FIND the thumbnail carousel container and ADD responsive hiding:
+// It already has "hidden lg:flex" — make sure it stays that way.
+</code></pre>
+
+<div class="ok">
+<strong>PHASE 2 VERIFICATION:</strong> Test on Chrome DevTools mobile (375px width) and desktop (1440px):<br>
+• Footer appears at bottom of every page except /watch<br>
+• TitleCard tap reveals overlay on mobile, hover on desktop<br>
+• Row scrolls horizontally with touch on mobile, arrows on desktop<br>
+• MobileHeader has search icon that opens overlay<br>
+• HeroBanner text scales down on mobile, thumbnail carousel hidden on small screens<br>
+• No horizontal scroll on any page
+</div>
+
+<div class="check">
+<h3>Phase 2 Checklist</h3>
+<ul>
+<li>Footer.tsx created and renders on all pages</li>
+<li>App.tsx imports Footer and places it correctly</li>
+<li>TitleCard has mobile tap-to-reveal (onTouchStart)</li>
+<li>TitleCard images have loading="lazy" and decoding="async"</li>
+<li>Row has snap-x snap-mandatory for mobile scroll</li>
+<li>Row skeletons match card dimensions exactly</li>
+<li>MobileHeader has search icon + overlay</li>
+<li>HeroBanner text responsive (text-3xl → text-7xl)</li>
+<li>No layout shift on page load</li>
+</ul>
+</div>
+
+<p><strong>End of Phase 2.</strong> Complete this phase before moving to Phase 3.</p>
+
+</body>
+</html>
