@@ -117,7 +117,7 @@ export default function TitleDetail() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#07070b] pb-24 md:pb-0" data-testid="page-title-detail">
+      <div className="min-h-screen bg-black pb-24 md:pb-0" data-testid="page-title-detail">
         {/* Shimmer skeleton for hero */}
         <div className="relative min-h-[520px] w-full overflow-hidden md:min-h-[640px] animate-shimmer" />
         <div className="px-6 pt-8 md:px-12 space-y-6">
@@ -149,7 +149,7 @@ export default function TitleDetail() {
 
   if (isError || !title) {
     return (
-      <div className="min-h-screen bg-[#07070b] pb-24 md:pb-0" data-testid="page-title-detail">
+      <div className="min-h-screen bg-black pb-24 md:pb-0" data-testid="page-title-detail">
         <div className="pt-24 md:pt-32 px-6 md:px-20">
           <ErrorState
             message="Could not load title details. The server may be unavailable."
@@ -347,35 +347,39 @@ export default function TitleDetail() {
           </div>
         )}
 
-        {/* Cast carousel */}
+        {/* Cast grid — bingr.one style */}
         {cast.length > 0 && (
-          <div>
-            <h3 className="text-lg font-semibold text-[#ffffffe6] mb-3">Cast</h3>
-            <div className="flex gap-4 overflow-x-auto no-scrollbar snap-x snap-proximity pb-2">
+          <div className="mt-14">
+            <div className="flex items-center justify-between gap-4 mb-5">
+              <h2 className="heading-trail text-xl md:text-2xl font-semibold text-white min-w-0 truncate">Actors</h2>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {cast.map((person) => (
                 <div
                   key={person.id}
-                  className="snap-start flex-none w-[90px] text-center"
+                  className="group flex items-center gap-3 p-3 rounded-[14px] border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/40 transition-all duration-200"
                 >
-                  <div className="w-[90px] h-[90px] rounded-full overflow-hidden bg-[#252830] mb-2 ring-1 ring-white/10 flex items-center justify-center">
+                  <div className="relative flex-shrink-0">
                     {person.profilePath ? (
                       <img
                         src={person.profilePath}
                         alt={person.name}
-                        className="w-full h-full object-cover"
+                        className="object-cover w-14 h-14 rounded-full ring-1 ring-white/[0.08] group-hover:ring-white/40 transition-all duration-200"
                         loading="lazy"
                         onError={(e) => {
                           (e.target as HTMLImageElement).style.display = 'none';
                         }}
                       />
                     ) : (
-                      <div className="flex flex-col items-center justify-center text-white/30">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                      <div className="w-14 h-14 rounded-full bg-white/[0.05] ring-1 ring-white/[0.08] flex items-center justify-center">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-white/30"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                       </div>
                     )}
                   </div>
-                  <p className="text-[#ffffffe6] text-xs font-medium line-clamp-1">{person.name}</p>
-                  <p className="text-[#ffffff4d] text-[11px] line-clamp-1">{person.character}</p>
+                  <div className="flex flex-col min-w-0">
+                    <p className="font-medium text-white text-sm leading-tight line-clamp-1 transition-colors duration-200 group-hover:text-white/80">{person.name}</p>
+                    <p className="text-white/50 text-xs leading-snug line-clamp-1 mt-0.5">{person.character}</p>
+                  </div>
                 </div>
               ))}
             </div>
