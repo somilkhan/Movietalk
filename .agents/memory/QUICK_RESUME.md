@@ -1,44 +1,43 @@
 # QUICK RESUME — Bingr Clone
 
 ## Now
-Phase: LIQUID_GLASS_UI + CONTENT_TRAY_POLISH
-Branch: main | Last Commit: 37e68ba | Dirty: NO
+Phase: BINGR_PIXEL_MATCH | Recon: 80% done, Components: 60% matched
+Branch: main | Last Commit: a72ee0d | Dirty: NO
 
 ## What We Are Building
-Pixel-perfect bingr.one clone. ~40-50% complete.
+Pixel-perfect bingr.one clone. ~50-60% complete.
 
-## Current State
-- Mobile nav: DONE (floating pill, blur, toast labels, swipe gestures)
-- Desktop sidebar: DONE
-- Hero banner: DONE (auto-rotate 7s, trailer fetch, logo overlay, filmstrip thumbs)
-- Title cards: DONE (160px, numbered variant, watchlist bookmark, progress bar)
-- Content rows: DONE (horizontal scroll, snap, lazy load, arrow buttons)
+## Current State (MATCHES BINGR)
+- Mobile nav: DONE ✅ (icon-only circles, 7 tabs, bg-[#0f1014]/90 backdrop-blur-md)
+- Desktop sidebar: PARTIAL (needs hover expand + 9 items verification)
+- Title cards: DONE ✅ (130/160/185px, ring-1 ring-white/5, hover -translate-y-2, metadata row)
+- Numbered cards: DONE ✅ (Alfa Slab One 100-140px gradient numbers)
+- Content rows: DONE ✅ (px-6 lg:px-20, gap-3, snap scroll, arrow buttons)
+- Row headers: DONE ✅ (text-[17px] semibold text-white/90, pill View All)
 - Pages: Home, Movies, TV, Anime, Explore, Categories, Space, Sports, Sparks, TitleDetail, Catalog, Watch, Settings
 - Auth: useAuth hook + LoginDialog
 - Watch page: BackendSelector, EpisodeList, SourceSelector
 
-## Design Tokens
-- bg: #0f1014 (main), #07070b (deepest)
-- card: #252830
-- accent: #4752c4
-- danger: #ff2357
-- Font: Inter (400/500/600/700), Bebas Neue (headings)
+## Design Tokens (from bingr.one DOM)
+- bg: black (#000000), #0f1014 (theme), #1a1a1a (nav circles), #1a1c24 (card bg)
+- text: white/90 (headings), white/60 (inactive), white/50 (metadata)
+- Font: Inter (400/500/600/700), Alfa Slab One (numbers)
 - Tailwind v4, @import order: fonts BEFORE tailwindcss
 
 ## Session Key
-allrated_session_id (NOT bingr_session)
+allrated_session_id
 
 ## Build Command
 pnpm -r --filter "./artifacts/allrated" run build
 
 ## Next 3 Tasks (Pick One)
-1. [EASY] Audit bingr.one visual recon → fill TARGET_AUDIT.md
-2. [MEDIUM] HeroBanner liquid glass overlay polish
-3. [MEDIUM] TitleCard hover glass panel + expanded info
+1. [EASY] Screenshot bingr.one detail page → copy DOM → match our TitleDetail
+2. [MEDIUM] Update DesktopSidebar → hover expand 350-450px, 9 items, gradient bg
+3. [MEDIUM] Verify HeroBanner usage → is it landing page only? Remove from Home if so
 
 ## Blockers
 - NONE
 
 ## DO NOT TOUCH
 - cinepro-core/
-- api-server/ (unless fixing proxy)
+- api-server/
