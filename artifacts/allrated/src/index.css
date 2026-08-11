@@ -759,3 +759,16 @@ img, a {
 .animate-ping-once {
   animation: ping-once 0.7s ease-out forwards;
 }
+
+
+/* Mobile nav padding - prevents content from being hidden behind floating nav */
+@layer base {
+  body {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (max-width: 768px) {
+    body {
+      padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    }
+  }
+}
