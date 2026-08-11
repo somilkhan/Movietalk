@@ -16,9 +16,9 @@ export function PosterCard({ title, index, size = 'md' }: PosterCardProps) {
   const mediaTypeLabel = title.mediaType === 'movie' ? 'Movie' : title.mediaType === 'tv' ? 'Series' : 'Anime';
 
   const sizeClasses = {
-    sm: 'w-[120px] md:w-[160px]',
-    md: 'w-[130px] md:w-[200px]',
-    lg: 'w-[160px] md:w-[260px]',
+    sm: 'w-[150px] md:w-[180px]',
+    md: 'w-[160px] md:w-[220px]',
+    lg: 'w-[200px] md:w-[280px]',
   };
 
   return (
@@ -31,13 +31,13 @@ export function PosterCard({ title, index, size = 'md' }: PosterCardProps) {
           "relative overflow-hidden rounded-xl bg-[#1a1a1a]",
           "aspect-[2/3]"
         )}>
-          {/* HUGE Number - positioned behind image, bottom-left, partially cut off */}
+          {/* HUGE Number - bottom-left, behind poster, partially cut off */}
           {index !== undefined && (
-            <div className="absolute -bottom-3 -left-2 z-0 pointer-events-none">
+            <div className="absolute -bottom-4 -left-1 z-0 pointer-events-none">
               <span 
                 className="text-white font-black leading-none block"
                 style={{
-                  fontSize: 'clamp(70px, 18vw, 100px)',
+                  fontSize: 'clamp(72px, 20vw, 110px)',
                   fontFamily: "'Bebas Neue', Impact, system-ui, sans-serif",
                   textShadow: '0 4px 30px rgba(0,0,0,0.9), 0 0 50px rgba(0,0,0,0.7)',
                   WebkitTextStroke: '1px rgba(0,0,0,0.3)',
@@ -74,7 +74,7 @@ export function PosterCard({ title, index, size = 'md' }: PosterCardProps) {
           )}
 
           {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none z-[3]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none z-[3]" />
 
           {/* Rating badge - green bg, black text, top right */}
           {title.voteAverage && (

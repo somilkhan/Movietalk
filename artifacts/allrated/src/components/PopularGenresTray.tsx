@@ -37,7 +37,7 @@ export function PopularGenresTray() {
     <section className="mb-8 md:mb-10">
       <div className="flex items-center justify-between mb-4 px-6 md:px-12 lg:px-16">
         <h2
-          className="text-white font-bold text-[18px] md:text-[22px] tracking-normal"
+          className="text-white font-bold text-[18px] md:text-[22px]"
           style={{ fontFamily: "'Bebas Neue', 'Anton', Impact, system-ui, sans-serif", letterSpacing: '0.04em' }}
         >
           Popular Genres

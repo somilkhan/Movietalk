@@ -55,18 +55,15 @@ export function ContentTray({
     <section className={cn('relative mb-8 md:mb-10', className)}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4 px-4 md:px-12 lg:px-16">
-        <h2
-          className="text-white font-bold text-[18px] md:text-[22px] tracking-normal"
-          style={{ fontFamily: "'Bebas Neue', 'Anton', Impact, system-ui, sans-serif", letterSpacing: '0.04em' }}
-        >
+        <h2 className="text-white font-bold text-[18px] md:text-[22px]">
           {heading}
         </h2>
         {viewAllHref && (
           <Link href={viewAllHref} className="text-white/50 text-xs md:text-sm font-medium hover:text-white transition-colors flex items-center gap-1">
-              View All
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 18l6-6-6-6"/>
-              </svg>
+            View All
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 18l6-6-6-6"/>
+            </svg>
           </Link>
         )}
       </div>
@@ -120,8 +117,8 @@ export function ContentTray({
         <div
           ref={scrollRef}
           className={cn(
-            "flex gap-1.5 md:gap-4 overflow-x-auto no-scrollbar scroll-smooth",
-            "snap-x snap-mandatory scroll-pl-6 md:scroll-pl-12 lg:scroll-pl-16",
+            "flex gap-2 md:gap-4 overflow-x-auto no-scrollbar scroll-smooth",
+            "snap-x snap-mandatory scroll-pl-4 md:scroll-pl-12 lg:scroll-pl-16",
             "px-4 md:px-12 lg:px-16 pb-2"
           )}
         >
@@ -131,9 +128,9 @@ export function ContentTray({
                 key={i}
                 className={cn(
                   "flex-shrink-0 rounded-lg bg-[#1a1a1a] animate-shimmer",
-                  size === 'sm' ? 'w-[130px] md:w-[160px] aspect-[2/3]' :
-                  size === 'lg' ? 'w-[180px] md:w-[260px] aspect-[2/3]' :
-                  'w-[140px] md:w-[200px] aspect-[2/3]'
+                  size === 'sm' ? 'w-[150px] md:w-[180px] aspect-[2/3]' :
+                  size === 'lg' ? 'w-[200px] md:w-[280px] aspect-[2/3]' :
+                  'w-[160px] md:w-[220px] aspect-[2/3]'
                 )}
               />
             ))}
