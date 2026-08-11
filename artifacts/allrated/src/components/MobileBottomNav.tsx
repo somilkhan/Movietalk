@@ -109,7 +109,7 @@ export function MobileBottomNav() {
   return (
     <nav
       className={cn(
-        'mx-auto flex h-16 gap-2 items-end rounded-2xl bg-[#0f1014]/90 backdrop-blur-md border border-white/10 px-3 pb-3 shadow-2xl fixed left-1/2 -translate-x-1/2 z-[60] transition-all duration-300 ease-in-out md:hidden',
+        'mx-auto flex h-16 gap-2 items-end rounded-2xl bg-[#0f1014]/90 backdrop-blur-md border border-white/10 px-3 pb-3 shadow-2xl fixed left-1/2 -translate-x-1/2 bottom-4 z-[60] transition-all duration-300 ease-in-out md:hidden',
         hidden ? 'translate-y-[120%] opacity-0' : 'translate-y-0 opacity-100'
       )}
       aria-label="Mobile navigation"
