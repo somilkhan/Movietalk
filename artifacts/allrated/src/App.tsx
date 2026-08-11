@@ -8,7 +8,6 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { NetworkStatus } from "@/components/NetworkStatus";
 import { DesktopSidebar } from "@/components/DesktopSidebar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
-import { MobileHeader } from "@/components/MobileHeader";
 
 import { Footer } from "@/components/Footer";
 
@@ -46,7 +45,7 @@ function ScrollToTop() {
 
 function PageLoader() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0f1014]">
+    <div className="min-h-screen flex items-center justify-center bg-black">
       <div className="w-10 h-10 border-2 border-white/10 border-t-[#4752c4] rounded-full animate-spin" />
     </div>
   );
@@ -56,16 +55,6 @@ function Router() {
   const [location] = useLocation();
   const isWatchPage = location.startsWith('/watch');
   const isTitlePage = location.startsWith('/title');
-
-  /* ---- smoke transformation coordination ----
-     Logo smokes at 4s, floating cat appears at 5s */
-  const [logoSmokePoof, setLogoSmokePoof] = useState(false);
-
-  useEffect(() => {
-    if (isWatchPage || isTitlePage) return;
-    const timer = setTimeout(() => setLogoSmokePoof(true), 4000);
-    return () => clearTimeout(timer);
-  }, [isWatchPage, isTitlePage]);
 
   return (
     <>
@@ -80,9 +69,8 @@ function Router() {
 
         {/* Standard layout */}
         <Route>
-          <div className="min-h-screen bg-[#0f1014] text-white flex flex-col">
+          <div className="min-h-screen bg-black text-white flex flex-col">
             <DesktopSidebar />
-            {!isWatchPage && !isTitlePage && <MobileHeader logoSmokePoof={logoSmokePoof} />}
 
             <main className="md:ml-[80px] flex-1 mobile-content md:pb-0 animate-slide-up">
               <Switch>
@@ -105,19 +93,19 @@ function Router() {
                 <Route path="/categories">
                   <Suspense fallback={<PageLoader />}><Categories /></Suspense>
                 </Route>
+                <Route path="/space">
+                  <Suspense fallback={<PageLoader />}><Space /></Suspense>
+                </Route>
                 <Route path="/sports">
                   <Suspense fallback={<PageLoader />}><Sports /></Suspense>
                 </Route>
-                <Route path="/spark">
+                <Route path="/sparks">
                   <Suspense fallback={<PageLoader />}><Sparks /></Suspense>
-                </Route>
-                <Route path="/space">
-                  <Suspense fallback={<PageLoader />}><Space /></Suspense>
                 </Route>
                 <Route path="/title/:mediaType/:id">
                   <Suspense fallback={<PageLoader />}><TitleDetail /></Suspense>
                 </Route>
-                <Route path="/category/:name">
+                <Route path="/catalog/:mediaType/:category">
                   <Suspense fallback={<PageLoader />}><Catalog /></Suspense>
                 </Route>
                 <Route path="/settings">
@@ -126,8 +114,9 @@ function Router() {
                 <Route component={NotFound} />
               </Switch>
             </main>
-            <Footer />
-            <MobileBottomNav />
+
+            {!isWatchPage && !isTitlePage && <MobileBottomNav />}
+            {!isWatchPage && <Footer />}
           </div>
         </Route>
       </Switch>
@@ -135,21 +124,28 @@ function Router() {
   );
 }
 
-function App() {
+export default function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <NetworkStatus />
-        <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+        <WouterRouter>
+          <TooltipProvider>
+            <NetworkStatus />
             <Router />
-          </WouterRouter>
-          <Toaster />
-          <SonnerToaster position="bottom-center" theme="dark" />
-        </TooltipProvider>
+            <Toaster />
+            <SonnerToaster
+              position="bottom-center"
+              toastOptions={{
+                style: {
+                  background: '#1a1c24',
+                  color: '#fff',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                },
+              }}
+            />
+          </TooltipProvider>
+        </WouterRouter>
       </QueryClientProvider>
     </ErrorBoundary>
   );
 }
-
-export default App;
