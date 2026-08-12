@@ -288,8 +288,8 @@ export default function TitleDetail() {
 
         {/* Bottom content — single flex column at bottom of hero */}
         <div className="absolute inset-x-0 bottom-6 md:bottom-8 z-10 px-6 md:px-12">
-          {/* Title/logo — stays visible, slides down when trailer plays */}
-          <div className={`mb-2 min-h-[60px] md:min-h-[80px] flex items-end justify-start w-full transition-all duration-[1500ms] ease-in-out ${videoPhase === 'visible' ? 'translate-y-10 md:translate-y-12' : 'translate-y-0'}`}>
+          {/* Title/logo — NO animation, stays in place always */}
+          <div className="mb-2 min-h-[60px] md:min-h-[80px] flex items-end justify-start w-full">
             {logoPath ? (
               <img
                 src={logoPath}
@@ -369,8 +369,11 @@ export default function TitleDetail() {
             )}
           </div>
 
+          {/* Spacer — keeps gap between title and buttons when metadata collapses */}
+          <div className="h-6" />
+
           {/* Action buttons — always visible */}
-          <div className="flex items-center justify-between mt-4">
+          <div className="flex items-center justify-between">
             {/* Left side */}
             <div className="flex items-center gap-4">
               {/* Play */}
@@ -455,8 +458,7 @@ export default function TitleDetail() {
               </div>
             )}
           </div>
-        </div>
-      </div>      {/* Below-hero sections */}
+        </div></div>      {/* Below-hero sections */}
       <div className="px-6 py-6 md:px-12 space-y-8 bg-black">
 
         {/* Rating panel */}
