@@ -474,38 +474,38 @@ export default function TitleDetail() {
           </div>
         )}
 
-        {/* Cast grid — bingr.one style */}
+        {/* Cast — horizontal scroll row */}
         {cast.length > 0 && (
           <div className="mt-14">
             <div className="flex items-center justify-between gap-4 mb-5">
               <h2 className="heading-trail text-xl md:text-2xl font-semibold text-white min-w-0 truncate">Actors</h2>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2 -mx-6 px-6 md:-mx-12 md:px-12">
               {cast.map((person) => (
                 <div
                   key={person.id}
-                  className="group flex items-center gap-3 p-3 rounded-[14px] border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/40 transition-all duration-200"
+                  className="group flex flex-col items-center gap-2 flex-shrink-0 w-[90px]"
                 >
-                  <div className="relative flex-shrink-0">
+                  <div className="relative">
                     {person.profilePath ? (
                       <img
                         src={person.profilePath}
                         alt={person.name}
-                        className="object-cover w-14 h-14 rounded-full ring-1 ring-white/[0.08] group-hover:ring-white/40 transition-all duration-200"
+                        className="object-cover w-[72px] h-[72px] rounded-full ring-1 ring-white/[0.08] group-hover:ring-white/40 transition-all duration-200"
                         loading="lazy"
                         onError={(e) => {
                           (e.target as HTMLImageElement).style.display = 'none';
                         }}
                       />
                     ) : (
-                      <div className="w-14 h-14 rounded-full bg-white/[0.05] ring-1 ring-white/[0.08] flex items-center justify-center">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-white/30"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                      <div className="w-[72px] h-[72px] rounded-full bg-white/[0.05] ring-1 ring-white/[0.08] flex items-center justify-center">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-white/30"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-col min-w-0">
-                    <p className="font-medium text-white text-sm leading-tight line-clamp-1 transition-colors duration-200 group-hover:text-white/80">{person.name}</p>
-                    <p className="text-white/50 text-xs leading-snug line-clamp-1 mt-0.5">{person.character}</p>
+                  <div className="flex flex-col items-center text-center">
+                    <p className="font-medium text-white text-[13px] leading-tight line-clamp-1 transition-colors duration-200 group-hover:text-white/80">{person.name}</p>
+                    <p className="text-white/40 text-[11px] leading-snug line-clamp-1 mt-0.5">{person.character}</p>
                   </div>
                 </div>
               ))}
