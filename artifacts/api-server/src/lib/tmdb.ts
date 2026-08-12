@@ -26,6 +26,7 @@ export interface TitleDetail extends Title {
   genres: Genre[];
   runtimeMinutes: number | null;
   numberOfSeasons: number | null;
+  certification: string | null;
   similar: Title[];
   cast: Array<{
     id: number;
@@ -294,12 +295,25 @@ export async function getTitleDetail(
   mediaType: MediaType,
   id: number,
 ): Promise<TitleDetail | null> {
+  const append = mediaType === "movie"
+    ? "credits,videos,similar,release_dates"
+    : "credits,videos,similar,content_ratings";
+
   const raw = await tmdbFetch<
     RawResult & {
       genres?: Genre[];
       runtime?: number;
       episode_run_time?: number[];
       number_of_seasons?: number;
+      release_dates?: {
+        results?: Array<{
+          iso_3166_1: string;
+          release_dates?: Array<{ certification?: string }>;
+        }>;
+      };
+      content_ratings?: {
+        results?: Array<{ iso_3166_1: string; rating?: string }>;
+      };
       similar?: { results: RawResult[] };
       credits?: {
         cast?: Array<{
@@ -310,10 +324,20 @@ export async function getTitleDetail(
         }>;
       };
     }
-  >(`/${mediaType}/${id}?append_to_response=credits,videos,similar`);
+  >(`/${mediaType}/${id}?append_to_response=${append}`);
 
   if (!raw) return null;
   const base = mapTitle(raw, mediaType);
+
+  let certification: string | null = null;
+  if (mediaType === "movie" && raw.release_dates?.results) {
+    const us = raw.release_dates.results.find((r) => r.iso_3166_1 === "US");
+    certification = us?.release_dates?.[0]?.certification || null;
+  } else if (mediaType === "tv" && raw.content_ratings?.results) {
+    const us = raw.content_ratings.results.find((r) => r.iso_3166_1 === "US");
+    certification = us?.rating || null;
+  }
+
   return {
     ...base,
     genres: raw.genres ?? [],
@@ -322,6 +346,7 @@ export async function getTitleDetail(
         ? raw.runtime ?? null
         : raw.episode_run_time?.[0] ?? null,
     numberOfSeasons: mediaType === "tv" ? raw.number_of_seasons ?? null : null,
+    certification,
     similar: (raw.similar?.results ?? []).map((r) => mapTitle(r, mediaType)),
     cast: (raw.credits?.cast ?? []).slice(0, 24).map((c) => ({
       id: c.id,
