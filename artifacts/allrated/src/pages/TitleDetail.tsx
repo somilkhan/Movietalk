@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useLocation, Link } from 'wouter';
 import { Seo } from '@/components/Seo';
-import { Play, Star, Clock, Layers, Bookmark, BookmarkCheck, X, Share2 } from 'lucide-react';
+import { Play, Star, Clock, Layers, Bookmark, BookmarkCheck, X, Share2, Plus, Check, Download } from 'lucide-react';
 import { LoginDialog } from '@/components/LoginDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useAnalytics } from '@/hooks/useAnalytics';
@@ -98,6 +98,7 @@ export default function TitleDetail() {
 
   // Fetch trailer key separately (not in generated schema)
   const [trailerKey, setTrailerKey] = useState<string | null>(null);
+  const [logoPath, setLogoPath] = useState<string | null>(null);
 
   // Auth — must be before any early returns (Rules of Hooks)
   const { isLoggedIn } = useAuth();
@@ -113,6 +114,20 @@ export default function TitleDetail() {
       })
       .then((d: { key: string | null } | null) => setTrailerKey(d?.key ?? null))
       .catch(() => {});
+  }, [mediaType, id]);
+
+  // Fetch title logo
+  useEffect(() => {
+    if (!Number.isFinite(id)) return;
+    const ctrl = new AbortController();
+    fetch(`${BASE}/api/catalog/title/${mediaType}/${id}/logo`, { signal: ctrl.signal })
+      .then(async (r) => {
+        if (!r.ok) return null;
+        return r.json().catch(() => null);
+      })
+      .then((d: { logoPath: string | null } | null) => setLogoPath(d?.logoPath ?? null))
+      .catch(() => {});
+    return () => ctrl.abort();
   }, [mediaType, id]);
 
   if (isLoading) {
@@ -225,12 +240,25 @@ export default function TitleDetail() {
         {/* Back button removed per user request */}
 
         <div className="relative z-10 flex h-full flex-col justify-end px-6 pb-8 pt-24 md:px-12">
-          <h1
-            className="font-display max-w-2xl leading-tight tracking-wide text-white"
-            style={{ fontSize: 'clamp(24px, 5vw, 72px)' }}
-          >
-            {title.title}
-          </h1>
+          {/* Title — show logo if available, else text */}
+          <div className="mb-2 min-h-[60px] md:min-h-[80px] flex items-end justify-start w-full">
+            {logoPath ? (
+              <img
+                src={logoPath}
+                alt={title.title}
+                className="max-h-[60px] md:max-h-[80px] w-auto object-contain drop-shadow-2xl"
+                loading="eager"
+                onError={() => setLogoPath(null)}
+              />
+            ) : (
+              <h1
+                className="font-display max-w-2xl leading-tight tracking-wide text-white"
+                style={{ fontSize: 'clamp(24px, 5vw, 72px)' }}
+              >
+                {title.title}
+              </h1>
+            )}
+          </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-3 text-sm font-semibold text-white/80">
             <span className="flex items-center gap-1 text-amber-400">
@@ -272,45 +300,58 @@ export default function TitleDetail() {
             </p>
           )}
 
-          {/* Primary action buttons */}
-          <div className="mt-6 flex flex-wrap items-center gap-3">
+          {/* Primary action buttons — bingr.one style */}
+          <div className="flex items-center gap-4 mt-6">
+            {/* Play */}
             <button
-              onClick={() => { trackEvent('play_title', { id: String(id), mediaType, title: title.title }); navigate(`/watch/${mediaType}/${id}`); }}
-              className="flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-black hover:bg-white/90 transition"
+              onClick={() => {
+                trackEvent('play_title', { id: String(id), mediaType, title: title.title });
+                navigate(`/watch/${mediaType}/${id}`);
+              }}
+              className="w-12 h-12 md:w-14 md:h-14 shrink-0 rounded-full bg-[#f9f9f9] text-black flex items-center justify-center hover:bg-white transition-all duration-300 active:scale-95 hover:shadow-[0_0_20px_rgba(255,255,255,0.5)] focus:outline-none"
               data-testid="button-play"
             >
-              <Play className="h-4 w-4 fill-black" />
-              Play
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="translate-x-[2px] w-5 h-5 md:w-6 md:h-6">
+                <path d="M6 4l15 8-15 8z"/>
+              </svg>
             </button>
 
+            {/* Desktop label */}
+            <div className="hidden md:flex flex-col mr-2">
+              <span className="text-white font-bold text-[17px]">Watch Now</span>
+              <span className="text-white/50 text-[13px] font-medium tracking-wide uppercase">
+                {mediaType === 'movie' ? 'Movie' : 'Series'}
+              </span>
+            </div>
+
+            {/* Watchlist */}
             <button
               onClick={handleWatchlist}
               disabled={watchlistAdd.isPending || watchlistRemove.isPending}
-              className={`flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition ${
+              aria-pressed={inWatchlist}
+              aria-label={inWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
+              className={`flex items-center justify-center w-12 h-12 md:w-[50px] md:h-[50px] backdrop-blur-md border rounded-full transition-all duration-200 hover:scale-105 active:scale-95 ${
                 inWatchlist
-                  ? 'bg-white/20 text-white'
-                  : 'bg-white/10 text-white/80 hover:bg-white/20'
+                  ? 'bg-white/20 border-white/20 text-white'
+                  : 'bg-white/10 hover:bg-white/20 border-white/10 text-white'
               }`}
               data-testid="button-watchlist"
             >
               {inWatchlist ? (
-                <><BookmarkCheck className="h-4 w-4" /> Saved</>
+                <Check className="w-5 h-5 md:w-[22px] md:h-[22px]" strokeWidth={2.5} />
               ) : (
-                <><Bookmark className="h-4 w-4" /> Save</>
+                <Plus className="w-5 h-5 md:w-[22px] md:h-[22px]" strokeWidth={2.5} />
               )}
             </button>
 
-            {/* Share */}
+            {/* Download */}
             <button
-              onClick={handleShare}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#ffffff0d] hover:bg-[#ffffff1a] text-[#ffffffb3] transition-bingr text-sm font-medium"
-              aria-label="Share"
+              onClick={() => trackEvent('download_title', { id: String(id), mediaType })}
+              className="w-12 h-12 md:w-[50px] md:h-[50px] shrink-0 rounded-full bg-white/10 text-white flex items-center justify-center border border-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 hover:scale-105 active:scale-95"
+              aria-label="Download"
             >
-              <Share2 className="h-4 w-4" />
-              Share
+              <Download className="w-[22px] h-[22px]" strokeWidth={2.5} />
             </button>
-
-
           </div>
         </div>
       </div>
