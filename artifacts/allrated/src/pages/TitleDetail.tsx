@@ -286,9 +286,8 @@ export default function TitleDetail() {
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent z-[2]" />
         <div className="absolute inset-0 bg-gradient-to-r from-black via-black/50 to-transparent w-[50%] md:w-[65%] z-[2]" />
 
-        {/* Text content — fades out when trailer plays */}
-        <div className={`absolute inset-x-0 bottom-24 md:bottom-28 z-10 px-6 md:px-12 transition-opacity duration-1000 ${videoPhase === 'visible' ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-          {/* Title — show logo if available, else text */}
+        {/* Title/logo — ALWAYS visible even when trailer plays */}
+        <div className="absolute inset-x-0 bottom-24 md:bottom-28 z-10 px-6 md:px-12">
           <div className="mb-2 min-h-[60px] md:min-h-[80px] flex items-end justify-start w-full">
             {logoPath ? (
               <img
@@ -307,64 +306,69 @@ export default function TitleDetail() {
               </h1>
             )}
           </div>
+        </div>
 
-          {/* Metadata row — bingr.one style */}
-          <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold text-white/80">
-            <span className="flex items-center gap-1 text-white">
-              <Star className="h-4 w-4 fill-white" />
-              {title.voteAverage.toFixed(1)}
-            </span>
-            {title.year && (
-              <>
-                <span className="text-white/40">•</span>
-                <span className="text-white/80">{title.year}</span>
-              </>
+        {/* Metadata, genres, overview — fade out when trailer plays */}
+        <div className={`absolute inset-x-0 bottom-24 md:bottom-28 z-10 px-6 md:px-12 transition-opacity duration-1000 ${videoPhase === 'visible' ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+          <div className="pt-[72px] md:pt-[96px]">
+            {/* Metadata row — bingr.one style */}
+            <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold text-white/80">
+              <span className="flex items-center gap-1 text-white">
+                <Star className="h-4 w-4 fill-white" />
+                {title.voteAverage.toFixed(1)}
+              </span>
+              {title.year && (
+                <>
+                  <span className="text-white/40">•</span>
+                  <span className="text-white/80">{title.year}</span>
+                </>
+              )}
+              {(title as any).certification && (
+                <>
+                  <span className="text-white/40">•</span>
+                  <span className="text-white/80">{(title as any).certification}</span>
+                </>
+              )}
+              {title.runtimeMinutes != null && (
+                <>
+                  <span className="text-white/40">•</span>
+                  <span className="text-white/80">
+                    {(() => {
+                      const h = Math.floor(title.runtimeMinutes / 60);
+                      const m = title.runtimeMinutes % 60;
+                      return h > 0 ? `${h}h ${m > 0 ? `${m}m` : ''}` : `${m}m`;
+                    })()}
+                  </span>
+                </>
+              )}
+              {title.numberOfSeasons != null && (
+                <>
+                  <span className="text-white/40">•</span>
+                  <span className="text-white/80">{title.numberOfSeasons} Season{title.numberOfSeasons === 1 ? '' : 's'}</span>
+                </>
+              )}
+            </div>
+
+            {/* Genres — pipe-separated text links */}
+            {genres.length > 0 && (
+              <div className="mt-3 flex flex-wrap items-center gap-x-1 text-sm font-medium text-white/70">
+                {genres.map((g, i) => (
+                  <span key={g.id} className="flex items-center">
+                    {i > 0 && <span className="mx-2 text-white/30">|</span>}
+                    <Link href={`/category/${encodeURIComponent(g.name)}`}>
+                      <span className="hover:text-white transition-colors cursor-pointer">{g.name}</span>
+                    </Link>
+                  </span>
+                ))}
+              </div>
             )}
-            {(title as any).certification && (
-              <>
-                <span className="text-white/40">•</span>
-                <span className="text-white/80">{(title as any).certification}</span>
-              </>
-            )}
-            {title.runtimeMinutes != null && (
-              <>
-                <span className="text-white/40">•</span>
-                <span className="text-white/80">
-                  {(() => {
-                    const h = Math.floor(title.runtimeMinutes / 60);
-                    const m = title.runtimeMinutes % 60;
-                    return h > 0 ? `${h}h ${m > 0 ? `${m}m` : ''}` : `${m}m`;
-                  })()}
-                </span>
-              </>
-            )}
-            {title.numberOfSeasons != null && (
-              <>
-                <span className="text-white/40">•</span>
-                <span className="text-white/80">{title.numberOfSeasons} Season{title.numberOfSeasons === 1 ? '' : 's'}</span>
-              </>
+
+            {title.overview && (
+              <p className="mt-4 max-w-2xl text-sm leading-relaxed text-white/60 md:text-base line-clamp-3">
+                {title.overview}
+              </p>
             )}
           </div>
-
-          {/* Genres — pipe-separated text links */}
-          {genres.length > 0 && (
-            <div className="mt-3 flex flex-wrap items-center gap-x-1 text-sm font-medium text-white/70">
-              {genres.map((g, i) => (
-                <span key={g.id} className="flex items-center">
-                  {i > 0 && <span className="mx-2 text-white/30">|</span>}
-                  <Link href={`/category/${encodeURIComponent(g.name)}`}>
-                    <span className="hover:text-white transition-colors cursor-pointer">{g.name}</span>
-                  </Link>
-                </span>
-              ))}
-            </div>
-          )}
-
-          {title.overview && (
-            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-white/60 md:text-base line-clamp-3">
-              {title.overview}
-            </p>
-          )}
         </div>
 
         {/* Action buttons — always visible at bottom of hero */}
