@@ -257,8 +257,8 @@ export default function TitleDetail() {
     <div className="min-h-screen pb-24 md:pb-0" data-testid="page-title-detail">
       <Seo title={title.title || 'Details'} />
 
-      {/* Hero backdrop */}
-      <div className="relative min-h-[520px] w-full overflow-hidden md:min-h-[640px] bg-black">
+      {/* Hero backdrop — full viewport height */}
+      <div className="relative h-[100dvh] w-full overflow-hidden bg-black">
         {/* Backdrop image — fades out when video becomes visible */}
         {title.backdropPath && (
           <img
@@ -286,7 +286,8 @@ export default function TitleDetail() {
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent z-[2]" />
         <div className="absolute inset-0 bg-gradient-to-r from-black via-black/50 to-transparent w-[50%] md:w-[65%] z-[2]" />
 
-        <div className="relative z-10 flex h-full flex-col justify-end px-6 pb-8 pt-24 md:px-12">
+        {/* Text content — fades out when trailer plays */}
+        <div className={`absolute inset-x-0 bottom-24 md:bottom-28 z-10 px-6 md:px-12 transition-opacity duration-1000 ${videoPhase === 'visible' ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
           {/* Title — show logo if available, else text */}
           <div className="mb-2 min-h-[60px] md:min-h-[80px] flex items-end justify-start w-full">
             {logoPath ? (
@@ -364,9 +365,11 @@ export default function TitleDetail() {
               {title.overview}
             </p>
           )}
+        </div>
 
-          {/* Primary action buttons — bingr.one style */}
-          <div className="flex items-center justify-between mt-6">
+        {/* Action buttons — always visible at bottom of hero */}
+        <div className="absolute bottom-6 md:bottom-8 left-0 right-0 z-10 px-6 md:px-12">
+          <div className="flex items-center justify-between">
             {/* Left side */}
             <div className="flex items-center gap-4">
               {/* Play */}
@@ -452,10 +455,8 @@ export default function TitleDetail() {
             )}
           </div>
         </div>
-      </div>
-
-      {/* Below-hero sections */}
-      <div className="px-6 py-8 md:px-12 space-y-10">
+      </div>      {/* Below-hero sections */}
+      <div className="px-6 py-6 md:px-12 space-y-8 bg-black">
 
         {/* Rating panel */}
         <div>
