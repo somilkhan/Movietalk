@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useLocation, Link } from 'wouter';
 import { Seo } from '@/components/Seo';
-import { Play, Star, Clock, Layers, Bookmark, BookmarkCheck, X, Share2, Plus, Check, Download } from 'lucide-react';
+import { Play, Star, Clock, Layers, Bookmark, BookmarkCheck, X, Share2, Plus, Check, Download, Pause } from 'lucide-react';
 import { LoginDialog } from '@/components/LoginDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useAnalytics } from '@/hooks/useAnalytics';
@@ -101,6 +101,7 @@ export default function TitleDetail() {
   const [logoPath, setLogoPath] = useState<string | null>(null);
   const [videoPhase, setVideoPhase] = useState<'idle' | 'visible'>('idle');
   const [muted, setMuted] = useState(true);
+  const [trailerPlaying, setTrailerPlaying] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // Auth — must be before any early returns (Rules of Hooks)
@@ -136,6 +137,15 @@ export default function TitleDetail() {
       win.postMessage(JSON.stringify({ event: 'command', func: cmd, args: '' }), '*');
     }
     setMuted((m) => !m);
+  };
+
+  const toggleTrailerPlay = () => {
+    const win = iframeRef.current?.contentWindow;
+    if (win) {
+      const cmd = trailerPlaying ? 'pauseVideo' : 'playVideo';
+      win.postMessage(JSON.stringify({ event: 'command', func: cmd, args: '' }), '*');
+    }
+    setTrailerPlaying((p) => !p);
   };
 
   // Fetch title logo
@@ -276,29 +286,6 @@ export default function TitleDetail() {
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent z-[2]" />
         <div className="absolute inset-0 bg-gradient-to-r from-black via-black/50 to-transparent w-[50%] md:w-[65%] z-[2]" />
 
-        {/* Sound toggle — visible when trailer plays */}
-        {videoPhase === 'visible' && (
-          <button
-            onClick={toggleMute}
-            className="absolute z-20 top-5 right-5 h-10 w-10 rounded-full border border-white/25 bg-black/40 backdrop-blur flex items-center justify-center text-white hover:bg-white/10 transition"
-            aria-label={muted ? 'Unmute trailer' : 'Mute trailer'}
-          >
-            {muted ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                <line x1="23" y1="9" x2="17" y2="15"/>
-                <line x1="17" y1="9" x2="23" y2="15"/>
-              </svg>
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
-              </svg>
-            )}
-          </button>
-        )}
-
         <div className="relative z-10 flex h-full flex-col justify-end px-6 pb-8 pt-24 md:px-12">
           {/* Title — show logo if available, else text */}
           <div className="mb-2 min-h-[60px] md:min-h-[80px] flex items-end justify-start w-full">
@@ -353,7 +340,7 @@ export default function TitleDetail() {
             {title.numberOfSeasons != null && (
               <>
                 <span className="text-white/40">•</span>
-                <span className="text-white/80">{title.numberOfSeasons} season{title.numberOfSeasons === 1 ? '' : 's'}</span>
+                <span className="text-white/80">{title.numberOfSeasons} Season{title.numberOfSeasons === 1 ? '' : 's'}</span>
               </>
             )}
           </div>
@@ -373,63 +360,96 @@ export default function TitleDetail() {
           )}
 
           {title.overview && (
-            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-white/60 md:text-base">
+            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-white/60 md:text-base line-clamp-3">
               {title.overview}
             </p>
           )}
 
           {/* Primary action buttons — bingr.one style */}
-          <div className="flex items-center gap-4 mt-6">
-            {/* Play */}
-            <button
-              onClick={() => {
-                trackEvent('play_title', { id: String(id), mediaType, title: title.title });
-                navigate(`/watch/${mediaType}/${id}`);
-              }}
-              className="w-12 h-12 md:w-14 md:h-14 shrink-0 rounded-full bg-[#f9f9f9] text-black flex items-center justify-center hover:bg-white transition-all duration-300 active:scale-95 hover:shadow-[0_0_20px_rgba(255,255,255,0.5)] focus:outline-none"
-              data-testid="button-play"
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="translate-x-[2px] w-5 h-5 md:w-6 md:h-6">
-                <path d="M6 4l15 8-15 8z"/>
-              </svg>
-            </button>
+          <div className="flex items-center justify-between mt-6">
+            {/* Left side */}
+            <div className="flex items-center gap-4">
+              {/* Play */}
+              <button
+                onClick={() => {
+                  trackEvent('play_title', { id: String(id), mediaType, title: title.title });
+                  navigate(`/watch/${mediaType}/${id}`);
+                }}
+                className="w-12 h-12 md:w-14 md:h-14 shrink-0 rounded-full bg-[#f9f9f9] text-black flex items-center justify-center hover:bg-white transition-all duration-300 active:scale-95 hover:shadow-[0_0_20px_rgba(255,255,255,0.5)] focus:outline-none"
+                data-testid="button-play"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="translate-x-[2px] w-5 h-5 md:w-6 md:h-6">
+                  <path d="M6 4l15 8-15 8z"/>
+                </svg>
+              </button>
 
-            {/* Desktop label */}
-            <div className="hidden md:flex flex-col mr-2">
-              <span className="text-white font-bold text-[17px]">Watch Now</span>
-              <span className="text-white/50 text-[13px] font-medium tracking-wide uppercase">
-                {mediaType === 'movie' ? 'Movie' : 'Series'}
-              </span>
+              {/* Watchlist */}
+              <button
+                onClick={handleWatchlist}
+                disabled={watchlistAdd.isPending || watchlistRemove.isPending}
+                aria-pressed={inWatchlist}
+                aria-label={inWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
+                className={`flex items-center justify-center w-12 h-12 md:w-[50px] md:h-[50px] backdrop-blur-md border rounded-full transition-all duration-200 hover:scale-105 active:scale-95 ${
+                  inWatchlist
+                    ? 'bg-white/20 border-white/20 text-white'
+                    : 'bg-white/10 hover:bg-white/20 border-white/10 text-white'
+                }`}
+                data-testid="button-watchlist"
+              >
+                {inWatchlist ? (
+                  <Check className="w-5 h-5 md:w-[22px] md:h-[22px]" strokeWidth={2.5} />
+                ) : (
+                  <Plus className="w-5 h-5 md:w-[22px] md:h-[22px]" strokeWidth={2.5} />
+                )}
+              </button>
+
+              {/* Download — movies only */}
+              {mediaType === 'movie' && (
+                <button
+                  onClick={() => trackEvent('download_title', { id: String(id), mediaType })}
+                  className="w-12 h-12 md:w-[50px] md:h-[50px] shrink-0 rounded-full bg-white/10 text-white flex items-center justify-center border border-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 hover:scale-105 active:scale-95"
+                  aria-label="Download"
+                >
+                  <Download className="w-[22px] h-[22px]" strokeWidth={2.5} />
+                </button>
+              )}
             </div>
 
-            {/* Watchlist */}
-            <button
-              onClick={handleWatchlist}
-              disabled={watchlistAdd.isPending || watchlistRemove.isPending}
-              aria-pressed={inWatchlist}
-              aria-label={inWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
-              className={`flex items-center justify-center w-12 h-12 md:w-[50px] md:h-[50px] backdrop-blur-md border rounded-full transition-all duration-200 hover:scale-105 active:scale-95 ${
-                inWatchlist
-                  ? 'bg-white/20 border-white/20 text-white'
-                  : 'bg-white/10 hover:bg-white/20 border-white/10 text-white'
-              }`}
-              data-testid="button-watchlist"
-            >
-              {inWatchlist ? (
-                <Check className="w-5 h-5 md:w-[22px] md:h-[22px]" strokeWidth={2.5} />
-              ) : (
-                <Plus className="w-5 h-5 md:w-[22px] md:h-[22px]" strokeWidth={2.5} />
-              )}
-            </button>
-
-            {/* Download */}
-            <button
-              onClick={() => trackEvent('download_title', { id: String(id), mediaType })}
-              className="w-12 h-12 md:w-[50px] md:h-[50px] shrink-0 rounded-full bg-white/10 text-white flex items-center justify-center border border-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 hover:scale-105 active:scale-95"
-              aria-label="Download"
-            >
-              <Download className="w-[22px] h-[22px]" strokeWidth={2.5} />
-            </button>
+            {/* Right side — media controls when trailer plays */}
+            {videoPhase === 'visible' && (
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={toggleMute}
+                  className="w-12 h-12 md:w-[50px] md:h-[50px] rounded-full bg-white/10 text-white flex items-center justify-center border border-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 hover:scale-105 active:scale-95"
+                  aria-label={muted ? 'Unmute trailer' : 'Mute trailer'}
+                >
+                  {muted ? (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                      <line x1="23" y1="9" x2="17" y2="15"/>
+                      <line x1="17" y1="9" x2="23" y2="15"/>
+                    </svg>
+                  ) : (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                    </svg>
+                  )}
+                </button>
+                <button
+                  onClick={toggleTrailerPlay}
+                  className="w-12 h-12 md:w-[50px] md:h-[50px] rounded-full bg-white/10 text-white flex items-center justify-center border border-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 hover:scale-105 active:scale-95"
+                  aria-label={trailerPlaying ? 'Pause trailer' : 'Play trailer'}
+                >
+                  {trailerPlaying ? (
+                    <Pause className="w-5 h-5" strokeWidth={2.5} />
+                  ) : (
+                    <Play className="w-5 h-5 fill-white" strokeWidth={0} />
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
