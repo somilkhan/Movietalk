@@ -289,7 +289,7 @@ export default function TitleDetail() {
         {/* Bottom content — single flex column at bottom of hero */}
         <div className="absolute inset-x-0 bottom-6 md:bottom-8 z-10 px-6 md:px-12">
           {/* Title/logo — stays visible, slides down when trailer plays */}
-          <div className={`mb-2 min-h-[60px] md:min-h-[80px] flex items-end justify-start w-full transition-all duration-1000 ease-out ${videoPhase === 'visible' ? 'translate-y-10 md:translate-y-12' : 'translate-y-0'}`}>
+          <div className={`mb-2 min-h-[60px] md:min-h-[80px] flex items-end justify-start w-full transition-all duration-[1500ms] ease-in-out ${videoPhase === 'visible' ? 'translate-y-10 md:translate-y-12' : 'translate-y-0'}`}>
             {logoPath ? (
               <img
                 src={logoPath}
@@ -309,7 +309,7 @@ export default function TitleDetail() {
           </div>
 
           {/* Metadata, genres, overview — fade out + collapse height when trailer plays */}
-          <div className={`transition-all duration-1000 ease-out overflow-hidden ${videoPhase === 'visible' ? 'opacity-0 pointer-events-none max-h-0 translate-y-2' : 'opacity-100 max-h-[300px] translate-y-0'}`}>
+          <div className={`transition-all duration-[1500ms] ease-in-out overflow-hidden ${videoPhase === 'visible' ? 'opacity-0 pointer-events-none max-h-0 translate-y-2' : 'opacity-100 max-h-[300px] translate-y-0'}`}>
             {/* Metadata row — bingr.one style */}
             <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold text-white/80">
               <span className="flex items-center gap-1 text-white">
