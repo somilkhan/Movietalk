@@ -511,10 +511,55 @@ export default function TitleDetail() {
         )}
       </div>
 
-      {/* Similar titles — full-width row outside the padded section */}
+      {/* Keep Bingring — landscape grid cards */}
       {similar.length > 0 && (
-        <div className="mb-10">
-          <Row heading="More Like This" titles={similar} />
+        <div className="mt-14 w-full">
+          <h2 className="heading-trail text-xl md:text-2xl font-semibold text-white min-w-0 truncate mb-6">Keep Bingring</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-[repeat(auto-fill,minmax(220px,1fr))] lg:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-3 sm:gap-4 md:gap-5 lg:gap-6">
+            {similar.map((item) => (
+              <Link key={item.id} href={`/title/${item.mediaType}/${item.id}`} className="group flex flex-col gap-2 w-full transition-all duration-200">
+                <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-white/5 border border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
+                  {item.backdropPath ? (
+                    <img
+                      src={item.backdropPath}
+                      alt={item.title}
+                      className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 absolute inset-0 z-0"
+                      loading="lazy"
+                    />
+                  ) : item.posterPath ? (
+                    <img
+                      src={item.posterPath}
+                      alt={item.title}
+                      className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 absolute inset-0 z-0"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-white/[0.04]" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-60 z-0" />
+                  <div className="absolute bottom-1.5 left-1.5 right-1.5 sm:bottom-2 sm:left-2 sm:right-2 flex items-end justify-between gap-2 z-10">
+                    <div className="flex items-center gap-1 sm:gap-1.5 text-[9px] sm:text-[11px] font-bold text-white bg-black/60 px-1 sm:px-1.5 py-0.5 rounded backdrop-blur-md border border-white/10">
+                      <Star className="w-2.5 h-2.5 sm:w-[10px] sm:h-[10px] fill-amber-400 text-amber-400" />
+                      {item.voteAverage.toFixed(1)}
+                    </div>
+                    <div className="flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/10 border border-white/20 text-white opacity-0 transform translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 backdrop-blur-md">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="sm:w-[14px] sm:h-[14px]">
+                        <polygon points="5 3 19 12 5 21 5 3" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col px-0.5">
+                  <h3 className="text-[12px] sm:text-[14px] font-medium text-white/90 leading-snug truncate transition-colors duration-200 group-hover:text-amber-400">{item.title}</h3>
+                  <div className="flex items-center gap-1 sm:gap-1.5 mt-1 text-[9px] sm:text-[11px] text-white/50 leading-none truncate font-medium">
+                    <span>{item.year}</span>
+                    <span className="w-1 h-1 rounded-full bg-white/20" />
+                    <span className="uppercase tracking-wider">{item.mediaType === 'movie' ? 'Movie' : 'Series'}</span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
       )}
 
