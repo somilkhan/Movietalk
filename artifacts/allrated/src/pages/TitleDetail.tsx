@@ -286,8 +286,9 @@ export default function TitleDetail() {
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent z-[2]" />
         <div className="absolute inset-0 bg-gradient-to-r from-black via-black/50 to-transparent w-[50%] md:w-[65%] z-[2]" />
 
-        {/* Title/logo — ALWAYS visible even when trailer plays */}
-        <div className="absolute inset-x-0 bottom-24 md:bottom-28 z-10 px-6 md:px-12">
+        {/* Bottom content — single flex column at bottom of hero */}
+        <div className="absolute inset-x-0 bottom-6 md:bottom-8 z-10 px-6 md:px-12">
+          {/* Title/logo — ALWAYS visible even when trailer plays */}
           <div className="mb-2 min-h-[60px] md:min-h-[80px] flex items-end justify-start w-full">
             {logoPath ? (
               <img
@@ -306,13 +307,11 @@ export default function TitleDetail() {
               </h1>
             )}
           </div>
-        </div>
 
-        {/* Metadata, genres, overview — fade out when trailer plays */}
-        <div className={`absolute inset-x-0 bottom-24 md:bottom-28 z-10 px-6 md:px-12 transition-opacity duration-1000 ${videoPhase === 'visible' ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-          <div className="pt-[72px] md:pt-[96px]">
+          {/* Metadata, genres, overview — fade out when trailer plays */}
+          <div className={`transition-opacity duration-1000 ${videoPhase === 'visible' ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
             {/* Metadata row — bingr.one style */}
-            <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold text-white/80">
+            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold text-white/80">
               <span className="flex items-center gap-1 text-white">
                 <Star className="h-4 w-4 fill-white" />
                 {title.voteAverage.toFixed(1)}
@@ -351,7 +350,7 @@ export default function TitleDetail() {
 
             {/* Genres — pipe-separated text links */}
             {genres.length > 0 && (
-              <div className="mt-3 flex flex-wrap items-center gap-x-1 text-sm font-medium text-white/70">
+              <div className="mt-2 flex flex-wrap items-center gap-x-1 text-sm font-medium text-white/70">
                 {genres.map((g, i) => (
                   <span key={g.id} className="flex items-center">
                     {i > 0 && <span className="mx-2 text-white/30">|</span>}
@@ -364,16 +363,14 @@ export default function TitleDetail() {
             )}
 
             {title.overview && (
-              <p className="mt-4 max-w-2xl text-sm leading-relaxed text-white/60 md:text-base line-clamp-3">
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/60 md:text-base line-clamp-3">
                 {title.overview}
               </p>
             )}
           </div>
-        </div>
 
-        {/* Action buttons — always visible at bottom of hero */}
-        <div className="absolute bottom-6 md:bottom-8 left-0 right-0 z-10 px-6 md:px-12">
-          <div className="flex items-center justify-between">
+          {/* Action buttons — always visible */}
+          <div className="flex items-center justify-between mt-4">
             {/* Left side */}
             <div className="flex items-center gap-4">
               {/* Play */}
