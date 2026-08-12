@@ -288,8 +288,8 @@ export default function TitleDetail() {
 
         {/* Bottom content — single flex column at bottom of hero */}
         <div className="absolute inset-x-0 bottom-6 md:bottom-8 z-10 px-6 md:px-12">
-          {/* Title/logo — ALWAYS visible even when trailer plays */}
-          <div className="mb-2 min-h-[60px] md:min-h-[80px] flex items-end justify-start w-full">
+          {/* Title/logo — stays visible, slides down when trailer plays */}
+          <div className={`mb-2 min-h-[60px] md:min-h-[80px] flex items-end justify-start w-full transition-all duration-1000 ease-out ${videoPhase === 'visible' ? 'translate-y-20 md:translate-y-24' : 'translate-y-0'}`}>
             {logoPath ? (
               <img
                 src={logoPath}
