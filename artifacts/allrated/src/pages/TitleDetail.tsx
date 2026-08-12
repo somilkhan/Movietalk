@@ -18,6 +18,7 @@ import {
 import type { TitleSnapshot } from '@/lib/userApi';
 import { getGenreNames } from '@/lib/tmdbGenres';
 import { Row } from '@/components/Row';
+import { EpisodesList } from '@/components/EpisodesList';
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 
@@ -465,13 +466,9 @@ export default function TitleDetail() {
 
 
 
-        {/* Episodes heading for TV shows */}
+        {/* Episodes list for TV shows */}
         {mediaType === 'tv' && (
-          <div>
-            <div className="flex items-center justify-between gap-4 mb-5">
-              <h2 className="heading-trail text-xl md:text-2xl font-semibold text-white min-w-0 truncate">Episodes</h2>
-            </div>
-          </div>
+          <EpisodesList showId={id} numberOfSeasons={title.numberOfSeasons} />
         )}
 
         {/* Cast — horizontal scroll row */}
