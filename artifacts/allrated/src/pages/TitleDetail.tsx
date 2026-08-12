@@ -461,31 +461,15 @@ export default function TitleDetail() {
         </div></div>      {/* Below-hero sections */}
       <div className="px-6 py-6 md:px-12 space-y-8 bg-black">
 
-        {/* Rating panel */}
-        <div>
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-widest text-white/40">
-            Your Rating
-          </h2>
-          <StarRatingPanel
-            current={myRating ?? null}
-            onRate={handleRate}
-            onClear={handleClearRating}
-            disabled={rateMut.isPending || unrateMut.isPending}
-          />
-        </div>
 
-        {/* Trailer */}
-        {trailerKey && (
+
+
+
+        {/* Episodes heading for TV shows */}
+        {mediaType === 'tv' && (
           <div>
-            <h3 className="text-lg font-semibold text-[#ffffffe6] mb-3">Trailer</h3>
-            <div className="relative aspect-video rounded-xl overflow-hidden bg-[#252830] max-w-3xl">
-              <iframe
-                src={`https://www.youtube.com/embed/${trailerKey}`}
-                title="Trailer"
-                className="w-full h-full"
-                allowFullScreen
-                loading="lazy"
-              />
+            <div className="flex items-center justify-between gap-4 mb-5">
+              <h2 className="heading-trail text-xl md:text-2xl font-semibold text-white min-w-0 truncate">Episodes</h2>
             </div>
           </div>
         )}
