@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useLocation, Link } from 'wouter';
 import { Seo } from '@/components/Seo';
 import { Play, Star, Clock, Layers, Bookmark, BookmarkCheck, X, Share2, Plus, Check, Download } from 'lucide-react';
@@ -99,6 +99,9 @@ export default function TitleDetail() {
   // Fetch trailer key separately (not in generated schema)
   const [trailerKey, setTrailerKey] = useState<string | null>(null);
   const [logoPath, setLogoPath] = useState<string | null>(null);
+  const [videoPhase, setVideoPhase] = useState<'idle' | 'visible'>('idle');
+  const [muted, setMuted] = useState(true);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // Auth — must be before any early returns (Rules of Hooks)
   const { isLoggedIn } = useAuth();
@@ -106,15 +109,34 @@ export default function TitleDetail() {
   const { trackEvent } = useAnalytics();
 
   useEffect(() => {
+    setTrailerKey(null);
+    setVideoPhase('idle');
+    setMuted(true);
     if (!Number.isFinite(id)) return;
-    fetch(`${BASE}/api/catalog/title/${mediaType}/${id}/videos`)
-      .then(async (r) => {
-        if (!r.ok) return null;
-        return r.json().catch(() => null);
-      })
-      .then((d: { key: string | null } | null) => setTrailerKey(d?.key ?? null))
-      .catch(() => {});
+    const ctrl = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`${BASE}/api/catalog/title/${mediaType}/${id}/videos`, { signal: ctrl.signal });
+        if (!res.ok) return;
+        const data: { key: string | null } = await res.json().catch(() => ({ key: null }));
+        if (data.key) setTrailerKey(data.key);
+      } catch { /* abort or network error */ }
+    }, 2500);
+    return () => { clearTimeout(timer); ctrl.abort(); };
   }, [mediaType, id]);
+
+  const handleIframeLoad = () => {
+    setTimeout(() => setVideoPhase('visible'), 800);
+  };
+
+  const toggleMute = () => {
+    const win = iframeRef.current?.contentWindow;
+    if (win) {
+      const cmd = muted ? 'unMute' : 'mute';
+      win.postMessage(JSON.stringify({ event: 'command', func: cmd, args: '' }), '*');
+    }
+    setMuted((m) => !m);
+  };
 
   // Fetch title logo
   useEffect(() => {
@@ -226,18 +248,56 @@ export default function TitleDetail() {
       <Seo title={title.title || 'Details'} />
 
       {/* Hero backdrop */}
-      <div className="relative min-h-[520px] w-full overflow-hidden md:min-h-[640px]">
+      <div className="relative min-h-[520px] w-full overflow-hidden md:min-h-[640px] bg-black">
+        {/* Backdrop image — fades out when video becomes visible */}
         {title.backdropPath && (
           <img
             src={title.backdropPath}
             alt={title.title}
-            className="absolute inset-0 h-full w-full object-cover"
+            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ${videoPhase === 'visible' ? 'opacity-0' : 'opacity-100'}`}
+            style={{ transform: 'scale(1.35)' }}
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-transparent to-transparent" />
+        {/* YouTube trailer — cover-fills the section */}
+        {trailerKey && (
+          <div className={`absolute inset-0 z-[1] transition-opacity duration-1000 ${videoPhase === 'visible' ? 'opacity-100' : 'opacity-0'}`}>
+            <iframe
+              ref={iframeRef}
+              src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&loop=1&playlist=${trailerKey}&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&fs=0&disablekb=1&cc_load_policy=0`}
+              title="Trailer"
+              className="absolute inset-0 h-full w-full"
+              style={{ transform: 'scale(1.35)', pointerEvents: 'none' }}
+              allow="autoplay; encrypted-media"
+              onLoad={handleIframeLoad}
+            />
+          </div>
+        )}
+        {/* Gradient overlays */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent z-[2]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/50 to-transparent w-[50%] md:w-[65%] z-[2]" />
 
-        {/* Back button removed per user request */}
+        {/* Sound toggle — visible when trailer plays */}
+        {videoPhase === 'visible' && (
+          <button
+            onClick={toggleMute}
+            className="absolute z-20 top-5 right-5 h-10 w-10 rounded-full border border-white/25 bg-black/40 backdrop-blur flex items-center justify-center text-white hover:bg-white/10 transition"
+            aria-label={muted ? 'Unmute trailer' : 'Mute trailer'}
+          >
+            {muted ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                <line x1="23" y1="9" x2="17" y2="15"/>
+                <line x1="17" y1="9" x2="23" y2="15"/>
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+              </svg>
+            )}
+          </button>
+        )}
 
         <div className="relative z-10 flex h-full flex-col justify-end px-6 pb-8 pt-24 md:px-12">
           {/* Title — show logo if available, else text */}
@@ -260,36 +320,54 @@ export default function TitleDetail() {
             )}
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-3 text-sm font-semibold text-white/80">
-            <span className="flex items-center gap-1 text-amber-400">
-              <Star className="h-4 w-4 fill-amber-400" />
+          {/* Metadata row — bingr.one style */}
+          <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold text-white/80">
+            <span className="flex items-center gap-1 text-white">
+              <Star className="h-4 w-4 fill-white" />
               {title.voteAverage.toFixed(1)}
             </span>
-            {title.year && <span className="text-white/60">{title.year}</span>}
+            {title.year && (
+              <>
+                <span className="text-white/40">•</span>
+                <span className="text-white/80">{title.year}</span>
+              </>
+            )}
+            {(title as any).certification && (
+              <>
+                <span className="text-white/40">•</span>
+                <span className="text-white/80">{(title as any).certification}</span>
+              </>
+            )}
             {title.runtimeMinutes != null && (
-              <span className="flex items-center gap-1 text-white/60">
-                <Clock className="h-3.5 w-3.5" />{title.runtimeMinutes} min
-              </span>
+              <>
+                <span className="text-white/40">•</span>
+                <span className="text-white/80">
+                  {(() => {
+                    const h = Math.floor(title.runtimeMinutes / 60);
+                    const m = title.runtimeMinutes % 60;
+                    return h > 0 ? `${h}h ${m > 0 ? `${m}m` : ''}` : `${m}m`;
+                  })()}
+                </span>
+              </>
             )}
             {title.numberOfSeasons != null && (
-              <span className="flex items-center gap-1 text-white/60">
-                <Layers className="h-3.5 w-3.5" />{title.numberOfSeasons} season{title.numberOfSeasons === 1 ? '' : 's'}
-              </span>
+              <>
+                <span className="text-white/40">•</span>
+                <span className="text-white/80">{title.numberOfSeasons} season{title.numberOfSeasons === 1 ? '' : 's'}</span>
+              </>
             )}
-            <span className="rounded border border-white/20 px-1.5 py-0.5 text-xs uppercase text-white/50">
-              {mediaType === 'movie' ? 'Movie' : 'Series'}
-            </span>
           </div>
 
-          {/* Clickable genre chips */}
+          {/* Genres — pipe-separated text links */}
           {genres.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {genres.map((g) => (
-                <Link key={g.id} href={`/category/${encodeURIComponent(g.name)}`}>
-                  <span className="rounded-full bg-[#ffffff0d] px-3 py-1 text-xs font-medium text-[#ffffffb3] hover:bg-[#ffffff1a] transition-bingr cursor-pointer">
-                    {g.name}
-                  </span>
-                </Link>
+            <div className="mt-3 flex flex-wrap items-center gap-x-1 text-sm font-medium text-white/70">
+              {genres.map((g, i) => (
+                <span key={g.id} className="flex items-center">
+                  {i > 0 && <span className="mx-2 text-white/30">|</span>}
+                  <Link href={`/category/${encodeURIComponent(g.name)}`}>
+                    <span className="hover:text-white transition-colors cursor-pointer">{g.name}</span>
+                  </Link>
+                </span>
               ))}
             </div>
           )}
