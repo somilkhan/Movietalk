@@ -140,7 +140,7 @@ router.get(
         return;
       }
       // Parse through schema for type safety, then re-attach fields not in generated schema
-      res.json({ ...GetTitleDetailResponse.parse(detail), similar: detail.similar, cast: detail.cast });
+      res.json({ ...GetTitleDetailResponse.parse(detail), similar: detail.similar, cast: detail.cast, certification: detail.certification });
     } catch (err) {
       req.log.error({ err }, "Failed to load title detail");
       res.status(404).json({ error: "Title not found" });
