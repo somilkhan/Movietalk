@@ -309,7 +309,7 @@ export default function TitleDetail() {
           </div>
 
           {/* Metadata, genres, overview — fade out when trailer plays */}
-          <div className={`transition-opacity duration-1000 ${videoPhase === 'visible' ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+          <div className={`transition-all duration-1000 ease-out ${videoPhase === 'visible' ? 'opacity-0 pointer-events-none translate-y-4' : 'opacity-100 translate-y-0'}`}>
             {/* Metadata row — bingr.one style */}
             <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold text-white/80">
               <span className="flex items-center gap-1 text-white">
