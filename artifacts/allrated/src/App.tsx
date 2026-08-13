@@ -7,7 +7,7 @@ import { Route, Switch, Router as WouterRouter, Redirect, useLocation } from "wo
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { NetworkStatus } from "@/components/NetworkStatus";
 import { DesktopSidebar } from "@/components/DesktopSidebar";
-import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { MobileNav } from "@/components/MobileNav";
 import { ProfileGuard } from "@/components/ProfileGuard";
 import { cn } from "@/lib/utils";
 
@@ -136,7 +136,7 @@ function Router() {
               </Switch>
             </main>
 
-            {!isWatchPage && !isTitlePage && !isProfilesPage && <MobileBottomNav />}
+            {!isWatchPage && !isTitlePage && !isProfilesPage && <MobileNav />}
             {!isWatchPage && !isProfilesPage && <Footer />}
           </div>
         </Route>
