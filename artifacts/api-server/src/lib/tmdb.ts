@@ -104,10 +104,11 @@ export async function getTrending(
   mediaType: "all" | MediaType,
   window: "day" | "week",
   page = 1,
+  region?: string,
 ): Promise<Title[]> {
   const data = await tmdbFetch<{ results: RawResult[] }>(
     `/trending/${mediaType}/${window}`,
-    { page },
+    { page, region },
   );
   if (!data) return [];
   return data.results
@@ -137,6 +138,7 @@ export async function getCatalogList(
   mediaType: MediaType,
   category: string,
   page = 1,
+  region = "IN",
 ): Promise<Title[]> {
   if (category === "animation") {
     const data = await tmdbFetch<{ results: RawResult[] }>(
@@ -145,6 +147,7 @@ export async function getCatalogList(
         with_genres: ANIMATION_GENRE_ID,
         sort_by: "popularity.desc",
         page,
+        region,
       },
     );
     if (!data) return [];
@@ -155,7 +158,7 @@ export async function getCatalogList(
   if (!endpoint) {
     throw new Error(`Unsupported category "${category}" for ${mediaType}`);
   }
-  const data = await tmdbFetch<{ results: RawResult[] }>(endpoint, { page });
+  const data = await tmdbFetch<{ results: RawResult[] }>(endpoint, { page, region });
   if (!data) return [];
   return data.results.map((r) => mapTitle(r, mediaType));
 }
@@ -189,14 +192,51 @@ export async function getGenres(mediaType: MediaType): Promise<Genre[]> {
   return data?.genres ?? [];
 }
 
-export async function searchCatalog(query: string): Promise<Title[]> {
+export async function searchCatalog(query: string, region = "IN"): Promise<Title[]> {
   const data = await tmdbFetch<{ results: RawResult[] }>("/search/multi", {
     query,
+    region,
   });
   if (!data) return [];
   return data.results
     .filter((r) => r.media_type === "movie" || r.media_type === "tv")
     .map((r) => mapTitle(r));
+}
+
+/** Get content filtered by origin country (e.g. IN for India) */
+export async function getRegionalContent(
+  mediaType: MediaType,
+  country: string,
+  page = 1,
+): Promise<Title[]> {
+  const data = await tmdbFetch<{ results: RawResult[] }>(
+    `/discover/${mediaType}`,
+    {
+      with_origin_country: country,
+      sort_by: "popularity.desc",
+      page,
+    },
+  );
+  if (!data) return [];
+  return data.results.map((r) => mapTitle(r, mediaType));
+}
+
+/** Get content by original language */
+export async function getContentByLanguage(
+  mediaType: MediaType,
+  language: string,
+  page = 1,
+): Promise<Title[]> {
+  const data = await tmdbFetch<{ results: RawResult[] }>(
+    `/discover/${mediaType}`,
+    {
+      with_original_language: language,
+      sort_by: "popularity.desc",
+      page,
+    },
+  );
+  if (!data) return [];
+  return data.results.map((r) => mapTitle(r, mediaType));
 }
 
 export interface Episode {
