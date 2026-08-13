@@ -22,8 +22,8 @@ router.get("/catalog/trending", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const { mediaType, window, page } = params.data;
-  const results = await tmdb.getTrending(mediaType, window, page);
+  const { mediaType, window, page, region } = params.data;
+  const results = await tmdb.getTrending(mediaType, window, page, region);
   res.json(GetTrendingResponse.parse(results));
 });
 
@@ -33,9 +33,9 @@ router.get("/catalog/list", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const { mediaType, category, page } = params.data;
+  const { mediaType, category, page, region } = params.data;
   try {
-    const results = await tmdb.getCatalogList(mediaType, category, page);
+    const results = await tmdb.getCatalogList(mediaType, category, page, region);
     res.json(GetCatalogListResponse.parse(results));
   } catch (err) {
     req.log.error({ err }, "Failed to load catalog list");
@@ -46,6 +46,46 @@ router.get("/catalog/list", async (req, res): Promise<void> => {
 router.get("/catalog/anime", async (_req, res): Promise<void> => {
   const results = await tmdb.getAnime();
   res.json(GetAnimeResponse.parse(results));
+});
+
+/** Regional content by origin country */
+router.get("/catalog/regional", async (req, res): Promise<void> => {
+  const mediaType = req.query.mediaType as tmdb.MediaType | undefined;
+  const country = (req.query.country as string) || "IN";
+  const page = Number(req.query.page) || 1;
+
+  if (!mediaType || !["movie", "tv"].includes(mediaType)) {
+    res.status(400).json({ error: "Invalid mediaType" });
+    return;
+  }
+
+  try {
+    const results = await tmdb.getRegionalContent(mediaType, country, page);
+    res.json(results);
+  } catch (err) {
+    req.log.error({ err }, "Failed to load regional content");
+    res.status(500).json({ error: "Failed to load regional content" });
+  }
+});
+
+/** Content by original language */
+router.get("/catalog/language", async (req, res): Promise<void> => {
+  const mediaType = req.query.mediaType as tmdb.MediaType | undefined;
+  const language = (req.query.language as string) || "hi";
+  const page = Number(req.query.page) || 1;
+
+  if (!mediaType || !["movie", "tv"].includes(mediaType)) {
+    res.status(400).json({ error: "Invalid mediaType" });
+    return;
+  }
+
+  try {
+    const results = await tmdb.getContentByLanguage(mediaType, language, page);
+    res.json(results);
+  } catch (err) {
+    req.log.error({ err }, "Failed to load language content");
+    res.status(500).json({ error: "Failed to load language content" });
+  }
 });
 
 router.get("/catalog/genres", async (req, res): Promise<void> => {
@@ -64,7 +104,8 @@ router.get("/catalog/search", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const results = await tmdb.searchCatalog(params.data.query);
+  const { query, region } = params.data;
+  const results = await tmdb.searchCatalog(query, region);
   res.json(SearchCatalogResponse.parse(results));
 });
 
@@ -139,7 +180,6 @@ router.get(
         res.status(404).json({ error: "Title not found" });
         return;
       }
-      // Parse through schema for type safety, then re-attach fields not in generated schema
       res.json({ ...GetTitleDetailResponse.parse(detail), similar: detail.similar, cast: detail.cast, certification: detail.certification });
     } catch (err) {
       req.log.error({ err }, "Failed to load title detail");
