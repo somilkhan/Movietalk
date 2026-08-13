@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
@@ -28,6 +28,9 @@ const TitleDetail = lazy(() => import("@/pages/TitleDetail"));
 const Catalog = lazy(() => import("@/pages/Catalog"));
 const Watch = lazy(() => import("@/pages/Watch"));
 const Settings = lazy(() => import("@/pages/Settings"));
+const SettingsAccount = lazy(() => import("@/pages/SettingsAccount"));
+const SettingsParental = lazy(() => import("@/pages/SettingsParental"));
+const SettingsHelp = lazy(() => import("@/pages/SettingsHelp"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -74,9 +77,7 @@ function Router() {
 
             <main className="md:ml-[80px] flex-1 mobile-content md:pb-0 animate-slide-up">
               <Switch>
-                <Route path="/">
-                  <Redirect to="/home" />
-                </Route>
+                <Route path="/" component={() => <Redirect to="/home" />} />
                 <Route path="/home" component={Home} />
                 <Route path="/movies">
                   <Suspense fallback={<PageLoader />}><Movies /></Suspense>
@@ -110,6 +111,15 @@ function Router() {
                 </Route>
                 <Route path="/settings">
                   <Suspense fallback={<PageLoader />}><Settings /></Suspense>
+                </Route>
+                <Route path="/settings/account">
+                  <Suspense fallback={<PageLoader />}><SettingsAccount /></Suspense>
+                </Route>
+                <Route path="/settings/parental">
+                  <Suspense fallback={<PageLoader />}><SettingsParental /></Suspense>
+                </Route>
+                <Route path="/settings/help">
+                  <Suspense fallback={<PageLoader />}><SettingsHelp /></Suspense>
                 </Route>
                 <Route component={NotFound} />
               </Switch>
