@@ -8,6 +8,8 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { NetworkStatus } from "@/components/NetworkStatus";
 import { DesktopSidebar } from "@/components/DesktopSidebar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { ProfileGuard } from "@/components/ProfileGuard";
+import { cn } from "@/lib/utils";
 
 import { Footer } from "@/components/Footer";
 
@@ -31,6 +33,7 @@ const Settings = lazy(() => import("@/pages/Settings"));
 const SettingsAccount = lazy(() => import("@/pages/SettingsAccount"));
 const SettingsParental = lazy(() => import("@/pages/SettingsParental"));
 const SettingsHelp = lazy(() => import("@/pages/SettingsHelp"));
+const Profiles = lazy(() => import("@/pages/Profiles"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,6 +61,7 @@ function Router() {
   const [location] = useLocation();
   const isWatchPage = location.startsWith('/watch');
   const isTitlePage = location.startsWith('/title');
+  const isProfilesPage = location === '/profiles';
 
   return (
     <>
@@ -70,12 +74,19 @@ function Router() {
           </Suspense>
         </Route>
 
+        {/* Profile selector — standalone, no sidebar/nav */}
+        <Route path="/profiles">
+          <Suspense fallback={<PageLoader />}>
+            <Profiles />
+          </Suspense>
+        </Route>
+
         {/* Standard layout */}
         <Route>
           <div className="min-h-screen bg-black text-white flex flex-col">
-            <DesktopSidebar />
+            {!isProfilesPage && <DesktopSidebar />}
 
-            <main className="md:ml-[80px] flex-1 mobile-content md:pb-0 animate-slide-up">
+            <main className={cn("flex-1 mobile-content md:pb-0 animate-slide-up", !isProfilesPage && "md:ml-[80px]")}>
               <Switch>
                 <Route path="/" component={() => <Redirect to="/home" />} />
                 <Route path="/home" component={Home} />
@@ -125,8 +136,8 @@ function Router() {
               </Switch>
             </main>
 
-            {!isWatchPage && !isTitlePage && <MobileBottomNav />}
-            {!isWatchPage && <Footer />}
+            {!isWatchPage && !isTitlePage && !isProfilesPage && <MobileBottomNav />}
+            {!isWatchPage && !isProfilesPage && <Footer />}
           </div>
         </Route>
       </Switch>
@@ -141,7 +152,9 @@ export default function App() {
         <WouterRouter>
           <TooltipProvider>
             <NetworkStatus />
-            <Router />
+            <ProfileGuard>
+              <Router />
+            </ProfileGuard>
             <Toaster />
             <SonnerToaster
               position="bottom-center"
