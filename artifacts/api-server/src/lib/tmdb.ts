@@ -154,6 +154,25 @@ export async function getCatalogList(
     return data.results.map((r) => mapTitle(r, mediaType));
   }
 
+  // For non-US regions, use /discover with origin country filter
+  // because /movie/popular and /tv/popular don't effectively filter by region
+  if (region && region !== "US") {
+    const sortBy = category === "top_rated" ? "vote_average.desc" : "popularity.desc";
+    const voteCountGte = category === "top_rated" ? 100 : undefined;
+
+    const data = await tmdbFetch<{ results: RawResult[] }>(
+      `/discover/${mediaType}`,
+      {
+        sort_by: sortBy,
+        with_origin_country: region,
+        ...(voteCountGte ? { "vote_count.gte": voteCountGte } : {}),
+        page,
+      },
+    );
+    if (!data) return [];
+    return data.results.map((r) => mapTitle(r, mediaType));
+  }
+
   const endpoint = LIST_ENDPOINTS[mediaType][category];
   if (!endpoint) {
     throw new Error(`Unsupported category "${category}" for ${mediaType}`);
@@ -161,28 +180,6 @@ export async function getCatalogList(
   const data = await tmdbFetch<{ results: RawResult[] }>(endpoint, { page, region });
   if (!data) return [];
   return data.results.map((r) => mapTitle(r, mediaType));
-}
-
-export async function getAnime(): Promise<Title[]> {
-  const [movies, shows] = await Promise.all([
-    tmdbFetch<{ results: RawResult[] }>("/discover/movie", {
-      with_genres: ANIMATION_GENRE_ID,
-      with_origin_country: "JP",
-      sort_by: "popularity.desc",
-    }),
-    tmdbFetch<{ results: RawResult[] }>("/discover/tv", {
-      with_genres: ANIMATION_GENRE_ID,
-      with_origin_country: "JP",
-      sort_by: "popularity.desc",
-    }),
-  ]);
-  if (!movies || !shows) return [];
-  const combined = [
-    ...movies.results.map((r) => mapTitle(r, "movie")),
-    ...shows.results.map((r) => mapTitle(r, "tv")),
-  ];
-  combined.sort((a, b) => b.voteAverage - a.voteAverage);
-  return combined;
 }
 
 export async function getGenres(mediaType: MediaType): Promise<Genre[]> {

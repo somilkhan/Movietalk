@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd artifacts/allrated && pnpm run build",
+  "buildCommand": "pnpm -r --filter './artifacts/api-server' run build && cd artifacts/allrated && pnpm run build",
   "outputDirectory": "artifacts/allrated/dist/public",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index" },
