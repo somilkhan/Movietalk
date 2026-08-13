@@ -22,7 +22,8 @@ router.get("/catalog/trending", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const { mediaType, window, page, region } = params.data;
+  const { mediaType, window, page } = params.data;
+  const region = req.query.region as string | undefined;
   const results = await tmdb.getTrending(mediaType, window, page, region);
   res.json(GetTrendingResponse.parse(results));
 });
@@ -33,7 +34,8 @@ router.get("/catalog/list", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const { mediaType, category, page, region } = params.data;
+  const { mediaType, category, page } = params.data;
+  const region = req.query.region as string | undefined;
   try {
     const results = await tmdb.getCatalogList(mediaType, category, page, region);
     res.json(GetCatalogListResponse.parse(results));
@@ -104,7 +106,8 @@ router.get("/catalog/search", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const { query, region } = params.data;
+  const { query } = params.data;
+  const region = req.query.region as string | undefined;
   const results = await tmdb.searchCatalog(query, region);
   res.json(SearchCatalogResponse.parse(results));
 });
