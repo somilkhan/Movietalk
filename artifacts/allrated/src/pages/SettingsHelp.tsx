@@ -1,6 +1,7 @@
 import { Link } from "wouter";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Globe } from "lucide-react";
 import { Seo } from "@/components/Seo";
+import { useRegion, REGIONS } from "@/hooks/useRegion";
 
 const LEGAL_LINKS = [
   { label: "Terms of Service", href: "#" },
@@ -9,6 +10,9 @@ const LEGAL_LINKS = [
 ];
 
 export default function SettingsHelp() {
+  const { region } = useRegion();
+  const currentRegion = REGIONS.find((r) => r.code === region);
+
   return (
     <div className="min-h-screen bg-[#07070b] text-white pb-28 md:pb-8" data-testid="page-settings-help">
       <Seo title="Help & Support" />
@@ -23,6 +27,22 @@ export default function SettingsHelp() {
           </Link>
 
           <h2 className="text-sm font-bold tracking-widest text-white/40 uppercase mb-8">Help &amp; Support</h2>
+
+          {/* Region Info Card */}
+          <div className="bg-[#1a1c22] rounded-2xl border border-white/5 p-6 mb-8">
+            <div className="flex items-center gap-3 mb-3">
+              <Globe className="w-5 h-5 text-white/70" />
+              <h3 className="text-lg font-semibold text-white/90">Current Region</h3>
+            </div>
+            <p className="text-[14px] font-medium text-white/50 leading-relaxed mb-4">
+              Content catalog and recommendations are tailored to your selected region.
+            </p>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
+              <span className="text-base">{currentRegion?.flag || "🌍"}</span>
+              <span className="text-sm font-semibold text-white/90">{currentRegion?.label || region}</span>
+              <span className="text-xs text-white/40 font-mono">{region}</span>
+            </div>
+          </div>
 
           {/* Discord Card */}
           <div className="bg-[#1a1c22] rounded-2xl border border-white/5 p-6 mb-10">
