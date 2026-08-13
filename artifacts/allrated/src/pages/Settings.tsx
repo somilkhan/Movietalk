@@ -1,9 +1,10 @@
 import { useState } from "react";
 import {
-  User, Play, Shield, Palette, Info, ChevronRight, Moon, Sun,
+  User, Play, Shield, Palette, Info, ChevronRight, Moon, Sun, Globe,
 } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { getSessionId } from "@/lib/session";
+import { useRegion, REGIONS, type RegionCode } from "@/hooks/useRegion";
 
 function Section({
   icon,
@@ -58,9 +59,11 @@ function SettingsRow({
 
 export default function Settings() {
   const sessionId = getSessionId();
+  const { region, setRegion, regions } = useRegion();
   const [parentalPin, setParentalPin] = useState("");
   const [darkMode, setDarkMode] = useState(true);
   const [saved, setSaved] = useState(false);
+  const [showRegionPicker, setShowRegionPicker] = useState(false);
 
   function handleSavePin() {
     if (parentalPin.length === 4) {
@@ -90,6 +93,39 @@ export default function Settings() {
           <SettingsRow label="Clear Cache" onClick={() => { localStorage.clear(); window.location.reload(); }} />
           <div className="h-px bg-white/5" />
           <SettingsRow label="Sign Out" danger onClick={handleLogout} />
+        </Section>
+
+        <Section icon={<Globe className="w-4 h-4" />} title="Region">
+          <button
+            onClick={() => setShowRegionPicker(!showRegionPicker)}
+            className="w-full flex items-center justify-between px-4 md:px-5 py-3.5 md:py-4 hover:bg-white/5 transition-colors text-left"
+          >
+            <span className="text-sm font-medium text-white">Content Region</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-white/40">
+                {regions.find((r) => r.code === region)?.flag} {regions.find((r) => r.code === region)?.label}
+              </span>
+              <ChevronRight className={`w-4 h-4 text-white/20 transition-transform ${showRegionPicker ? "rotate-90" : ""}`} />
+            </div>
+          </button>
+          {showRegionPicker && (
+            <div className="px-4 md:px-5 pb-3 grid grid-cols-2 gap-2">
+              {regions.map((r) => (
+                <button
+                  key={r.code}
+                  onClick={() => { setRegion(r.code as RegionCode); setShowRegionPicker(false); }}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                    region === r.code
+                      ? "bg-[#4752c4] text-white"
+                      : "bg-white/5 text-white/70 hover:bg-white/10"
+                  }`}
+                >
+                  <span>{r.flag}</span>
+                  <span>{r.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </Section>
 
         <Section icon={<Play className="w-4 h-4" />} title="Playback">
@@ -144,7 +180,7 @@ export default function Settings() {
         </Section>
 
         <Section icon={<Info className="w-4 h-4" />} title="About">
-          <SettingsRow label="Version" value="2.0.0" />
+          <SettingsRow label="Version" value="2.1.0" />
           <div className="h-px bg-white/5" />
           <SettingsRow label="Terms of Service" />
           <div className="h-px bg-white/5" />
