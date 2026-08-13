@@ -18,7 +18,7 @@ export default function Home() {
   const popularTv = useGetCatalogList({ mediaType: "tv", category: "popular", region });
   const topRatedTv = useGetCatalogList({ mediaType: "tv", category: "top_rated", region });
   const anime = useGetAnime();
-  const { titles: continueTitles } = useContinueWatching();
+  const { items: continueTitles } = useContinueWatching();
 
   // Regional / Indian content
   const regionalMovies = useGetRegional({ mediaType: "movie", country: region });
