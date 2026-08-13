@@ -1,6 +1,5 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
   description: API specification
@@ -47,6 +46,13 @@ paths:
             type: string
             enum: [day, week]
             default: week
+        - name: region
+          in: query
+          required: false
+          schema:
+            type: string
+            default: IN
+            description: ISO 3166-1 region code (e.g. IN, US, GB)
       responses:
         "200":
           description: Trending titles
@@ -73,6 +79,13 @@ paths:
           schema:
             type: string
             enum: [popular, top_rated, now_playing, on_the_air, animation]
+        - name: region
+          in: query
+          required: false
+          schema:
+            type: string
+            default: IN
+            description: ISO 3166-1 region code
       responses:
         "200":
           description: Titles in the category
@@ -89,6 +102,72 @@ paths:
       responses:
         "200":
           description: Anime titles
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TitleList"
+
+  /catalog/regional:
+    get:
+      operationId: getRegional
+      tags: [catalog]
+      summary: Regional content by origin country
+      parameters:
+        - name: mediaType
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [movie, tv]
+        - name: country
+          in: query
+          required: false
+          schema:
+            type: string
+            default: IN
+            description: ISO 3166-1 country code
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+      responses:
+        "200":
+          description: Regional titles
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TitleList"
+
+  /catalog/language:
+    get:
+      operationId: getByLanguage
+      tags: [catalog]
+      summary: Content by original language
+      parameters:
+        - name: mediaType
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [movie, tv]
+        - name: language
+          in: query
+          required: false
+          schema:
+            type: string
+            default: hi
+            description: ISO 639-1 language code (e.g. hi, ta, te, ml, kn)
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+      responses:
+        "200":
+          description: Language-filtered titles
           content:
             application/json:
               schema:
@@ -126,6 +205,13 @@ paths:
           schema:
             type: string
             minLength: 1
+        - name: region
+          in: query
+          required: false
+          schema:
+            type: string
+            default: IN
+            description: ISO 3166-1 region code
       responses:
         "200":
           description: Search results
