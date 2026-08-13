@@ -26,8 +26,9 @@ export const getTrendingQueryWindowDefault = `week`;
 export const GetTrendingQueryParams = zod.object({
   "mediaType": zod.enum(['all', 'movie', 'tv']).default(getTrendingQueryMediaTypeDefault),
   "window": zod.enum(['day', 'week']).default(getTrendingQueryWindowDefault),
-  "page": zod.coerce.number().int().min(1).max(500).optional().default(1)
-})
+  "page": zod.coerce.number().int().min(1).max(500).optional().default(1),
+      "region": zod.string().optional()
+    })
 
 export const GetTrendingResponseItem = zod.object({
   "id": zod.number(),
@@ -49,8 +50,9 @@ export const GetTrendingResponse = zod.array(GetTrendingResponseItem)
 export const GetCatalogListQueryParams = zod.object({
   "mediaType": zod.enum(['movie', 'tv']),
   "category": zod.enum(['popular', 'top_rated', 'now_playing', 'on_the_air', 'animation']),
-  "page": zod.coerce.number().int().min(1).max(500).optional().default(1)
-})
+  "page": zod.coerce.number().int().min(1).max(500).optional().default(1),
+      "region": zod.string().optional()
+    })
 
 export const GetCatalogListResponseItem = zod.object({
   "id": zod.number(),
@@ -104,8 +106,9 @@ export const GetGenresResponse = zod.array(GetGenresResponseItem)
 
 
 export const SearchCatalogQueryParams = zod.object({
-  "query": zod.coerce.string().min(1)
-})
+  "query": zod.coerce.string().min(1),
+      "region": zod.string().optional()
+    })
 
 export const SearchCatalogResponseItem = zod.object({
   "id": zod.number(),
