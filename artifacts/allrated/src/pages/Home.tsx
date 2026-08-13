@@ -1,22 +1,33 @@
-import { useGetTrending, useGetCatalogList, useGetAnime } from '@workspace/api-client-react';
-import { useContinueWatching } from '@/hooks/useContinueWatching';
-import { HeroSection } from '@/components/HeroSection';
-import { ContentTray } from '@/components/ContentTray';
-import { StudiosTray } from '@/components/StudiosTray';
-import { PopularGenresTray } from '@/components/PopularGenresTray';
-import { PopularLanguagesTray } from '@/components/PopularLanguagesTray';
-import { Seo } from '@/components/Seo';
+import { useGetTrending, useGetCatalogList, useGetAnime, useGetRegional, useGetByLanguage } from "@workspace/api-client-react";
+import { useContinueWatching } from "@/hooks/useContinueWatching";
+import { useRegion } from "@/hooks/useRegion";
+import { HeroSection } from "@/components/HeroSection";
+import { ContentTray } from "@/components/ContentTray";
+import { StudiosTray } from "@/components/StudiosTray";
+import { PopularGenresTray } from "@/components/PopularGenresTray";
+import { PopularLanguagesTray } from "@/components/PopularLanguagesTray";
+import { Seo } from "@/components/Seo";
 
 export default function Home() {
-  const trending = useGetTrending({ mediaType: 'all', window: 'week' });
-  const trendingMovies = useGetTrending({ mediaType: 'movie', window: 'week' });
-  const trendingTv = useGetTrending({ mediaType: 'tv', window: 'week' });
-  const popularMovies = useGetCatalogList({ mediaType: 'movie', category: 'popular' });
-  const topRatedMovies = useGetCatalogList({ mediaType: 'movie', category: 'top_rated' });
-  const popularTv = useGetCatalogList({ mediaType: 'tv', category: 'popular' });
-  const topRatedTv = useGetCatalogList({ mediaType: 'tv', category: 'top_rated' });
+  const { region } = useRegion();
+  const trending = useGetTrending({ mediaType: "all", window: "week", region });
+  const trendingMovies = useGetTrending({ mediaType: "movie", window: "week", region });
+  const trendingTv = useGetTrending({ mediaType: "tv", window: "week", region });
+  const popularMovies = useGetCatalogList({ mediaType: "movie", category: "popular", region });
+  const topRatedMovies = useGetCatalogList({ mediaType: "movie", category: "top_rated", region });
+  const popularTv = useGetCatalogList({ mediaType: "tv", category: "popular", region });
+  const topRatedTv = useGetCatalogList({ mediaType: "tv", category: "top_rated", region });
   const anime = useGetAnime();
   const { titles: continueTitles } = useContinueWatching();
+
+  // Regional / Indian content
+  const regionalMovies = useGetRegional({ mediaType: "movie", country: region });
+  const regionalTv = useGetRegional({ mediaType: "tv", country: region });
+  const hindiMovies = useGetByLanguage({ mediaType: "movie", language: "hi" });
+  const tamilMovies = useGetByLanguage({ mediaType: "movie", language: "ta" });
+  const teluguMovies = useGetByLanguage({ mediaType: "movie", language: "te" });
+
+  const isIndia = region === "IN";
 
   return (
     <div className="pb-28 md:pb-0" data-testid="page-home">
@@ -29,6 +40,57 @@ export default function Home() {
             heading="Continue Watching"
             titles={continueTitles}
             viewAllHref="/continue-watching"
+            size="md"
+          />
+        )}
+
+        {/* Regional content first for India */}
+        {isIndia && regionalMovies.data && regionalMovies.data.length > 0 && (
+          <ContentTray
+            heading="Indian Movies"
+            titles={regionalMovies.data}
+            loading={regionalMovies.isLoading}
+            viewAllHref="/catalog/regional?mediaType=movie&country=IN"
+            size="md"
+          />
+        )}
+
+        {isIndia && regionalTv.data && regionalTv.data.length > 0 && (
+          <ContentTray
+            heading="Indian TV Shows"
+            titles={regionalTv.data}
+            loading={regionalTv.isLoading}
+            viewAllHref="/catalog/regional?mediaType=tv&country=IN"
+            size="md"
+          />
+        )}
+
+        {isIndia && hindiMovies.data && hindiMovies.data.length > 0 && (
+          <ContentTray
+            heading="Hindi Movies"
+            titles={hindiMovies.data}
+            loading={hindiMovies.isLoading}
+            viewAllHref="/catalog/language?mediaType=movie&language=hi"
+            size="md"
+          />
+        )}
+
+        {isIndia && tamilMovies.data && tamilMovies.data.length > 0 && (
+          <ContentTray
+            heading="Tamil Movies"
+            titles={tamilMovies.data}
+            loading={tamilMovies.isLoading}
+            viewAllHref="/catalog/language?mediaType=movie&language=ta"
+            size="md"
+          />
+        )}
+
+        {isIndia && teluguMovies.data && teluguMovies.data.length > 0 && (
+          <ContentTray
+            heading="Telugu Movies"
+            titles={teluguMovies.data}
+            loading={teluguMovies.isLoading}
+            viewAllHref="/catalog/language?mediaType=movie&language=te"
             size="md"
           />
         )}
