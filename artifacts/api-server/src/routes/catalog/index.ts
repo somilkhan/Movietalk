@@ -167,6 +167,25 @@ router.get(
 );
 
 router.get(
+  "/catalog/title/:mediaType/:id/similar",
+  async (req, res): Promise<void> => {
+    const mediaType = req.params.mediaType as "movie" | "tv";
+    const id = Number(req.params.id);
+    if (!["movie", "tv"].includes(mediaType) || !Number.isFinite(id)) {
+      res.status(400).json({ error: "Invalid media type or id" });
+      return;
+    }
+    try {
+      const detail = await tmdb.getTitleDetail(mediaType, id);
+      res.json(detail?.similar ?? []);
+    } catch (err) {
+      req.log.error({ err }, "Failed to load similar titles");
+      res.json([]);
+    }
+  },
+);
+
+router.get(
   "/catalog/title/:mediaType/:id",
   async (req, res): Promise<void> => {
     const params = GetTitleDetailParams.safeParse(req.params);
