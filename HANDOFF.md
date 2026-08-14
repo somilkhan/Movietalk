@@ -23,13 +23,13 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 - `useHlsPlayer` remains the playback layer and `/api/proxy` remains the media proxy.
 
 ### Player UI / interaction status
-- `BingrWatch.tsx` now follows the supplied bingr.one mobile layout: title/back at top-left, Quality and Audio & Subtitles at top-right, server pill above the seekbar, More Like This above the transport controls, and bottom transport controls.
+- `BingrWatch.tsx` follows the supplied bingr.one mobile layout: title/back at top-left, Quality and Audio & Subtitles at top-right, server pill above the seekbar, More Like This above the transport controls, and bottom transport controls.
 - Quality profile selection is wired to source selection and preserves playback position.
 - Server 1/2 and the full server list are wired to `useBingrSources` and preserve playback position.
 - Rewind/forward 10s, play/pause, seekbar, volume/mute, fullscreen, subtitles, More Like This navigation/close, back navigation, and report interaction are wired.
 - HLS audio-track selection is exposed by `useHlsPlayer` and the Audio menu only presents tracks actually supplied by the HLS manifest.
 - Report an Issue uses the device share sheet when available, with clipboard fallback.
-- More Like This cards use SPA navigation instead of full-page anchors.
+- More Like This now fetches live TMDB similar-title data through `/api/catalog/title/:mediaType/:id/similar`; cards use SPA navigation.
 
 ### Important honesty rule
 The player should never display a fake audio option when the current HLS manifest does not expose alternate audio tracks. If the manifest has no alternate tracks, the Audio panel explicitly says so.
@@ -37,6 +37,7 @@ The player should never display a fake audio option when the current HLS manifes
 ### Verification still required
 - Deploy `main` to Vercel.
 - Verify `POST /api/bingr/stream` is HTTP 200 and contains `sources` and `subtitles`.
+- Verify `GET /api/catalog/title/movie/969681/similar` (and TV equivalent) returns a non-empty `results` array for titles that have TMDB similar data.
 - Runtime QA on mobile and desktop against the supplied bingr.one screenshots.
 - Confirm every player interaction after deployment; do not claim pixel-perfect/runtime parity until visually checked.
 
