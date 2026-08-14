@@ -90,7 +90,7 @@ function GenreGrid() {
   return (
     <div className="w-full relative px-4 md:px-0 mb-10">
       <div className="flex items-center justify-between mb-4 pr-4 md:pr-0">
-        <h2 className="text-[18px] md:text-[20px] font-semibold text-white/90">Genres</h2>
+        <h2 className="text-[18px] md:text-[20px] font-semibold text-white/90">Popular Genres</h2>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
         {GENRES.map((genre, i) => (
