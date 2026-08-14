@@ -96,7 +96,34 @@ function clearCookie(res, name) {
   res.setHeader("Set-Cookie", arr);
 }
 
+
+// Vercel serverless helpers — Node.js native ServerResponse doesn't have .json() or .status()
+function sendJson(res, statusCode, data) {
+  res.statusCode = statusCode;
+  res.setHeader("Content-Type", "application/json");
+  res.end(JSON.stringify(data));
+}
+
+function sendText(res, statusCode, text) {
+  res.statusCode = statusCode;
+  res.setHeader("Content-Type", "text/plain");
+  res.end(text);
+}
+
 module.exports = async function handler(req, res) {
+  // Helper: res.json() polyfill for Vercel native serverless
+  if (!res.json) {
+    res.json = (data) => {
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify(data));
+    };
+  }
+  if (!res.status) {
+    res.status = (code) => { res.statusCode = code; return res; };
+  }
+  if (!res.send) {
+    res.send = (data) => { res.end(data); return res; };
+  }
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS, PATCH");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Cookie, Range");
