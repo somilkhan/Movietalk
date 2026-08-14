@@ -109,19 +109,15 @@ function PopularGenresRow() {
               <Link href="/catalog/list?mediaType=movie&category=popular">
                 <a className="block">
                   <div
-                    className={`flex-none cursor-pointer group/genre relative rounded-md overflow-hidden transition-all duration-300 transform hover:scale-105 hover:z-10 bg-gradient-to-br ${GENRE_GRADIENTS[i % GENRE_GRADIENTS.length]} w-[160px] md:w-[220px] lg:w-[280px] aspect-[16/9]`}
+                    className="flex-none cursor-pointer group/genre relative rounded-md overflow-hidden transition-all duration-300 transform hover:scale-105 hover:z-10 w-[160px] md:w-[220px] lg:w-[280px] aspect-[16/9]"
                   >
-                    {genre.image && (
-                      <img
-                        alt={genre.name}
-                        className="w-full h-full object-cover opacity-40 group-hover/genre:opacity-60 transition-opacity"
-                        loading="lazy"
-                        src={genre.image}
-                      />
-                    )}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-white font-semibold text-sm drop-shadow-lg">{genre.name}</span>
-                    </div>
+                    <img
+                      alt={genre.name}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover/genre:scale-105"
+                      loading="lazy"
+                      src={genre.image}
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover/genre:bg-white/5 transition-colors duration-300" />
                   </div>
                 </a>
               </Link>
