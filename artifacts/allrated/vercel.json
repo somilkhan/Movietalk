@@ -4,9 +4,13 @@
   "functions": {
     "api/index.js": {
       "maxDuration": 30
+    },
+    "api/bingr/stream.js": {
+      "maxDuration": 30
     }
   },
   "rewrites": [
+    { "source": "/api/bingr/stream", "destination": "/api/bingr/stream" },
     { "source": "/api/(.*)", "destination": "/api/index" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
