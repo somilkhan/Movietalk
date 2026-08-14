@@ -2,7 +2,7 @@
   "buildCommand": "pnpm run build",
   "outputDirectory": "dist/public",
   "functions": {
-    "api/index.js": {
+    "api/index.cjs": {
       "maxDuration": 30
     }
   },
