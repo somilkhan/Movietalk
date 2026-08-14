@@ -26,10 +26,14 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 - `BingrWatch.tsx` follows the supplied bingr.one mobile layout: title/back at top-left, Quality and Audio & Subtitles at top-right, server pill above the seekbar, More Like This above the transport controls, and bottom transport controls.
 - Quality profile selection is wired to source selection and preserves playback position.
 - Server 1/2 and the full server list are wired to `useBingrSources` and preserve playback position.
-- Rewind/forward 10s, play/pause, seekbar, volume/mute, fullscreen, subtitles, More Like This navigation/close, back navigation, and report interaction are wired.
+- Rewind/forward 10s now use the double-chevron transport icons matching the reference.
+- Play/pause, seekbar, volume/mute and back/report interactions are wired.
+- Fullscreen requests the player root with browser UI hidden where supported, then requests a landscape orientation lock; exit unlocks the screen. Orientation locking remains browser/device dependent.
+- Subtitle URLs are routed through the existing media proxy before being attached as WebVTT text tracks, and selected tracks are explicitly switched between `disabled` and `showing`.
 - HLS audio-track selection is exposed by `useHlsPlayer` and the Audio menu only presents tracks actually supplied by the HLS manifest.
+- Controls auto-hide after 3.2s while playback is running; overlays/menus keep them visible, and pointer movement only wakes hidden controls instead of constantly resetting the timer while visible.
+- More Like This uses TMDB recommendations first, with TMDB similar titles as fallback, excludes the current title, deduplicates results, and navigates each real card through the SPA.
 - Report an Issue uses the device share sheet when available, with clipboard fallback.
-- More Like This now fetches live TMDB similar-title data through `/api/catalog/title/:mediaType/:id/similar`; cards use SPA navigation.
 
 ### Important honesty rule
 The player should never display a fake audio option when the current HLS manifest does not expose alternate audio tracks. If the manifest has no alternate tracks, the Audio panel explicitly says so.
@@ -37,9 +41,10 @@ The player should never display a fake audio option when the current HLS manifes
 ### Verification still required
 - Deploy `main` to Vercel.
 - Verify `POST /api/bingr/stream` is HTTP 200 and contains `sources` and `subtitles`.
-- Verify `GET /api/catalog/title/movie/969681/similar` (and TV equivalent) returns a non-empty `results` array for titles that have TMDB similar data.
+- Verify `GET /api/catalog/title/movie/969681/similar` (and TV equivalent) returns the intended recommendation data.
 - Runtime QA on mobile and desktop against the supplied bingr.one screenshots.
-- Confirm every player interaction after deployment; do not claim pixel-perfect/runtime parity until visually checked.
+- Confirm fullscreen rotation, subtitle rendering, transport icons, More Like This relevance, and the control auto-hide timing after deployment.
+- Do not claim pixel-perfect/runtime parity until visually checked.
 
 ## Token
 Repo: `somilkhan/Movietalk`
