@@ -140,6 +140,19 @@ module.exports = async function handler(req, res) {
 
   if (path === "/health") { res.json({ status: "ok" }); return; }
 
+  // Debug endpoint
+  if (path === "/debug") {
+    res.json({
+      tmdbKeySet: !!process.env.TMDB_API_KEY,
+      tmdbKeyLength: process.env.TMDB_API_KEY ? process.env.TMDB_API_KEY.length : 0,
+      cineproUrl: process.env.CINEPRO_URL || "not set",
+      nodeEnv: process.env.NODE_ENV || "not set",
+      region: region,
+      path: path,
+    });
+    return;
+  }
+
   if (path === "/auth/register" && req.method === "POST") {
     const { email, password, username } = body;
     if (!email || !password || !username) { res.status(400).json({ error: "Missing fields" }); return; }
