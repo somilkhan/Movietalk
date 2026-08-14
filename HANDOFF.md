@@ -14,46 +14,32 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 - API: `artifacts/api-server/` (Express, port 8080)
 - CinePro: `artifacts/cinepro-core/` (streaming engine, port 3001)
 
-## Current Status — WATCH PAGE IN PROGRESS
+## Current Status — BINGR WATCH STREAM ROUTING FIX
 
-### ✅ Completed (do NOT redo)
-- Mobile nav (7 tabs, icon-only circles, bingr SVGs)
-- ContentTray (bingr header styling, pill View All)
-- TitleCard (ring, hover, metadata)
-- **Detail page hero**: full viewport video background, title/logo stays visible, metadata fades when trailer plays
-- **Detail page action buttons**: Play (white circle), Watchlist (+), Download (movies only), Mute, Pause
-- **Metadata format**: • dot separators, `2h 25m` runtime, certification (TV-MA/PG-13)
-- **Genres**: pipe-separated text links
-- **Removed**: YOUR RATING section, Trailer embed section
-- **Cast**: horizontal scroll row with circular photos
-- **Episodes section**: season picker, search, episode list with thumbnails (TV only)
-- **Keep Bingring**: landscape grid cards with rating badge + hover play button
-- **Backend**: certification fetching from TMDB (release_dates/content_ratings)
-- Existing working Bingr extraction path via `useBingrSources` + `useHlsPlayer`
-- New Bingr-style watch player shell: `artifacts/allrated/src/pages/BingrWatch.tsx`
-- `/watch/:mediaType/:id` routed to new player from `App.tsx`
-- Quality/server popover UI, Audio & Subtitles popover UI, seek controls, fullscreen, volume, subtitle track toggling, More Like This overlay
+### Completed
+- Existing Bingr extraction path remains in `useBingrSources` + `useHlsPlayer`.
+- New Bingr-style watch player shell remains in `artifacts/allrated/src/pages/BingrWatch.tsx`.
+- `/watch/:mediaType/:id` remains routed to the new player.
+- **Bingr is kept separate from CinePro.** Do not route Bingr through CinePro.
+- Added dedicated Vercel function `artifacts/allrated/api/bingr/stream.js` which forwards the existing POST body to the user's Bingr API at `https://api.bingr.one/api/stream`.
+- Added Vercel function configuration for the dedicated Bingr endpoint.
 
-### 🔄 In Progress / Known Issues
-- Watch player needs runtime visual QA against the supplied Bingr screenshots on mobile and desktop
-- Audio selection is currently UI/state only unless the active extracted source exposes separate selectable audio tracks
-- More Like This uses available `similar`/`recommendations` data when present and needs screenshot-level spacing verification
+### Critical evidence from supplied DevTools HAR
+The real Bingr site sends `POST https://api.bingr.one/api/stream` with JSON and receives HTTP 200 JSON. The local Allrated deployment was instead sending `POST /api/bingr/stream` and receiving HTTP 404. Therefore the player was failing before source selection/playback.
+
+### Rules
+- Do NOT replace Bingr with CinePro.
+- Do NOT change the extraction/provider/server implementation unless runtime evidence proves it is broken.
+- Do NOT rework `useHlsPlayer` until the Bingr source response is confirmed healthy.
+- After deployment, verify `/api/bingr/stream` returns the same JSON shape as the real Bingr upstream.
 
 ## Next Tasks
-1. Runtime QA of `/watch/:mediaType/:id` with a known working extracted stream
-2. Fine-tune exact desktop/mobile spacing, gradients, icons, and menu positioning against provided Bingr DOM/screenshots
-3. Verify quality profile switching selects the correct available source without breaking playback
-4. Wire genuine audio-track switching when source metadata supports it
+1. Deploy the two latest commits to Vercel.
+2. Confirm `POST /api/bingr/stream` is HTTP 200 in Vercel logs.
+3. Confirm response contains `sources` and `subtitles`.
+4. Only then debug actual video playback if the player still fails.
+5. Runtime QA of mobile/desktop player after streaming is restored.
 
 ## Token
 Repo: `somilkhan/Movietalk`
 Use GitHub API with the stored token. NEVER expose it.
-
-## How to Commit
-```bash
-# Via GitHub API (Python)
-import base64, json, urllib.request
-token = "..."  # from memory
-repo = "somilkhan/Movietalk"
-# PUT to https://api.github.com/repos/{repo}/contents/{path}
-```
