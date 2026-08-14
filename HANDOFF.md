@@ -14,13 +14,12 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 - API: `artifacts/api-server/` (Express, port 8080)
 - CinePro: `artifacts/cinepro-core/` (streaming engine, port 3001)
 
-## Current Status — DETAIL PAGE IN PROGRESS
+## Current Status — WATCH PAGE IN PROGRESS
 
 ### ✅ Completed (do NOT redo)
 - Mobile nav (7 tabs, icon-only circles, bingr SVGs)
 - ContentTray (bingr header styling, pill View All)
 - TitleCard (ring, hover, metadata)
-- NumberedTitleCard (Alfa Slab One gradient numbers)
 - **Detail page hero**: full viewport video background, title/logo stays visible, metadata fades when trailer plays
 - **Detail page action buttons**: Play (white circle), Watchlist (+), Download (movies only), Mute, Pause
 - **Metadata format**: • dot separators, `2h 25m` runtime, certification (TV-MA/PG-13)
@@ -30,20 +29,21 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 - **Episodes section**: season picker, search, episode list with thumbnails (TV only)
 - **Keep Bingring**: landscape grid cards with rating badge + hover play button
 - **Backend**: certification fetching from TMDB (release_dates/content_ratings)
+- Existing working Bingr extraction path via `useBingrSources` + `useHlsPlayer`
+- New Bingr-style watch player shell: `artifacts/allrated/src/pages/BingrWatch.tsx`
+- `/watch/:mediaType/:id` routed to new player from `App.tsx`
+- Quality/server popover UI, Audio & Subtitles popover UI, seek controls, fullscreen, volume, subtitle track toggling, More Like This overlay
 
 ### 🔄 In Progress / Known Issues
-- Detail page may need fine-tuning after deploy
-- Desktop sidebar — verify it matches bingr.one hover-expand
-- Home page hero — verify video background works
-- Watch page — not started
-- Explore/Search pages — not started
+- Watch player needs runtime visual QA against the supplied Bingr screenshots on mobile and desktop
+- Audio selection is currently UI/state only unless the active extracted source exposes separate selectable audio tracks
+- More Like This uses available `similar`/`recommendations` data when present and needs screenshot-level spacing verification
 
-### 📋 Next Tasks (pick one)
-1. **Deploy and test detail page** — check all changes render correctly
-2. **Fix any detail page bugs** — user will screenshot issues
-3. **Home page** — match bingr.one hero styling
-4. **Watch page** — build the player page
-5. **Desktop sidebar** — verify/update to match bingr.one
+## Next Tasks
+1. Runtime QA of `/watch/:mediaType/:id` with a known working extracted stream
+2. Fine-tune exact desktop/mobile spacing, gradients, icons, and menu positioning against provided Bingr DOM/screenshots
+3. Verify quality profile switching selects the correct available source without breaking playback
+4. Wire genuine audio-track switching when source metadata supports it
 
 ## Token
 Repo: `somilkhan/Movietalk`
