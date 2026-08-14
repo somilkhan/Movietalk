@@ -14,31 +14,31 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 - API: `artifacts/api-server/` (Express, port 8080)
 - CinePro: `artifacts/cinepro-core/` (streaming engine, port 3001)
 
-## Current Status — BINGR WATCH STREAM ROUTING FIX
+## Current Status — BINGR WATCH PLAYER
 
-### Completed
-- Existing Bingr extraction path remains in `useBingrSources` + `useHlsPlayer`.
-- New Bingr-style watch player shell remains in `artifacts/allrated/src/pages/BingrWatch.tsx`.
-- `/watch/:mediaType/:id` remains routed to the new player.
-- **Bingr is kept separate from CinePro.** Do not route Bingr through CinePro.
-- Added dedicated Vercel function `artifacts/allrated/api/bingr/stream.js` which forwards the existing POST body to the user's Bingr API at `https://api.bingr.one/api/stream`.
-- Added Vercel function configuration for the dedicated Bingr endpoint.
+### Streaming architecture
+- Bingr and CinePro are separate systems; **do not route Bingr through CinePro**.
+- Existing Bingr extraction/request flow remains in `useBingrSources` + the dedicated Vercel function `artifacts/allrated/api/bingr/stream.js`.
+- The real upstream request is `POST https://api.bingr.one/api/stream`.
+- `useHlsPlayer` remains the playback layer and `/api/proxy` remains the media proxy.
 
-### Critical evidence from supplied DevTools HAR
-The real Bingr site sends `POST https://api.bingr.one/api/stream` with JSON and receives HTTP 200 JSON. The local Allrated deployment was instead sending `POST /api/bingr/stream` and receiving HTTP 404. Therefore the player was failing before source selection/playback.
+### Player UI / interaction status
+- `BingrWatch.tsx` now follows the supplied bingr.one mobile layout: title/back at top-left, Quality and Audio & Subtitles at top-right, server pill above the seekbar, More Like This above the transport controls, and bottom transport controls.
+- Quality profile selection is wired to source selection and preserves playback position.
+- Server 1/2 and the full server list are wired to `useBingrSources` and preserve playback position.
+- Rewind/forward 10s, play/pause, seekbar, volume/mute, fullscreen, subtitles, More Like This navigation/close, back navigation, and report interaction are wired.
+- HLS audio-track selection is exposed by `useHlsPlayer` and the Audio menu only presents tracks actually supplied by the HLS manifest.
+- Report an Issue uses the device share sheet when available, with clipboard fallback.
+- More Like This cards use SPA navigation instead of full-page anchors.
 
-### Rules
-- Do NOT replace Bingr with CinePro.
-- Do NOT change the extraction/provider/server implementation unless runtime evidence proves it is broken.
-- Do NOT rework `useHlsPlayer` until the Bingr source response is confirmed healthy.
-- After deployment, verify `/api/bingr/stream` returns the same JSON shape as the real Bingr upstream.
+### Important honesty rule
+The player should never display a fake audio option when the current HLS manifest does not expose alternate audio tracks. If the manifest has no alternate tracks, the Audio panel explicitly says so.
 
-## Next Tasks
-1. Deploy the two latest commits to Vercel.
-2. Confirm `POST /api/bingr/stream` is HTTP 200 in Vercel logs.
-3. Confirm response contains `sources` and `subtitles`.
-4. Only then debug actual video playback if the player still fails.
-5. Runtime QA of mobile/desktop player after streaming is restored.
+### Verification still required
+- Deploy `main` to Vercel.
+- Verify `POST /api/bingr/stream` is HTTP 200 and contains `sources` and `subtitles`.
+- Runtime QA on mobile and desktop against the supplied bingr.one screenshots.
+- Confirm every player interaction after deployment; do not claim pixel-perfect/runtime parity until visually checked.
 
 ## Token
 Repo: `somilkhan/Movietalk`
