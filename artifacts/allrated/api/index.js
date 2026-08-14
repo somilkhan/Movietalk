@@ -1,3 +1,6 @@
+const https = require("https");
+const http = require("http");
+
 const TMDB_BASE = "https://api.themoviedb.org/3";
 const IMAGE_BASE = "https://image.tmdb.org/t/p";
 const ANIMATION_GENRE_ID = 16;
@@ -48,6 +51,23 @@ function mapTitle(raw, fallbackMediaType) {
   };
 }
 
+function httpsGet(url, options = {}) {
+  return new Promise((resolve, reject) => {
+    const client = url.startsWith("https:") ? https : http;
+    client.get(url, options, (res) => {
+      const chunks = [];
+      res.on("data", (chunk) => chunks.push(chunk));
+      res.on("end", () => {
+        resolve({
+          status: res.statusCode,
+          headers: res.headers,
+          buffer: Buffer.concat(chunks),
+        });
+      });
+    }).on("error", reject);
+  });
+}
+
 async function tmdbFetch(path, params) {
   const key = process.env.TMDB_API_KEY;
   if (!key) return null;
@@ -56,9 +76,12 @@ async function tmdbFetch(path, params) {
   for (const [k, value] of Object.entries(params || {})) {
     if (value !== undefined) url.searchParams.set(k, String(value));
   }
-  const res = await fetch(url.toString());
-  if (!res.ok) return null;
-  return res.json();
+  try {
+    const res = await httpsGet(url.toString());
+    return JSON.parse(res.buffer.toString());
+  } catch {
+    return null;
+  }
 }
 
 function parseBody(req) {
@@ -95,7 +118,6 @@ function clearCookie(res, name) {
   arr.push(`${name}=; HttpOnly; SameSite=Lax; Max-Age=0; Path=/`);
   res.setHeader("Set-Cookie", arr);
 }
-
 
 // Vercel serverless helpers — Node.js native ServerResponse doesn't have .json() or .status()
 function sendJson(res, statusCode, data) {
@@ -441,8 +463,8 @@ module.exports = async function handler(req, res) {
     const [, id] = streamMovieMatch;
     if (!CINEPRO_URL) { res.status(503).json({ error: "Stream unavailable", sources: [], subtitles: [] }); return; }
     try {
-      const upstream = await fetch(`${CINEPRO_URL}/v1/movies/${id}`, { headers: { Accept: "application/json" } });
-      const data = await upstream.json();
+      const upstream = await httpsGet(`${CINEPRO_URL}/v1/movies/${id}`, { headers: { Accept: "application/json" } });
+      const data = JSON.parse(upstream.buffer.toString());
       res.status(upstream.status).json(data);
     } catch { res.status(503).json({ error: "Stream unavailable", sources: [], subtitles: [] }); }
     return;
@@ -453,8 +475,8 @@ module.exports = async function handler(req, res) {
     const [, id, s, e] = streamTvMatch;
     if (!CINEPRO_URL) { res.status(503).json({ error: "Stream unavailable", sources: [], subtitles: [] }); return; }
     try {
-      const upstream = await fetch(`${CINEPRO_URL}/v1/tv/${id}/seasons/${s}/episodes/${e}`, { headers: { Accept: "application/json" } });
-      const data = await upstream.json();
+      const upstream = await httpsGet(`${CINEPRO_URL}/v1/tv/${id}/seasons/${s}/episodes/${e}`, { headers: { Accept: "application/json" } });
+      const data = JSON.parse(upstream.buffer.toString());
       res.status(upstream.status).json(data);
     } catch { res.status(503).json({ error: "Stream unavailable", sources: [], subtitles: [] }); }
     return;
@@ -474,16 +496,15 @@ module.exports = async function handler(req, res) {
         Accept: "*/*",
       };
       if (req.headers.range) headers["Range"] = req.headers.range;
-      const upstream = await fetch(rawUrl, { headers });
+      const upstream = await httpsGet(rawUrl, { headers });
       res.setHeader("Access-Control-Allow-Origin", "*");
       res.setHeader("Access-Control-Allow-Headers", "Range");
       res.setHeader("Access-Control-Expose-Headers", "Content-Length,Content-Range");
-      if (upstream.headers.get("content-type")) res.setHeader("Content-Type", upstream.headers.get("content-type"));
-      if (upstream.headers.get("content-length")) res.setHeader("Content-Length", upstream.headers.get("content-length"));
-      if (upstream.headers.get("content-range")) res.setHeader("Content-Range", upstream.headers.get("content-range"));
+      if (upstream.headers["content-type"]) res.setHeader("Content-Type", upstream.headers["content-type"]);
+      if (upstream.headers["content-length"]) res.setHeader("Content-Length", upstream.headers["content-length"]);
+      if (upstream.headers["content-range"]) res.setHeader("Content-Range", upstream.headers["content-range"]);
       res.status(upstream.status);
-      const buf = await upstream.arrayBuffer();
-      res.end(Buffer.from(buf));
+      res.end(upstream.buffer);
     } catch { res.status(502).send("Proxy error"); }
     return;
   }
