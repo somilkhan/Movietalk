@@ -6,13 +6,11 @@ const router: IRouter = Router();
 
 const CINEPRO_URL = process.env.CINEPRO_URL ?? "http://localhost:3001";
 
-// Allowed protocols for the proxy
 const ALLOWED_PROTOCOLS = ["http:", "https:"];
 
-// Optional: restrict proxy to known streaming domains
 const ALLOWED_PROXY_DOMAINS = process.env.ALLOWED_PROXY_DOMAINS
   ? process.env.ALLOWED_PROXY_DOMAINS.split(",").map((d) => d.trim().toLowerCase())
-  : null; // null = allow all (default for development)
+  : null;
 
 async function proxyToCinePro(path: string): Promise<Response> {
   const url = `${CINEPRO_URL}${path}`;
@@ -23,7 +21,6 @@ async function proxyToCinePro(path: string): Promise<Response> {
   return res;
 }
 
-/** GET /api/stream/movie/:id → CinePro /v1/movies/:id */
 router.get("/stream/movie/:id", async (req, res): Promise<void> => {
   const id = Number(req.params.id);
   if (!Number.isFinite(id)) {
@@ -45,7 +42,6 @@ router.get("/stream/movie/:id", async (req, res): Promise<void> => {
   }
 });
 
-/** GET /api/stream/tv/:id/season/:s/episode/:e → CinePro /v1/tv/:id/seasons/:s/episodes/:e */
 router.get(
   "/stream/tv/:id/season/:s/episode/:e",
   async (req, res): Promise<void> => {
@@ -74,101 +70,6 @@ router.get(
   },
 );
 
-/**
- * POST /api/bingr/stream
- * Compatibility endpoint for the Bingr-style player.
- * Reuses the existing CinePro aggregated stream response and filters it to
- * the requested Bingr server; it does not run a second extraction path.
- */
-router.post("/bingr/stream", streamLimiter, async (req, res): Promise<void> => {
-  const body = (req.body ?? {}) as {
-    srv?: string;
-    t?: "movie" | "tv";
-    id?: number;
-    query?: {
-      title?: string;
-      year?: string;
-      season?: number;
-      episode?: number;
-    };
-  };
-
-  const srv = typeof body.srv === "string" ? body.srv : "";
-  const type = body.t === "tv" ? "tv" : "movie";
-  const id = Number(body.id);
-  const season = Number(body.query?.season);
-  const episode = Number(body.query?.episode);
-
-  if (!srv || !Number.isFinite(id)) {
-    res.status(400).json({ error: "Invalid Bingr stream request", sources: [], subtitles: [] });
-    return;
-  }
-
-  try {
-    const path = type === "tv" && Number.isFinite(season) && Number.isFinite(episode)
-      ? `/v1/tv/${id}/seasons/${season}/episodes/${episode}`
-      : `/v1/movies/${id}`;
-
-    const upstream = await proxyToCinePro(path);
-    const data = (await upstream.json()) as {
-      sources?: Array<{
-        url?: string;
-        type?: string;
-        quality?: string | number;
-        provider?: { id?: string; name?: string };
-        audioTracks?: Array<{ label: string; language: string }>;
-      }>;
-      subtitles?: Array<{ url?: string; label?: string; language?: string }>;
-      diagnostics?: unknown[];
-    };
-
-    if (!upstream.ok) {
-      res.status(upstream.status).json(data);
-      return;
-    }
-
-    const normalizedSrv = srv.toLowerCase();
-    const serverNames: Record<string, string> = {
-      s11: "sirius",
-      s40: "darkmatter",
-      s12: "quasar",
-      s30: "apollo",
-      s1: "miller",
-      s2: "mann",
-      s3: "edmunds",
-      s4: "luna",
-      s5: "aditya",
-    };
-    const serverName = serverNames[normalizedSrv] ?? normalizedSrv;
-
-    const sources = (data.sources ?? []).filter((source) => {
-      const provider = `${source.provider?.id ?? ""} ${source.provider?.name ?? ""}`.toLowerCase();
-      return provider.includes(normalizedSrv) || provider.includes(serverName);
-    });
-
-    res.status(200).json({
-      sources,
-      subtitles: data.subtitles ?? [],
-      diagnostics: data.diagnostics ?? [],
-    });
-  } catch (err) {
-    req.log.error({ err }, "CinePro compatibility proxy error (Bingr)");
-    res.status(503).json({
-      error: "Stream service unavailable",
-      sources: [],
-      subtitles: [],
-      diagnostics: [{ message: "CinePro Core is not running or returned an error" }],
-    });
-  }
-});
-
-/**
- * GET /api/proxy?url=<encoded>
- *
- * Transparent streaming proxy – tunnels any HLS manifest or segment through
- * the server so the browser never makes a cross-origin request directly.
- * HLS.js fetchSetup rewrites every request URL to go through here.
- */
 router.get("/proxy", streamLimiter, async (req, res): Promise<void> => {
   const rawUrl = req.query.url as string | undefined;
 
@@ -190,7 +91,6 @@ router.get("/proxy", streamLimiter, async (req, res): Promise<void> => {
     return;
   }
 
-  // Domain restriction (if configured)
   if (ALLOWED_PROXY_DOMAINS) {
     const hostname = parsedUrl.hostname.toLowerCase();
     const allowed = ALLOWED_PROXY_DOMAINS.some(
@@ -212,7 +112,6 @@ router.get("/proxy", streamLimiter, async (req, res): Promise<void> => {
       Accept: "*/*",
     };
 
-    // Forward Range so seeking works
     if (req.headers.range) headers["Range"] = req.headers.range;
 
     const upstream = await fetch(rawUrl, {
@@ -222,7 +121,6 @@ router.get("/proxy", streamLimiter, async (req, res): Promise<void> => {
       compress: false,
     });
 
-    // CORS + passthrough headers
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Headers", "Range");
     res.setHeader("Access-Control-Expose-Headers", "Content-Length,Content-Range");
@@ -243,7 +141,6 @@ router.get("/proxy", streamLimiter, async (req, res): Promise<void> => {
       return;
     }
 
-    // Stream the body without buffering it all in memory
     Readable.fromWeb(upstream.body as Parameters<typeof Readable.fromWeb>[0]).pipe(res);
   } catch (err) {
     req.log.error({ err }, "HLS proxy error");
@@ -251,7 +148,6 @@ router.get("/proxy", streamLimiter, async (req, res): Promise<void> => {
   }
 });
 
-// Handle CORS preflight for the proxy
 router.options("/proxy", (_req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Headers", "Range");
