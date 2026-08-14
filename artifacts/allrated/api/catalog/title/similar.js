@@ -16,6 +16,14 @@ function mapTitle(raw, mediaType) {
   };
 }
 
+async function tmdbList(mediaType, id, endpoint, key) {
+  const url = `${TMDB_BASE}/${mediaType}/${id}/${endpoint}?api_key=${encodeURIComponent(key)}&language=en-US&page=1`;
+  const upstream = await fetch(url, { headers: { Accept: "application/json" } });
+  if (!upstream.ok) return [];
+  const data = await upstream.json();
+  return Array.isArray(data?.results) ? data.results : [];
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
@@ -25,7 +33,6 @@ export default async function handler(req, res) {
     res.status(204).end();
     return;
   }
-
   if (req.method !== "GET") {
     res.status(405).json({ error: "Method not allowed" });
     return;
@@ -34,31 +41,34 @@ export default async function handler(req, res) {
   const mediaType = String(req.query?.mediaType || "");
   const id = Number(req.query?.id);
   const key = process.env.TMDB_API_KEY;
-
   if (!["movie", "tv"].includes(mediaType) || !Number.isFinite(id)) {
     res.status(400).json({ error: "Invalid mediaType or id" });
     return;
   }
-
   if (!key) {
     res.status(503).json({ error: "TMDB API key is not configured", results: [] });
     return;
   }
 
   try {
-    const url = `${TMDB_BASE}/${mediaType}/${id}/similar?api_key=${encodeURIComponent(key)}&page=1`;
-    const upstream = await fetch(url, { headers: { Accept: "application/json" } });
-    if (!upstream.ok) {
-      res.status(upstream.status).json({ error: "TMDB similar titles request failed", results: [] });
-      return;
-    }
-    const data = await upstream.json();
-    res.status(200).json({
-      results: (Array.isArray(data?.results) ? data.results : [])
-        .slice(0, 20)
-        .map((item) => mapTitle(item, mediaType)),
-    });
+    // Recommendations are the primary source for a player-facing "More Like This" row.
+    // TMDB's similar endpoint is only a fallback when recommendations are unavailable.
+    const recommended = await tmdbList(mediaType, id, "recommendations", key);
+    const fallback = recommended.length ? [] : await tmdbList(mediaType, id, "similar", key);
+    const seen = new Set([id]);
+    const results = [...recommended, ...fallback]
+      .filter((item) => item && Number.isFinite(Number(item.id)) && !seen.has(Number(item.id)))
+      .filter((item) => {
+        const itemId = Number(item.id);
+        if (seen.has(itemId)) return false;
+        seen.add(itemId);
+        return true;
+      })
+      .slice(0, 20)
+      .map((item) => mapTitle(item, mediaType));
+
+    res.status(200).json({ results });
   } catch {
-    res.status(502).json({ error: "Similar titles service unavailable", results: [] });
+    res.status(502).json({ error: "Recommendations service unavailable", results: [] });
   }
 }
