@@ -2,22 +2,34 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useParams } from 'wouter';
 import { useGetTitleDetail } from '@workspace/api-client-react';
 import {
-  ArrowLeft, ChevronDown, ChevronUp, CircleAlert, Expand, FastForward, Gauge,
-  Loader2, Maximize, Pause, Play, Rewind, Settings2, Volume2, VolumeX, X,
+  ArrowLeft,
+  Captions,
+  ChevronUp,
+  CircleAlert,
+  FastForward,
+  Loader2,
+  Maximize,
+  Pause,
+  Play,
+  Rewind,
+  Settings2,
+  Volume2,
+  VolumeX,
+  X,
 } from 'lucide-react';
 import { useBingrSources } from '@/hooks/useBingrSources';
 import { useHlsPlayer } from '@/hooks/useHlsPlayer';
 
 const SERVERS = [
-  { id: 's11', name: 'Sirius', cc: 'GL' },
-  { id: 's40', name: 'DarkMatter', cc: 'GL' },
-  { id: 's12', name: 'Quasar', cc: 'GL' },
-  { id: 's30', name: 'Apollo', cc: 'US' },
-  { id: 's1', name: 'Miller', cc: 'US' },
-  { id: 's2', name: 'Mann', cc: 'US' },
-  { id: 's3', name: 'Edmunds', cc: 'US' },
-  { id: 's4', name: 'Luna', cc: 'US' },
-  { id: 's5', name: 'Aditya', cc: 'IN' },
+  { id: 's11', name: 'Sirius', icon: 'logo' },
+  { id: 's40', name: 'DarkMatter', icon: 'logo' },
+  { id: 's12', name: 'Quasar', icon: 'logo' },
+  { id: 's30', name: 'Apollo', icon: 'us' },
+  { id: 's1', name: 'Miller', icon: 'us' },
+  { id: 's2', name: 'Mann', icon: 'us' },
+  { id: 's3', name: 'Edmunds', icon: 'us' },
+  { id: 's4', name: 'Luna', icon: 'us' },
+  { id: 's5', name: 'Aditya', icon: 'in' },
 ] as const;
 
 const QUALITIES = [
@@ -25,6 +37,8 @@ const QUALITIES = [
   { id: 'theatrical', label: 'Theatrical', cap: 720 },
   { id: 'smooth', label: 'Smooth', cap: 480 },
 ] as const;
+
+type Menu = 'quality' | 'audio' | null;
 
 function formatTime(value: number) {
   if (!Number.isFinite(value) || value < 0) return '0:00';
@@ -35,12 +49,45 @@ function formatTime(value: number) {
 }
 
 function qualityRank(q: string) {
-  const m = q.match(/(2160|1080|720|480|360|240)/);
-  return m ? Number(m[1]) : 0;
+  const match = q.match(/(2160|1080|720|480|360|240)/);
+  return match ? Number(match[1]) : 0;
 }
 
-function serverIcon(cc: string) {
-  return cc === 'IN' ? '🇮🇳' : cc === 'US' ? '🇺🇸' : '◈';
+function ServerIcon({ kind }: { kind: 'logo' | 'us' | 'in' }) {
+  if (kind === 'logo') {
+    return <img alt="Bingr" src="/brand/logo.png" className="h-[14px] w-5 shrink-0 rounded-[2px] object-contain scale-[1.7]" />;
+  }
+  if (kind === 'in') {
+    return (
+      <span className="relative block h-[14px] w-5 shrink-0 overflow-hidden rounded-[2px]" aria-hidden="true">
+        <span className="absolute inset-x-0 top-0 h-1/3 bg-[#ff6820]" />
+        <span className="absolute inset-x-0 top-1/3 h-1/3 bg-white" />
+        <span className="absolute inset-x-0 bottom-0 h-1/3 bg-[#046a38]" />
+        <span className="absolute left-1/2 top-1/2 h-[6px] w-[6px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#07038d]" />
+      </span>
+    );
+  }
+  return (
+    <span className="relative block h-[14px] w-5 shrink-0 overflow-hidden rounded-[2px] bg-white" aria-hidden="true">
+      <span className="absolute inset-x-0 top-0 h-[1.75px] bg-[#d80027]" />
+      <span className="absolute inset-x-0 top-[3.5px] h-[1.75px] bg-[#d80027]" />
+      <span className="absolute inset-x-0 top-[7px] h-[1.75px] bg-[#d80027]" />
+      <span className="absolute inset-x-0 top-[10.5px] h-[1.75px] bg-[#d80027]" />
+      <span className="absolute left-0 top-0 h-[8px] w-[10px] bg-[#2e52b2]" />
+    </span>
+  );
+}
+
+function SettingButton({ selected, children, onClick, subtitle }: { selected: boolean; children: React.ReactNode; onClick: () => void; subtitle?: string }) {
+  return (
+    <button onClick={onClick} className="flex items-start gap-3 px-5 py-2.5 text-left transition-colors hover:bg-white/10">
+      <span className="mt-0.5 w-4 shrink-0 text-blue-400" style={{ opacity: selected ? 1 : 0 }}>✓</span>
+      <div>
+        <div className="font-semibold text-[15px] leading-tight">{children}</div>
+        {subtitle ? <div className="mt-0.5 text-[13px] text-white/50">{subtitle}</div> : null}
+      </div>
+    </button>
+  );
 }
 
 export default function BingrWatch() {
@@ -48,9 +95,10 @@ export default function BingrWatch() {
   const [, navigate] = useLocation();
   const mediaType = params.mediaType === 'tv' ? 'tv' : 'movie';
   const tmdbId = Number(params.id);
+
   const [serverId, setServerId] = useState('s11');
   const [qualityId, setQualityId] = useState<(typeof QUALITIES)[number]['id']>('cinematic');
-  const [menu, setMenu] = useState<'quality' | 'audio' | null>(null);
+  const [menu, setMenu] = useState<Menu>(null);
   const [playing, setPlaying] = useState(false);
   const [controls, setControls] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
@@ -64,37 +112,45 @@ export default function BingrWatch() {
   const [subtitle, setSubtitle] = useState('Off');
   const [showVolume, setShowVolume] = useState(false);
   const [loading, setLoading] = useState(false);
+
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const fatalRef = useRef<(() => void) | null>(null);
+  const restoreTimeRef = useRef(0);
+  const firstSourceRef = useRef(true);
 
   const { data: title } = useGetTitleDetail(mediaType, tmdbId, { query: { enabled: Number.isFinite(tmdbId) } });
   const titleName = title?.title || title?.name || '';
   const year = (title?.release_date || title?.first_air_date || '').slice(0, 4);
   const { sources, subtitles, loading: sourceLoading } = useBingrSources(serverId, mediaType, tmdbId, titleName, year, 1, 1);
 
-  const quality = QUALITIES.find((q) => q.id === qualityId)!;
+  const quality = QUALITIES.find((q) => q.id === qualityId) || QUALITIES[0];
   const selectedSource = useMemo(() => {
     if (!sources.length) return null;
-    const withinCap = sources.filter((s) => qualityRank(s.quality) <= quality.cap && qualityRank(s.quality) > 0);
-    return (withinCap.sort((a, b) => qualityRank(b.quality) - qualityRank(a.quality))[0] || sources[0]);
+    const ranked = sources
+      .map((source) => ({ source, rank: qualityRank(source.quality) }))
+      .filter(({ rank }) => rank > 0 && rank <= quality.cap)
+      .sort((a, b) => b.rank - a.rank);
+    return ranked[0]?.source || sources[0];
   }, [sources, quality.cap]);
 
   const resetControls = useCallback(() => {
     setControls(true);
     if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => setControls(false), 3200);
-  }, []);
+    timerRef.current = setTimeout(() => {
+      if (!menu && !moreLike && !loading) setControls(false);
+    }, 3200);
+  }, [loading, menu, moreLike]);
 
-  const handleFatal = useCallback(() => {
-    setLoading(false);
-  }, []);
+  const handleFatal = useCallback(() => setLoading(false), []);
   useEffect(() => { fatalRef.current = handleFatal; }, [handleFatal]);
   const { load } = useHlsPlayer(videoRef, fatalRef);
 
   useEffect(() => {
     if (!selectedSource) return;
+    const video = videoRef.current;
+    restoreTimeRef.current = video?.currentTime || 0;
     setLoading(true);
     load(selectedSource.url, selectedSource.type);
   }, [load, selectedSource?.url, selectedSource?.type]);
@@ -102,6 +158,13 @@ export default function BingrWatch() {
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+    const onLoadedMetadata = () => {
+      setDuration(video.duration || 0);
+      if (!firstSourceRef.current && restoreTimeRef.current > 0 && Number.isFinite(video.duration)) {
+        video.currentTime = Math.min(restoreTimeRef.current, Math.max(0, video.duration - 0.5));
+      }
+      firstSourceRef.current = false;
+    };
     const onPlay = () => { setPlaying(true); setLoading(false); resetControls(); };
     const onPause = () => setPlaying(false);
     const onTime = () => setCurrentTime(video.currentTime || 0);
@@ -111,14 +174,22 @@ export default function BingrWatch() {
     };
     const onWaiting = () => setLoading(true);
     const onPlaying = () => setLoading(false);
-    video.addEventListener('play', onPlay); video.addEventListener('pause', onPause);
-    video.addEventListener('timeupdate', onTime); video.addEventListener('durationchange', onDuration);
-    video.addEventListener('progress', onProgress); video.addEventListener('waiting', onWaiting);
+    video.addEventListener('loadedmetadata', onLoadedMetadata);
+    video.addEventListener('play', onPlay);
+    video.addEventListener('pause', onPause);
+    video.addEventListener('timeupdate', onTime);
+    video.addEventListener('durationchange', onDuration);
+    video.addEventListener('progress', onProgress);
+    video.addEventListener('waiting', onWaiting);
     video.addEventListener('playing', onPlaying);
     return () => {
-      video.removeEventListener('play', onPlay); video.removeEventListener('pause', onPause);
-      video.removeEventListener('timeupdate', onTime); video.removeEventListener('durationchange', onDuration);
-      video.removeEventListener('progress', onProgress); video.removeEventListener('waiting', onWaiting);
+      video.removeEventListener('loadedmetadata', onLoadedMetadata);
+      video.removeEventListener('play', onPlay);
+      video.removeEventListener('pause', onPause);
+      video.removeEventListener('timeupdate', onTime);
+      video.removeEventListener('durationchange', onDuration);
+      video.removeEventListener('progress', onProgress);
+      video.removeEventListener('waiting', onWaiting);
       video.removeEventListener('playing', onPlaying);
     };
   }, [resetControls]);
@@ -129,197 +200,294 @@ export default function BingrWatch() {
     const onFs = () => setFullscreen(Boolean(document.fullscreenElement || (document as any).webkitFullscreenElement));
     document.addEventListener('fullscreenchange', onFs);
     document.addEventListener('webkitfullscreenchange', onFs);
-    return () => { document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('webkitfullscreenchange', onFs); };
+    return () => {
+      document.removeEventListener('fullscreenchange', onFs);
+      document.removeEventListener('webkitfullscreenchange', onFs);
+    };
   }, []);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    video.querySelectorAll('track').forEach((el) => el.remove());
+    video.querySelectorAll('track').forEach((track) => track.remove());
     subtitles.forEach((sub) => {
-      const t = document.createElement('track');
-      t.kind = 'subtitles'; t.src = sub.url; t.label = sub.label; t.srclang = sub.language.slice(0, 2);
-      video.appendChild(t);
+      const track = document.createElement('track');
+      track.kind = 'subtitles';
+      track.src = sub.url;
+      track.label = sub.label;
+      track.srclang = sub.language.slice(0, 2);
+      video.appendChild(track);
     });
   }, [subtitles]);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    Array.from(video.textTracks).forEach((t) => { t.mode = 'disabled'; });
+    Array.from(video.textTracks).forEach((track) => { track.mode = 'disabled'; });
     if (subtitle !== 'Off') {
-      const track = Array.from(video.textTracks).find((t) => t.label === subtitle);
+      const track = Array.from(video.textTracks).find((item) => item.label === subtitle);
       if (track) track.mode = 'showing';
     }
   }, [subtitle, subtitles]);
 
   const togglePlay = () => {
-    const video = videoRef.current; if (!video) return;
-    if (video.paused) video.play().catch(() => {}); else video.pause();
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) video.play().catch(() => undefined);
+    else video.pause();
     resetControls();
   };
+
   const seek = (delta: number) => {
-    const video = videoRef.current; if (!video) return;
-    video.currentTime = Math.max(0, Math.min(video.duration || 0, video.currentTime + delta)); resetControls();
+    const video = videoRef.current;
+    if (!video) return;
+    video.currentTime = Math.max(0, Math.min(video.duration || 0, video.currentTime + delta));
+    resetControls();
   };
-  const seekPointer = (e: React.PointerEvent<HTMLDivElement>) => {
-    const video = videoRef.current, el = e.currentTarget;
+
+  const seekPointer = (event: React.PointerEvent<HTMLDivElement>) => {
+    const video = videoRef.current;
     if (!video || !duration) return;
-    const rect = el.getBoundingClientRect();
-    video.currentTime = ((e.clientX - rect.left) / rect.width) * duration;
+    const rect = event.currentTarget.getBoundingClientRect();
+    video.currentTime = Math.max(0, Math.min(duration, ((event.clientX - rect.left) / rect.width) * duration));
   };
-  const changeVolume = (v: number) => {
-    const video = videoRef.current; if (!video) return;
-    const clamped = Math.max(0, Math.min(1, v)); video.volume = clamped; video.muted = clamped === 0;
-    setVolume(clamped); setMuted(clamped === 0);
+
+  const changeVolume = (value: number) => {
+    const video = videoRef.current;
+    if (!video) return;
+    const next = Math.max(0, Math.min(1, value));
+    video.volume = next;
+    video.muted = next === 0;
+    setVolume(next);
+    setMuted(next === 0);
   };
+
   const toggleMute = () => {
-    const video = videoRef.current; if (!video) return;
-    video.muted = !video.muted; setMuted(video.muted);
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = !video.muted;
+    setMuted(video.muted);
   };
+
   const toggleFullscreen = async () => {
     if (document.fullscreenElement || (document as any).webkitFullscreenElement) {
-      await document.exitFullscreen?.(); return;
+      await document.exitFullscreen?.();
+      return;
     }
     const root = rootRef.current;
     if (root?.requestFullscreen) await root.requestFullscreen();
-    else (root as any)?.webkitRequestFullscreen?.();
+    else await (root as any)?.webkitRequestFullscreen?.();
   };
-  const switchQuality = (id: (typeof QUALITIES)[number]['id']) => {
-    setQualityId(id); setMenu(null); resetControls();
+
+  const selectQuality = (id: (typeof QUALITIES)[number]['id']) => {
+    if (id === qualityId) {
+      setMenu(null);
+      return;
+    }
+    restoreTimeRef.current = videoRef.current?.currentTime || 0;
+    setQualityId(id);
+    setMenu(null);
+    resetControls();
+  };
+
+  const selectServer = (id: string) => {
+    if (id === serverId) {
+      setMenu(null);
+      return;
+    }
+    restoreTimeRef.current = videoRef.current?.currentTime || 0;
+    setServerId(id);
+    setMenu(null);
+    resetControls();
   };
 
   if (!Number.isFinite(tmdbId)) return <div className="min-h-screen bg-black" />;
 
+  const progress = duration ? Math.min(100, Math.max(0, currentTime / duration * 100)) : 0;
+  const bufferedProgress = duration ? Math.min(100, Math.max(0, buffered / duration * 100)) : 0;
+
   return (
     <div
       ref={rootRef}
-      className="fixed inset-0 z-[200] bg-black overflow-hidden select-none"
+      className="fixed inset-0 z-[200] overflow-hidden select-none bg-black"
+      style={{ cursor: controls || menu || moreLike ? 'default' : 'none' }}
       onMouseMove={resetControls}
       onTouchStart={resetControls}
-      style={{ cursor: controls ? 'default' : 'none' }}
     >
       <video
         ref={videoRef}
-        className="absolute inset-0 h-full w-full object-contain bg-black cursor-pointer"
-        playsInline
+        className="absolute inset-0 h-full w-full cursor-pointer object-contain bg-black"
         crossOrigin="anonymous"
+        playsInline
         onClick={togglePlay}
       />
 
-      <div className={`absolute inset-0 z-[210] bg-gradient-to-b from-black/70 via-transparent to-black/90 transition-opacity duration-300 ${controls || menu || moreLike ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+      <div className={`absolute inset-0 z-[210] bg-gradient-to-b from-black/70 via-transparent to-black/90 transition-opacity duration-300 ${controls || menu || moreLike ? 'opacity-100' : 'pointer-events-none opacity-0'}`}>
         <div className="absolute inset-x-0 top-0 flex items-start gap-3 px-4 py-4 md:px-8 md:py-6">
-          <button onClick={() => navigate(`/title/${mediaType}/${tmdbId}`)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 backdrop-blur-md border border-white/5 text-white transition hover:bg-white/20" aria-label="Back">
-            <ArrowLeft className="h-6 w-6" />
+          <button onClick={() => navigate(`/title/${mediaType}/${tmdbId}`)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/5 bg-white/10 text-white backdrop-blur-md transition-all hover:bg-white/20 md:h-11 md:w-11" aria-label="Back">
+            <ArrowLeft className="h-6 w-6 md:h-7 md:w-7" />
           </button>
-          <div className="pt-1 text-lg md:text-xl font-bold leading-tight tracking-wide text-white">{titleName}</div>
+          <div className="pt-1 text-lg font-bold leading-tight tracking-wide text-white md:text-xl">{titleName}</div>
         </div>
 
         <div className="absolute inset-x-0 bottom-0 px-4 pb-4 md:px-8 md:pb-6">
-          <div className="flex items-center justify-center pb-3 md:justify-end">
-            <div className="flex items-center gap-1 rounded-full bg-white/10 p-1 shadow-sm backdrop-blur-md border border-white/15">
-              <button className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${serverId === 's11' ? 'bg-white text-black' : 'text-white/70'}`} onClick={() => setServerId('s11')}>Server 1</button>
-              <button className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${serverId === 's40' ? 'bg-white text-black' : 'text-white/70'}`} onClick={() => setServerId('s40')}>Server 2</button>
+          <div className="flex items-center justify-center pb-3 md:justify-end md:gap-4">
+            <div className="flex items-center gap-1 rounded-full border border-white/15 bg-white/10 p-1 shadow-sm backdrop-blur-md">
+              <button onClick={() => selectServer('s11')} className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide transition-colors ${serverId === 's11' ? 'bg-white text-black' : 'text-white/70 hover:text-white'}`}>Server 1</button>
+              <button onClick={() => selectServer('s40')} className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide transition-colors ${serverId === 's40' ? 'bg-white text-black' : 'text-white/70 hover:text-white'}`}>Server 2</button>
             </div>
+            <button onClick={() => setMoreLike(true)} className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/60 px-4 py-1.5 text-xs font-semibold tracking-wide text-white/90 shadow-lg backdrop-blur-md transition-all hover:text-white md:hidden">
+              <span>More Like This</span><ChevronUp className="h-3.5 w-3.5" />
+            </button>
           </div>
 
           <div className="relative mb-2 flex items-center gap-2 md:gap-3">
             <div className="group/seek relative h-5 flex-1 cursor-pointer" onPointerDown={seekPointer}>
-              <div className="absolute left-0 right-0 top-1/2 h-[6px] -translate-y-1/2 overflow-hidden rounded-full bg-white/25">
-                <div className="absolute inset-y-0 left-0 rounded-full bg-white/40 origin-left" style={{ width: `${duration ? Math.min(100, buffered / duration * 100) : 0}%` }} />
-                <div className="absolute inset-y-0 left-0 rounded-full bg-white origin-left" style={{ width: `${duration ? Math.min(100, currentTime / duration * 100) : 0}%` }} />
+              <div className="absolute left-0 right-0 top-1/2 h-[6px] -translate-y-1/2 overflow-hidden rounded-full bg-white/25 transition-all duration-150">
+                <div className="absolute inset-y-0 left-0 w-full origin-left rounded-full bg-white/40" style={{ transform: `scaleX(${bufferedProgress / 100})` }} />
+                <div className="absolute inset-y-0 left-0 w-full origin-left rounded-full bg-white" style={{ transform: `scaleX(${progress / 100})` }} />
               </div>
-              <div className="absolute top-1/2 h-4 w-4 -translate-y-1/2 -translate-x-1/2 rounded-full bg-white shadow-lg" style={{ left: `${duration ? Math.min(100, currentTime / duration * 100) : 0}%` }} />
+              <div className="absolute left-0 top-1/2 z-10 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-lg" style={{ left: `${progress}%` }} />
             </div>
             <span className="mr-2 shrink-0 text-xs font-semibold tabular-nums text-white md:text-sm">{formatTime(duration)}</span>
           </div>
 
           <div className="relative flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <button className="relative flex items-center justify-center px-2 py-2 text-white/90 hover:text-white" onClick={() => seek(-10)} aria-label="Rewind 10 seconds"><Rewind className="h-5 w-5 md:h-6 md:w-6"/><span className="ml-0.5 text-sm md:text-base font-semibold">10</span></button>
-              <button className="p-2 text-white" onClick={togglePlay} aria-label={playing ? 'Pause' : 'Play'}>{playing ? <Pause className="h-8 w-8 md:h-10 md:w-10"/> : <Play className="h-8 w-8 md:h-10 md:w-10 fill-current"/>}</button>
-              <button className="relative flex items-center justify-center px-2 py-2 text-white/90 hover:text-white" onClick={() => seek(10)} aria-label="Forward 10 seconds"><span className="mr-0.5 text-sm md:text-base font-semibold">10</span><FastForward className="h-5 w-5 md:h-6 md:w-6"/></button>
-              <div className="flex items-center">
-                <button className="p-1.5 text-white" onClick={toggleMute} onMouseEnter={() => setShowVolume(true)} aria-label="Volume">{muted || volume === 0 ? <VolumeX className="h-6 w-6 md:h-7 md:w-7"/> : <Volume2 className="h-6 w-6 md:h-7 md:w-7"/>}</button>
-                <div className={`overflow-hidden transition-all duration-200 ${showVolume ? 'w-24 opacity-100' : 'w-0 opacity-0'}`} onMouseLeave={() => setShowVolume(false)}>
-                  <input className="mx-2 w-20 accent-white" type="range" min="0" max="100" value={Math.round(volume * 100)} onChange={(e) => changeVolume(Number(e.target.value) / 100)} />
+              <button onClick={() => seek(-10)} className="relative flex select-none items-center justify-center px-2 py-2 text-white/90 transition-opacity hover:text-white" aria-label="Rewind 10 seconds">
+                <Rewind className="h-5 w-5 -scale-x-100 md:h-6 md:w-6" /><span className="ml-0.5 text-sm font-semibold leading-none md:text-base">10</span>
+              </button>
+              <button onClick={togglePlay} className="flex items-center justify-center p-2 text-white" aria-label={playing ? 'Pause' : 'Play'}>
+                {playing ? <Pause className="h-8 w-8 md:h-10 md:w-10" /> : <Play className="h-8 w-8 fill-current md:h-10 md:w-10" />}
+              </button>
+              <button onClick={() => seek(10)} className="relative flex select-none items-center justify-center px-2 py-2 text-white/90 transition-opacity hover:text-white" aria-label="Forward 10 seconds">
+                <span className="mr-0.5 text-sm font-semibold leading-none md:text-base">10</span><FastForward className="h-5 w-5 md:h-6 md:w-6" />
+              </button>
+              <div className="flex items-center" onMouseEnter={() => setShowVolume(true)} onMouseLeave={() => setShowVolume(false)}>
+                <button onClick={toggleMute} className="flex items-center justify-center p-1.5 text-white" aria-label="Volume">
+                  {muted || volume === 0 ? <VolumeX className="h-6 w-6 md:h-7 md:w-7" /> : <Volume2 className="h-6 w-6 md:h-7 md:w-7" />}
+                </button>
+                <div className={`overflow-hidden transition-all duration-200 ${showVolume ? 'w-24 opacity-100' : 'w-0 opacity-0'}`}>
+                  <div className="relative mx-2 flex h-5 w-20 items-center">
+                    <input min="0" max="100" step="1" type="range" value={Math.round(volume * 100)} onChange={(e) => changeVolume(Number(e.target.value) / 100)} className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0" aria-label="Volume level" />
+                    <div className="relative h-1 w-full overflow-hidden rounded-full bg-white/25"><div className="absolute inset-y-0 left-0 w-full origin-left rounded-full bg-white" style={{ transform: `scaleX(${volume})` }} /></div>
+                    <div className="pointer-events-none absolute left-0 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow" style={{ left: `${volume * 100}%` }} />
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center">
-              <button onClick={() => setMoreLike(true)} className="relative flex items-center justify-center gap-1.5 px-2 py-2 text-base font-semibold text-white/90 hover:text-white">
-                <span>More Like This</span><ChevronUp className="h-4 w-4 mt-0.5" />
+            <div className="absolute left-1/2 hidden -translate-x-1/2 items-center md:flex">
+              <button onClick={() => setMoreLike(true)} className="relative flex items-center justify-center gap-1.5 px-2 py-2 text-base font-semibold text-white/90 transition-opacity hover:text-white">
+                <span>More Like This</span><ChevronUp className="mt-0.5 h-4 w-4" />
               </button>
             </div>
 
-            <div className="flex items-center gap-2 md:gap-3">
+            <div className="flex items-center gap-2 md:gap-4">
               <div className="relative">
-                <button className="flex items-center gap-2 rounded-lg p-2 text-white/90 transition hover:bg-white/10 hover:text-white" onClick={() => setMenu(menu === 'quality' ? null : 'quality')}>
-                  <Settings2 className="h-6 w-6" /><span className="hidden md:inline">Quality</span><span className="hidden md:inline opacity-50 font-normal">{selectedSource?.quality || `${quality.cap}p`}</span>
+                <button onClick={() => setMenu(menu === 'quality' ? null : 'quality')} className="flex items-center gap-2 rounded-lg p-2 text-sm font-semibold text-white/90 transition-all hover:bg-white/10 hover:text-white">
+                  <Settings2 className="h-6 w-6" />
+                  <span className="hidden md:inline">Quality</span>
+                  <span className="hidden font-normal opacity-50 md:inline">{selectedSource?.quality || '1080p'}</span>
                 </button>
-                {menu === 'quality' && (
-                  <div className="fixed left-1/2 top-[66px] z-50 -translate-x-1/2 min-w-[14rem] max-w-[calc(100vw-1rem)] origin-top md:absolute md:left-auto md:right-0 md:top-full md:translate-x-0 md:pt-2 md:origin-top-right">
-                    <div className="bg-black/50 backdrop-blur-2xl border border-white/10 text-white rounded-xl shadow-2xl py-2 text-sm flex flex-col w-max max-w-[calc(100vw-1rem)]">
+                {menu === 'quality' ? (
+                  <div className="fixed left-1/2 top-[66px] z-50 min-w-[14rem] max-w-[calc(100vw-1rem)] -translate-x-1/2 origin-top transition-all duration-200 md:absolute md:left-auto md:right-0 md:top-full md:translate-x-0 md:pt-2 md:origin-top-right">
+                    <div className="flex w-max max-w-[calc(100vw-1rem)] flex-col rounded-xl border border-white/10 bg-black/50 py-2 text-sm text-white shadow-2xl backdrop-blur-2xl">
                       <div className="flex">
                         <div className="flex-1 py-2">
-                          <div className="text-white/50 text-[11px] font-bold px-5 mb-2 uppercase tracking-wider">Quality</div>
-                          <div className="flex flex-col max-h-[250px] overflow-y-auto">
-                            {QUALITIES.map((q) => <button key={q.id} onClick={() => switchQuality(q.id)} className="flex items-start gap-3 px-5 py-2.5 hover:bg-white/10 text-left transition-colors"><span className="text-blue-400 w-4 mt-0.5" style={{ opacity: qualityId === q.id ? 1 : 0 }}>✓</span><div><div className="font-semibold text-[15px]">{q.label}</div><div className="text-white/50 text-xs">Up to {q.cap}p</div></div></button>)}
+                          <div className="mb-2 px-5 text-[11px] font-bold uppercase tracking-wider text-white/50">Quality</div>
+                          <div className="flex max-h-[250px] flex-col overflow-y-auto">
+                            {QUALITIES.map((q) => (
+                              <SettingButton key={q.id} selected={qualityId === q.id} onClick={() => selectQuality(q.id)} subtitle={`Up to ${q.cap}p`}>{q.label}</SettingButton>
+                            ))}
                           </div>
                         </div>
-                        <div className="flex-1 py-2 border-l border-white/10">
-                          <div className="text-white/50 text-[11px] font-bold px-5 mb-2 uppercase tracking-wider">Server</div>
-                          <div className="flex flex-col max-h-[250px] overflow-y-auto">
-                            {SERVERS.map((s) => <button key={s.id} onClick={() => { setServerId(s.id); setMenu(null); }} className="flex items-center gap-3 px-5 py-2.5 text-left transition-colors hover:bg-white/10"><span className="text-blue-400 w-4" style={{ opacity: serverId === s.id ? 1 : 0 }}>✓</span><span style={{ width: 20, display: 'inline-flex', justifyContent: 'center' }}>{serverIcon(s.cc)}</span><div className="font-semibold text-[15px] flex-1">{s.name}</div></button>)}
+                        <div className="flex-1 border-l border-white/10 py-2">
+                          <div className="mb-2 px-5 text-[11px] font-bold uppercase tracking-wider text-white/50">Server</div>
+                          <div className="flex max-h-[250px] flex-col overflow-y-auto">
+                            {SERVERS.map((server) => (
+                              <button key={server.id} onClick={() => selectServer(server.id)} className="flex items-center gap-3 px-5 py-2.5 text-left transition-colors hover:bg-white/10">
+                                <span className="w-4 shrink-0 text-blue-400" style={{ opacity: serverId === server.id ? 1 : 0 }}>✓</span>
+                                <ServerIcon kind={server.icon} />
+                                <div className="flex-1 font-semibold text-[15px]">{server.name}</div>
+                              </button>
+                            ))}
                           </div>
                         </div>
                       </div>
-                      <div className="h-px bg-white/10 my-1 mx-4" />
-                      <button className="flex items-center justify-center gap-2 px-4 py-3 text-white/60 hover:text-white transition-colors text-xs font-semibold"><CircleAlert className="h-4 w-4" />Report an Issue</button>
+                      <div className="mx-4 my-1 h-px bg-white/10" />
+                      <button className="flex items-center justify-center gap-2 px-4 py-3 text-xs font-semibold text-white/60 transition-colors hover:text-white"><CircleAlert className="h-4 w-4" />Report an Issue</button>
                     </div>
                   </div>
-                )}
+                ) : null}
               </div>
 
               <div className="relative">
-                <button className="flex items-center gap-2 rounded-lg p-2 text-white/90 transition hover:bg-white/10" onClick={() => setMenu(menu === 'audio' ? null : 'audio')}>
-                  <Gauge className="h-6 w-6" /><span className="hidden md:inline">Audio &amp; Subtitles</span>
+                <button onClick={() => setMenu(menu === 'audio' ? null : 'audio')} className="flex items-center gap-2 rounded-lg p-2 text-sm font-semibold text-white/90 transition-all hover:bg-white/10 hover:text-white">
+                  <Captions className="h-6 w-6" /><span className="hidden md:inline">Audio &amp; Subtitles</span>
                 </button>
-                {menu === 'audio' && (
-                  <div className="fixed left-1/2 top-[66px] z-50 w-[340px] max-w-[calc(100vw-1rem)] -translate-x-1/2 origin-top md:absolute md:left-auto md:right-0 md:top-full md:translate-x-0 md:pt-2 md:origin-top-right">
-                    <div className="bg-black/50 backdrop-blur-2xl border border-white/10 text-white rounded-xl shadow-2xl py-2 text-sm">
+                {menu === 'audio' ? (
+                  <div className="fixed left-1/2 top-[66px] z-50 w-[340px] max-w-[calc(100vw-1rem)] -translate-x-1/2 origin-top transition-all duration-200 md:absolute md:left-auto md:right-0 md:top-full md:translate-x-0 md:pt-2 md:origin-top-right">
+                    <div className="rounded-xl border border-white/10 bg-black/50 py-2 text-sm text-white shadow-2xl backdrop-blur-2xl">
                       <div className="flex">
-                        <div className="flex-1 py-2"><div className="text-white/50 text-[11px] font-bold px-5 mb-2 uppercase tracking-wider">Audio</div><div className="flex flex-col max-h-[250px] overflow-y-auto">
-                          {['Hindi', 'English'].map((a) => <button key={a} onClick={() => { setAudio(a); setMenu(null); }} className="flex items-center gap-3 px-5 py-2.5 hover:bg-white/10 text-left transition-colors"><span className="text-blue-400 w-4" style={{ opacity: audio === a ? 1 : 0 }}>✓</span><span className="w-5 text-center">{a === 'Hindi' ? '🇮🇳' : '🇺🇸'}</span><div className="flex-1"><div className="font-semibold text-[15px] leading-tight">{a}</div>{a === 'Hindi' && <div className="text-white/50 text-[13px] mt-0.5">Original</div>}</div></button>)}
-                        </div></div>
-                        <div className="flex-1 py-2 border-l border-white/10"><div className="text-white/50 text-[11px] font-bold px-5 mb-2 uppercase tracking-wider">Subtitles</div><div className="flex flex-col max-h-[250px] overflow-y-auto">
-                          {[{ label: 'Off', url: '' }, ...subtitles].map((s, i) => <button key={`${s.label}-${i}`} onClick={() => { setSubtitle(s.label); setMenu(null); }} className="flex items-center gap-3 px-5 py-2.5 hover:bg-white/10 text-left transition-colors"><span className="text-blue-400 w-4" style={{ opacity: subtitle === s.label ? 1 : 0 }}>✓</span><div className="font-semibold text-[15px]">{s.label}</div></button>)}
-                        </div></div>
+                        <div className="flex-1 py-2">
+                          <div className="mb-2 px-5 text-[11px] font-bold uppercase tracking-wider text-white/50">Audio</div>
+                          <div className="flex max-h-[250px] flex-col overflow-y-auto">
+                            <button onClick={() => { setAudio('Hindi'); setMenu(null); }} className="flex items-center gap-3 px-5 py-2.5 text-left transition-colors hover:bg-white/10"><span className="w-4 text-blue-400" style={{ opacity: audio === 'Hindi' ? 1 : 0 }}>✓</span><span className="text-sm">🇮🇳</span><div className="flex-1"><div className="font-semibold text-[15px] leading-tight">Hindi</div><div className="mt-0.5 text-[13px] text-white/50">Original</div></div></button>
+                            <button onClick={() => { setAudio('English'); setMenu(null); }} className="flex items-center gap-3 px-5 py-2.5 text-left transition-colors hover:bg-white/10"><span className="w-4 text-blue-400" style={{ opacity: audio === 'English' ? 1 : 0 }}>✓</span><span className="text-sm">🇺🇸</span><div className="flex-1"><div className="font-semibold text-[15px] leading-tight">English</div></div></button>
+                          </div>
+                        </div>
+                        <div className="flex-1 border-l border-white/10 py-2">
+                          <div className="mb-2 px-5 text-[11px] font-bold uppercase tracking-wider text-white/50">Subtitles</div>
+                          <div className="flex max-h-[250px] flex-col overflow-y-auto">
+                            <button onClick={() => { setSubtitle('Off'); setMenu(null); }} className="flex items-center gap-3 px-5 py-2.5 text-left transition-colors hover:bg-white/10"><span className="w-4 text-blue-400" style={{ opacity: subtitle === 'Off' ? 1 : 0 }}>✓</span><div className="font-semibold text-[15px]">Off</div></button>
+                            {subtitles.map((sub, index) => (
+                              <button key={`${sub.label}-${index}`} onClick={() => { setSubtitle(sub.label); setMenu(null); }} className="flex items-center gap-3 px-5 py-2.5 text-left transition-colors hover:bg-white/10"><span className="w-4 text-blue-400" style={{ opacity: subtitle === sub.label ? 1 : 0 }}>✓</span><div className="font-semibold text-[15px]">{sub.label}</div></button>
+                            ))}
+                          </div>
+                        </div>
                       </div>
-                      <div className="h-px bg-white/10 my-1 mx-4" /><button className="flex items-center justify-center gap-2 px-4 py-3 text-white/60 hover:text-white transition-colors text-xs font-semibold w-full"><CircleAlert className="h-4 w-4" />Report an Issue</button>
+                      <div className="mx-4 my-1 h-px bg-white/10" />
+                      <button className="flex w-full items-center justify-center gap-2 px-4 py-3 text-xs font-semibold text-white/60 transition-colors hover:text-white"><CircleAlert className="h-4 w-4" />Report an Issue</button>
                     </div>
                   </div>
-                )}
+                ) : null}
               </div>
 
-              <button onClick={toggleFullscreen} className="p-2 text-white/90 hover:text-white" aria-label="Fullscreen">{fullscreen ? <X className="h-6 w-6 md:h-7 md:w-7"/> : <Maximize className="h-6 w-6 md:h-7 md:w-7"/>}</button>
+              <button onClick={toggleFullscreen} className="p-2 text-white/90 transition-opacity hover:text-white" aria-label="Fullscreen"><Maximize className="h-6 w-6 md:h-7 md:w-7" /></button>
             </div>
           </div>
         </div>
 
-        {moreLike && (
-          <div className="absolute inset-0 z-[220] bg-black/80 backdrop-blur-md text-white flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between px-6 md:px-10 py-5 shrink-0"><div className="flex items-baseline gap-4"><h2 className="text-2xl md:text-[26px] font-bold tracking-wide">More Like This</h2><span className="text-white/40 font-medium text-sm md:text-lg line-clamp-1">{titleName}</span></div><button onClick={() => setMoreLike(false)} className="p-2.5 rounded-full hover:bg-white/10" aria-label="Close"><X className="w-7 h-7"/></button></div>
-            <div className="h-px bg-white/10 mx-6 md:mx-10 shrink-0" />
-            <div className="flex-1 overflow-y-auto px-6 md:px-10 pb-32 pt-4 md:pt-6"><div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6 mt-4">
-              {(((title as any)?.similar?.results || (title as any)?.recommendations?.results || []) as any[]).slice(0, 20).map((item: any) => <a key={item.id} href={`/title/${item.media_type || (mediaType === 'tv' ? 'tv' : 'movie')}/${item.id}`} className="group flex flex-col gap-2"><div className="relative aspect-video w-full overflow-hidden rounded-xl bg-white/5 border border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.3)]"><img src={item.backdrop_path ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` : item.poster_path ? `https://image.tmdb.org/t/p/w780${item.poster_path}` : ''} alt="" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105" loading="lazy"/><div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"/><div className="absolute bottom-2 left-2 right-2"><div className="truncate text-[12px] sm:text-[14px] font-medium text-white/90 group-hover:text-white">{item.title || item.name}</div><div className="mt-1 text-[9px] sm:text-[11px] text-white/50">{String(item.release_date || item.first_air_date || '').slice(0,4)}<span className="mx-1">•</span>{String(item.media_type || mediaType).toUpperCase()}</div></div></div></a>)}
-            </div></div>
+        {moreLike ? (
+          <div className="absolute inset-0 z-[220] flex flex-col overflow-hidden bg-black/80 text-white backdrop-blur-md">
+            <div className="flex shrink-0 items-center justify-between px-6 py-5 md:px-10">
+              <div className="flex min-w-0 items-baseline gap-4"><h2 className="text-2xl font-bold tracking-wide md:text-[26px]">More Like This</h2><span className="line-clamp-1 text-sm font-medium text-white/40 md:text-lg">{titleName}</span></div>
+              <button onClick={() => setMoreLike(false)} className="rounded-full p-2.5 transition-colors hover:bg-white/10" aria-label="Close"><X className="h-7 w-7" /></button>
+            </div>
+            <div className="mx-6 h-px shrink-0 bg-white/10 md:mx-10" />
+            <div className="flex-1 overflow-y-auto px-6 pb-32 pt-4 md:px-10 md:pt-6">
+              <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 md:gap-6 lg:grid-cols-5">
+                {(((title as any)?.similar?.results || (title as any)?.recommendations?.results || []) as any[]).slice(0, 20).map((item: any) => (
+                  <a key={item.id} href={`/title/${item.media_type || mediaType}/${item.id}`} className="group flex w-full flex-col gap-2 transition-all duration-200">
+                    <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-white/10 bg-white/5 shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
+                      <img alt={item.title || item.name || ''} loading="lazy" src={item.backdrop_path ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` : item.poster_path ? `https://image.tmdb.org/t/p/w780${item.poster_path}` : ''} className="absolute inset-0 z-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105" />
+                      <div className="absolute inset-0 z-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-60" />
+                      <div className="absolute bottom-1.5 left-1.5 right-1.5 z-10 flex items-end justify-between gap-2 sm:bottom-2 sm:left-2 sm:right-2">
+                        {item.vote_average ? <div className="rounded bg-black/60 px-1 py-0.5 text-[9px] font-bold text-white backdrop-blur-md sm:px-1.5 sm:text-[11px]">★ {Number(item.vote_average).toFixed(1)}</div> : <span />}
+                        <div className="flex h-6 w-6 translate-y-2 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 sm:h-7 sm:w-7"><Play className="h-3 w-3 fill-current" /></div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col px-0.5"><h3 className="truncate text-[12px] font-medium leading-snug text-white/90 transition-colors duration-200 group-hover:text-white sm:text-[14px]">{item.title || item.name}</h3><div className="mt-1 truncate text-[9px] font-medium leading-none text-white/50 sm:text-[11px]">{String(item.release_date || item.first_air_date || '').slice(0, 4)}<span className="mx-1">•</span><span className="uppercase tracking-wider">{String(item.media_type || mediaType)}</span></div></div>
+                  </a>
+                ))}
+              </div>
+            </div>
           </div>
-        )}
+        ) : null}
       </div>
 
-      {sourceLoading || loading ? <div className="absolute inset-0 z-[230] flex items-center justify-center pointer-events-none"><Loader2 className="h-8 w-8 animate-spin text-white/70" /></div> : null}
+      {sourceLoading || loading ? <div className="pointer-events-none absolute inset-0 z-[230] flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-white/70" /></div> : null}
     </div>
   );
 }
