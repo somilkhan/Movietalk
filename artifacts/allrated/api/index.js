@@ -51,51 +51,41 @@ function mapTitle(raw, fallbackMediaType) {
   };
 }
 
-// ── HTTP client: tries native fetch (Node 18+), falls back to https ──────────
+// ── HTTP client ─────────────────────────────────────────────────────────────
 
-function httpsGet(urlStr, options = {}, maxRedirects = 5) {
+function httpsRequest(urlStr, options = {}) {
   return new Promise((resolve, reject) => {
     const client = urlStr.startsWith("https:") ? https : http;
     const req = client.get(urlStr, options, (res) => {
-      // Follow redirects
-      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location && maxRedirects > 0) {
-        httpsGet(res.headers.location, options, maxRedirects - 1).then(resolve).catch(reject);
-        return;
-      }
       const chunks = [];
       res.on("data", (chunk) => chunks.push(chunk));
       res.on("end", () => {
         resolve({
           status: res.statusCode,
           headers: res.headers,
-          buffer: Buffer.concat(chunks),
+          body: Buffer.concat(chunks).toString(),
         });
       });
     });
-    req.on("error", reject);
-    req.setTimeout(15000, () => {
+    req.on("error", (err) => reject(err));
+    req.setTimeout(10000, () => {
       req.destroy();
-      reject(new Error("Request timeout after 15s"));
+      reject(new Error("Request timeout"));
     });
   });
 }
 
 async function httpGet(urlStr, options = {}) {
-  // Try native fetch first (Node 18+)
   if (typeof fetch !== "undefined") {
     try {
       const res = await fetch(urlStr, options);
-      const buf = await res.arrayBuffer();
-      return {
-        status: res.status,
-        headers: Object.fromEntries(res.headers.entries()),
-        buffer: Buffer.from(buf),
-      };
+      const text = await res.text();
+      return { status: res.status, body: text };
     } catch {
-      // fall through to https
+      // fall through
     }
   }
-  return httpsGet(urlStr, options);
+  return httpsRequest(urlStr, options);
 }
 
 async function tmdbFetch(path, params) {
@@ -109,7 +99,7 @@ async function tmdbFetch(path, params) {
   try {
     const res = await httpGet(url.toString());
     if (res.status >= 400) return null;
-    return JSON.parse(res.buffer.toString());
+    return JSON.parse(res.body);
   } catch {
     return null;
   }
@@ -150,102 +140,139 @@ function clearCookie(res, name) {
   res.setHeader("Set-Cookie", arr);
 }
 
-function sendJson(res, statusCode, data) {
-  res.statusCode = statusCode;
-  res.setHeader("Content-Type", "application/json");
-  res.end(JSON.stringify(data));
-}
+// ── Safe response helpers ───────────────────────────────────────────────────
 
-function sendText(res, statusCode, text) {
-  res.statusCode = statusCode;
-  res.setHeader("Content-Type", "text/plain");
-  res.end(text);
-}
-
-module.exports = async function handler(req, res) {
-  // Polyfills for Vercel native serverless
-  if (!res.json) {
-    res.json = (data) => {
+function safeJson(res, data) {
+  try {
+    if (!res.headersSent) {
       res.setHeader("Content-Type", "application/json");
       res.end(JSON.stringify(data));
-    };
+    }
+  } catch (e) {
+    try { res.end(JSON.stringify({ error: "Response failed" })); } catch {}
   }
-  if (!res.status) {
-    res.status = (code) => { res.statusCode = code; return res; };
-  }
-  if (!res.send) {
-    res.send = (data) => { res.end(data); return res; };
-  }
+}
+
+function safeStatus(res, code) {
+  try {
+    if (!res.headersSent) res.statusCode = code;
+  } catch {}
+  return res;
+}
+
+// ── Main handler ────────────────────────────────────────────────────────────
+
+module.exports = async function handler(req, res) {
+  // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS, PATCH");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Cookie, Range");
   res.setHeader("Access-Control-Expose-Headers", "Content-Length, Content-Range");
-  if (req.method === "OPTIONS") { res.status(200).end(); return; }
+  if (req.method === "OPTIONS") {
+    safeStatus(res, 200);
+    res.end();
+    return;
+  }
 
   try {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const path = url.pathname.replace(/^\/api/, "").replace(/\/$/, "") || "/";
-    const query = Object.fromEntries(url.searchParams);
-    const body = req.method === "POST" || req.method === "PATCH" || req.method === "DELETE" ? await parseBody(req) : {};
+    // Parse URL safely
+    let pathname = "/";
+    let search = "";
+    try {
+      const rawUrl = req.url || "/";
+      // req.url might be full URL or just path
+      const urlObj = rawUrl.startsWith("http")
+        ? new URL(rawUrl)
+        : new URL(rawUrl, `http://${req.headers.host || "localhost"}`);
+      pathname = urlObj.pathname || "/";
+      search = urlObj.search || "";
+    } catch (e) {
+      pathname = "/";
+      search = "";
+    }
+
+    // Strip /api prefix if present
+    const path = pathname.replace(/^\/api/, "").replace(/\/$/, "") || "/";
+
+    // Parse query
+    const query = {};
+    try {
+      const sp = new URLSearchParams(search);
+      sp.forEach((v, k) => { query[k] = v; });
+    } catch {}
+
+    const body = req.method === "POST" || req.method === "PATCH" || req.method === "DELETE"
+      ? await parseBody(req)
+      : {};
     const cookies = parseCookies(req);
     const region = query.region || "IN";
 
-    if (path === "/health") { res.json({ status: "ok" }); return; }
+    // ── Routes ──────────────────────────────────────────────────────────────
+
+    if (path === "/health") {
+      safeJson(res, { status: "ok", time: Date.now() });
+      return;
+    }
 
     if (path === "/debug") {
-      res.json({
+      safeJson(res, {
         tmdbKeySet: !!process.env.TMDB_API_KEY,
         tmdbKeyLength: process.env.TMDB_API_KEY ? process.env.TMDB_API_KEY.length : 0,
-        cineproUrl: process.env.CINEPRO_URL || "not set",
         nodeEnv: process.env.NODE_ENV || "not set",
         hasFetch: typeof fetch !== "undefined",
-        region,
         path,
+        pathname,
+        region,
       });
       return;
     }
 
-    // Test endpoint: directly call TMDB and return raw response for debugging
     if (path === "/test-tmdb") {
-      const testUrl = `${TMDB_BASE}/movie/popular?api_key=${process.env.TMDB_API_KEY}&page=1`;
+      const key = process.env.TMDB_API_KEY;
+      if (!key) {
+        safeJson(res, { ok: false, error: "No TMDB key" });
+        return;
+      }
+      const testUrl = `${TMDB_BASE}/movie/popular?api_key=${key}&page=1`;
       try {
         const result = await httpGet(testUrl);
-        const parsed = JSON.parse(result.buffer.toString());
-        res.json({
+        const parsed = JSON.parse(result.body);
+        safeJson(res, {
           ok: true,
           status: result.status,
           resultCount: Array.isArray(parsed.results) ? parsed.results.length : 0,
           firstTitle: parsed.results?.[0]?.title || null,
-          usedFetch: typeof fetch !== "undefined",
         });
       } catch (err) {
-        res.status(500).json({ ok: false, error: err.message, usedFetch: typeof fetch !== "undefined" });
+        safeJson(res, { ok: false, error: err.message });
       }
       return;
     }
 
+    // Auth
     if (path === "/auth/register" && req.method === "POST") {
       const { email, password, username } = body;
-      if (!email || !password || !username) { res.status(400).json({ error: "Missing fields" }); return; }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { res.status(400).json({ error: "Invalid email" }); return; }
-      if (password.length < 8) { res.status(400).json({ error: "Password too short" }); return; }
-      if (users.has(email)) { res.status(409).json({ error: "Email exists" }); return; }
+      if (!email || !password || !username) { safeStatus(res, 400); safeJson(res, { error: "Missing fields" }); return; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { safeStatus(res, 400); safeJson(res, { error: "Invalid email" }); return; }
+      if (password.length < 8) { safeStatus(res, 400); safeJson(res, { error: "Password too short" }); return; }
+      if (users.has(email)) { safeStatus(res, 409); safeJson(res, { error: "Email exists" }); return; }
       const id = randomUUID();
       users.set(email, { id, email, username, passwordHash: password });
       const sessionId = createSession(id, email);
       setCookie(res, "sessionId", sessionId, SESSION_TTL / 1000);
-      res.status(201).json({ id, email, username });
+      safeStatus(res, 201);
+      safeJson(res, { id, email, username });
       return;
     }
 
     if (path === "/auth/login" && req.method === "POST") {
       const { email, password } = body;
-      if (!email || !password) { res.status(400).json({ error: "Missing fields" }); return; }
+      if (!email || !password) { safeStatus(res, 400); safeJson(res, { error: "Missing fields" }); return; }
       const user = users.get(email);
-      if (!user || user.passwordHash !== password) { res.status(401).json({ error: "Invalid credentials" }); return; }
+      if (!user || user.passwordHash !== password) { safeStatus(res, 401); safeJson(res, { error: "Invalid credentials" }); return; }
       const sessionId = createSession(user.id, user.email);
       setCookie(res, "sessionId", sessionId, SESSION_TTL / 1000);
-      res.json({ id: user.id, email: user.email, username: user.username });
+      safeJson(res, { id: user.id, email: user.email, username: user.username });
       return;
     }
 
@@ -253,33 +280,34 @@ module.exports = async function handler(req, res) {
       const sid = cookies.sessionId;
       if (sid) sessions.delete(sid);
       clearCookie(res, "sessionId");
-      res.json({ success: true });
+      safeJson(res, { success: true });
       return;
     }
 
     if (path === "/auth/me" && req.method === "GET") {
       const session = getSession(cookies.sessionId);
-      if (!session) { res.status(401).json({ error: "Not authenticated" }); return; }
-      res.json({ id: session.userId, email: session.email });
+      if (!session) { safeStatus(res, 401); safeJson(res, { error: "Not authenticated" }); return; }
+      safeJson(res, { id: session.userId, email: session.email });
       return;
     }
 
+    // Watchlist
     if (path === "/watchlist" && req.method === "GET") {
       const sid = query.sessionId;
-      if (!sid) { res.status(400).json({ error: "sessionId required" }); return; }
-      res.json(watchlists.get(sid) || []);
+      if (!sid) { safeStatus(res, 400); safeJson(res, { error: "sessionId required" }); return; }
+      safeJson(res, watchlists.get(sid) || []);
       return;
     }
 
     if (path === "/watchlist" && req.method === "POST") {
       const { sessionId: sid, titleId, mediaType, titleSnapshot } = body;
-      if (!sid || !titleId || !mediaType || typeof titleSnapshot !== "object") { res.status(400).json({ error: "Invalid body" }); return; }
+      if (!sid || !titleId || !mediaType || typeof titleSnapshot !== "object") { safeStatus(res, 400); safeJson(res, { error: "Invalid body" }); return; }
       const list = watchlists.get(sid) || [];
       if (!list.find((x) => x.titleId === titleId && x.mediaType === mediaType)) {
         list.push({ titleId, mediaType, titleSnapshot, addedAt: new Date().toISOString() });
         watchlists.set(sid, list);
       }
-      res.json({ ok: true });
+      safeJson(res, { ok: true });
       return;
     }
 
@@ -287,10 +315,10 @@ module.exports = async function handler(req, res) {
     if (watchlistDelMatch && req.method === "DELETE") {
       const [, mediaType, titleId] = watchlistDelMatch;
       const sid = query.sessionId;
-      if (!sid) { res.status(400).json({ error: "sessionId required" }); return; }
+      if (!sid) { safeStatus(res, 400); safeJson(res, { error: "sessionId required" }); return; }
       const list = watchlists.get(sid) || [];
       watchlists.set(sid, list.filter((x) => !(x.titleId === Number(titleId) && x.mediaType === mediaType)));
-      res.json({ ok: true });
+      safeJson(res, { ok: true });
       return;
     }
 
@@ -298,30 +326,31 @@ module.exports = async function handler(req, res) {
     if (watchlistGetMatch && req.method === "GET") {
       const [, mediaType, titleId] = watchlistGetMatch;
       const sid = query.sessionId;
-      if (!sid) { res.status(400).json({ error: "sessionId required" }); return; }
+      if (!sid) { safeStatus(res, 400); safeJson(res, { error: "sessionId required" }); return; }
       const list = watchlists.get(sid) || [];
       const found = list.find((x) => x.titleId === Number(titleId) && x.mediaType === mediaType);
-      res.json({ inWatchlist: !!found });
+      safeJson(res, { inWatchlist: !!found });
       return;
     }
 
+    // Ratings
     if (path === "/ratings" && req.method === "GET") {
       const sid = query.sessionId;
-      if (!sid) { res.status(400).json({ error: "sessionId required" }); return; }
-      res.json(ratingsStore.get(sid) || []);
+      if (!sid) { safeStatus(res, 400); safeJson(res, { error: "sessionId required" }); return; }
+      safeJson(res, ratingsStore.get(sid) || []);
       return;
     }
 
     if (path === "/ratings" && req.method === "POST") {
       const { sessionId: sid, titleId, mediaType, rating, titleSnapshot } = body;
-      if (!sid || !titleId || !mediaType || !rating || typeof titleSnapshot !== "object") { res.status(400).json({ error: "Invalid body" }); return; }
+      if (!sid || !titleId || !mediaType || !rating || typeof titleSnapshot !== "object") { safeStatus(res, 400); safeJson(res, { error: "Invalid body" }); return; }
       const list = ratingsStore.get(sid) || [];
       const idx = list.findIndex((x) => x.titleId === titleId && x.mediaType === mediaType);
       const entry = { titleId, mediaType, rating, titleSnapshot, ratedAt: new Date().toISOString() };
       if (idx >= 0) list[idx] = entry;
       else list.push(entry);
       ratingsStore.set(sid, list);
-      res.json({ ok: true });
+      safeJson(res, { ok: true });
       return;
     }
 
@@ -329,10 +358,10 @@ module.exports = async function handler(req, res) {
     if (ratingsDelMatch && req.method === "DELETE") {
       const [, mediaType, titleId] = ratingsDelMatch;
       const sid = query.sessionId;
-      if (!sid) { res.status(400).json({ error: "sessionId required" }); return; }
+      if (!sid) { safeStatus(res, 400); safeJson(res, { error: "sessionId required" }); return; }
       const list = ratingsStore.get(sid) || [];
       ratingsStore.set(sid, list.filter((x) => !(x.titleId === Number(titleId) && x.mediaType === mediaType)));
-      res.json({ ok: true });
+      safeJson(res, { ok: true });
       return;
     }
 
@@ -340,21 +369,23 @@ module.exports = async function handler(req, res) {
     if (ratingsGetMatch && req.method === "GET") {
       const [, mediaType, titleId] = ratingsGetMatch;
       const sid = query.sessionId;
-      if (!sid) { res.status(400).json({ error: "sessionId required" }); return; }
+      if (!sid) { safeStatus(res, 400); safeJson(res, { error: "sessionId required" }); return; }
       const list = ratingsStore.get(sid) || [];
       const found = list.find((x) => x.titleId === Number(titleId) && x.mediaType === mediaType);
-      res.json({ rating: found ? found.rating : null });
+      safeJson(res, { rating: found ? found.rating : null });
       return;
     }
+
+    // ── Catalog ─────────────────────────────────────────────────────────────
 
     if (path === "/catalog/trending") {
       const mediaType = query.mediaType || "all";
       const window = query.window || "week";
       const page = query.page || "1";
       const data = await tmdbFetch(`/trending/${mediaType}/${window}`, { page, region });
-      if (!data) { res.status(500).json({ error: "TMDB error" }); return; }
+      if (!data) { safeStatus(res, 500); safeJson(res, { error: "TMDB error" }); return; }
       const results = (data.results || []).filter((r) => r.media_type !== "person").map((r) => mapTitle(r, mediaType === "all" ? undefined : mediaType));
-      res.json(results);
+      safeJson(res, results);
       return;
     }
 
@@ -365,7 +396,7 @@ module.exports = async function handler(req, res) {
 
       if (category === "animation") {
         const data = await tmdbFetch(`/discover/${mediaType}`, { with_genres: ANIMATION_GENRE_ID, sort_by: "popularity.desc", page, region });
-        res.json((data?.results || []).map((r) => mapTitle(r, mediaType)));
+        safeJson(res, (data?.results || []).map((r) => mapTitle(r, mediaType)));
         return;
       }
 
@@ -374,7 +405,7 @@ module.exports = async function handler(req, res) {
         const params = { sort_by: sortBy, with_origin_country: region, page };
         if (category === "top_rated") params["vote_count.gte"] = 100;
         const data = await tmdbFetch(`/discover/${mediaType}`, params);
-        res.json((data?.results || []).map((r) => mapTitle(r, mediaType)));
+        safeJson(res, (data?.results || []).map((r) => mapTitle(r, mediaType)));
         return;
       }
 
@@ -383,9 +414,9 @@ module.exports = async function handler(req, res) {
         tv: { popular: "/tv/popular", top_rated: "/tv/top_rated", on_the_air: "/tv/on_the_air" },
       };
       const endpoint = endpoints[mediaType]?.[category];
-      if (!endpoint) { res.status(400).json({ error: "Invalid category" }); return; }
+      if (!endpoint) { safeStatus(res, 400); safeJson(res, { error: "Invalid category" }); return; }
       const data = await tmdbFetch(endpoint, { page, region });
-      res.json((data?.results || []).map((r) => mapTitle(r, mediaType)));
+      safeJson(res, (data?.results || []).map((r) => mapTitle(r, mediaType)));
       return;
     }
 
@@ -394,7 +425,7 @@ module.exports = async function handler(req, res) {
       const country = query.country || "IN";
       const page = query.page || "1";
       const data = await tmdbFetch(`/discover/${mediaType}`, { with_origin_country: country, sort_by: "popularity.desc", page });
-      res.json((data?.results || []).map((r) => mapTitle(r, mediaType)));
+      safeJson(res, (data?.results || []).map((r) => mapTitle(r, mediaType)));
       return;
     }
 
@@ -403,7 +434,7 @@ module.exports = async function handler(req, res) {
       const language = query.language || "hi";
       const page = query.page || "1";
       const data = await tmdbFetch(`/discover/${mediaType}`, { with_original_language: language, sort_by: "popularity.desc", page });
-      res.json((data?.results || []).map((r) => mapTitle(r, mediaType)));
+      safeJson(res, (data?.results || []).map((r) => mapTitle(r, mediaType)));
       return;
     }
 
@@ -417,21 +448,21 @@ module.exports = async function handler(req, res) {
         ...((shows?.results || []).map((r) => mapTitle(r, "tv"))),
       ];
       combined.sort((a, b) => b.voteAverage - a.voteAverage);
-      res.json(combined);
+      safeJson(res, combined);
       return;
     }
 
     if (path === "/catalog/search") {
       const q = query.query || "";
       const data = await tmdbFetch("/search/multi", { query: q, region });
-      res.json((data?.results || []).filter((r) => r.media_type === "movie" || r.media_type === "tv").map((r) => mapTitle(r)));
+      safeJson(res, (data?.results || []).filter((r) => r.media_type === "movie" || r.media_type === "tv").map((r) => mapTitle(r)));
       return;
     }
 
     if (path === "/catalog/genres") {
       const mediaType = query.mediaType || "movie";
       const data = await tmdbFetch(`/genre/${mediaType}/list`);
-      res.json(data?.genres || []);
+      safeJson(res, data?.genres || []);
       return;
     }
 
@@ -440,7 +471,7 @@ module.exports = async function handler(req, res) {
       const [, mediaType, id] = titleMatch;
       const append = mediaType === "movie" ? "credits,videos,similar,release_dates" : "credits,videos,similar,content_ratings";
       const raw = await tmdbFetch(`/${mediaType}/${id}?append_to_response=${append}`);
-      if (!raw) { res.status(404).json({ error: "Not found" }); return; }
+      if (!raw) { safeStatus(res, 404); safeJson(res, { error: "Not found" }); return; }
       const base = mapTitle(raw, mediaType);
       let certification = null;
       if (mediaType === "movie" && raw.release_dates?.results) {
@@ -450,7 +481,7 @@ module.exports = async function handler(req, res) {
         const us = raw.content_ratings.results.find((r) => r.iso_3166_1 === "US");
         certification = us?.rating || null;
       }
-      res.json({
+      safeJson(res, {
         ...base,
         genres: raw.genres || [],
         runtimeMinutes: raw.runtime || (raw.episode_run_time?.[0]) || null,
@@ -468,7 +499,7 @@ module.exports = async function handler(req, res) {
       const data = await tmdbFetch(`/${mediaType}/${id}/videos`);
       const yt = (data?.results || []).filter((v) => v.site === "YouTube");
       const trailer = yt.find((v) => v.type === "Trailer" && v.official) || yt.find((v) => v.type === "Trailer") || yt.find((v) => v.type === "Teaser") || yt[0] || null;
-      res.json({ key: trailer?.key || null });
+      safeJson(res, { key: trailer?.key || null });
       return;
     }
 
@@ -478,7 +509,7 @@ module.exports = async function handler(req, res) {
       const data = await tmdbFetch(`/${mediaType}/${id}/videos`);
       const yt = (data?.results || []).filter((v) => v.site === "YouTube");
       const trailer = yt.find((v) => v.type === "Trailer" && v.official) || yt.find((v) => v.type === "Trailer") || yt.find((v) => v.type === "Teaser") || yt[0] || null;
-      res.json({ key: trailer?.key || null });
+      safeJson(res, { key: trailer?.key || null });
       return;
     }
 
@@ -488,7 +519,7 @@ module.exports = async function handler(req, res) {
       const data = await tmdbFetch(`/${mediaType}/${id}/images`);
       const logos = data?.logos || [];
       const logo = logos.find((l) => l.iso_639_1 === "en") || logos[0] || null;
-      res.json({ logoPath: logo ? `${IMAGE_BASE}/w500${logo.file_path}` : null });
+      safeJson(res, { logoPath: logo ? `${IMAGE_BASE}/w500${logo.file_path}` : null });
       return;
     }
 
@@ -496,7 +527,7 @@ module.exports = async function handler(req, res) {
     if (seasonMatch) {
       const [, showId, seasonNumber] = seasonMatch;
       const data = await tmdbFetch(`/tv/${showId}/season/${seasonNumber}`);
-      res.json((data?.episodes || []).map((ep) => ({
+      safeJson(res, (data?.episodes || []).map((ep) => ({
         id: ep.id,
         episodeNumber: ep.episode_number,
         name: ep.name,
@@ -508,36 +539,40 @@ module.exports = async function handler(req, res) {
       return;
     }
 
+    // Stream
     const streamMovieMatch = path.match(/^\/stream\/movie\/(\d+)$/);
     if (streamMovieMatch && req.method === "GET") {
       const [, id] = streamMovieMatch;
-      if (!CINEPRO_URL) { res.status(503).json({ error: "Stream unavailable", sources: [], subtitles: [] }); return; }
+      if (!CINEPRO_URL) { safeStatus(res, 503); safeJson(res, { error: "Stream unavailable", sources: [], subtitles: [] }); return; }
       try {
         const upstream = await httpGet(`${CINEPRO_URL}/v1/movies/${id}`, { headers: { Accept: "application/json" } });
-        const data = JSON.parse(upstream.buffer.toString());
-        res.status(upstream.status).json(data);
-      } catch { res.status(503).json({ error: "Stream unavailable", sources: [], subtitles: [] }); }
+        const data = JSON.parse(upstream.body);
+        safeStatus(res, upstream.status);
+        safeJson(res, data);
+      } catch { safeStatus(res, 503); safeJson(res, { error: "Stream unavailable", sources: [], subtitles: [] }); }
       return;
     }
 
     const streamTvMatch = path.match(/^\/stream\/tv\/(\d+)\/season\/(\d+)\/episode\/(\d+)$/);
     if (streamTvMatch && req.method === "GET") {
       const [, id, s, e] = streamTvMatch;
-      if (!CINEPRO_URL) { res.status(503).json({ error: "Stream unavailable", sources: [], subtitles: [] }); return; }
+      if (!CINEPRO_URL) { safeStatus(res, 503); safeJson(res, { error: "Stream unavailable", sources: [], subtitles: [] }); return; }
       try {
         const upstream = await httpGet(`${CINEPRO_URL}/v1/tv/${id}/seasons/${s}/episodes/${e}`, { headers: { Accept: "application/json" } });
-        const data = JSON.parse(upstream.buffer.toString());
-        res.status(upstream.status).json(data);
-      } catch { res.status(503).json({ error: "Stream unavailable", sources: [], subtitles: [] }); }
+        const data = JSON.parse(upstream.body);
+        safeStatus(res, upstream.status);
+        safeJson(res, data);
+      } catch { safeStatus(res, 503); safeJson(res, { error: "Stream unavailable", sources: [], subtitles: [] }); }
       return;
     }
 
+    // Proxy
     if (path === "/proxy") {
       const rawUrl = query.url;
-      if (!rawUrl) { res.status(400).send("Missing url"); return; }
+      if (!rawUrl) { safeStatus(res, 400); res.end("Missing url"); return; }
       let parsedUrl;
-      try { parsedUrl = new URL(rawUrl); } catch { res.status(400).send("Invalid url"); return; }
-      if (!["http:", "https:"].includes(parsedUrl.protocol)) { res.status(400).send("Protocol not allowed"); return; }
+      try { parsedUrl = new URL(rawUrl); } catch { safeStatus(res, 400); res.end("Invalid url"); return; }
+      if (!["http:", "https:"].includes(parsedUrl.protocol)) { safeStatus(res, 400); res.end("Protocol not allowed"); return; }
       try {
         const headers = {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
@@ -550,17 +585,26 @@ module.exports = async function handler(req, res) {
         res.setHeader("Access-Control-Allow-Origin", "*");
         res.setHeader("Access-Control-Allow-Headers", "Range");
         res.setHeader("Access-Control-Expose-Headers", "Content-Length,Content-Range");
-        if (upstream.headers["content-type"]) res.setHeader("Content-Type", upstream.headers["content-type"]);
-        if (upstream.headers["content-length"]) res.setHeader("Content-Length", upstream.headers["content-length"]);
-        if (upstream.headers["content-range"]) res.setHeader("Content-Range", upstream.headers["content-range"]);
-        res.status(upstream.status);
-        res.end(upstream.buffer);
-      } catch { res.status(502).send("Proxy error"); }
+        if (upstream.headers && upstream.headers["content-type"]) res.setHeader("Content-Type", upstream.headers["content-type"]);
+        if (upstream.headers && upstream.headers["content-length"]) res.setHeader("Content-Length", upstream.headers["content-length"]);
+        if (upstream.headers && upstream.headers["content-range"]) res.setHeader("Content-Range", upstream.headers["content-range"]);
+        safeStatus(res, upstream.status);
+        res.end(Buffer.from(upstream.body));
+      } catch { safeStatus(res, 502); res.end("Proxy error"); }
       return;
     }
 
-    res.status(404).json({ error: "Not found", path });
+    // 404
+    safeStatus(res, 404);
+    safeJson(res, { error: "Not found", path });
+
   } catch (err) {
-    res.status(500).json({ error: "Internal server error", message: err.message, stack: err.stack });
+    // Absolute last-resort error handler
+    try {
+      safeStatus(res, 500);
+      safeJson(res, { error: "Internal error", message: String(err && err.message ? err.message : err) });
+    } catch {
+      try { res.statusCode = 500; res.end("Internal Server Error"); } catch {}
+    }
   }
 };
