@@ -28,7 +28,7 @@ const Sports = lazy(() => import("@/pages/Sports"));
 const Sparks = lazy(() => import("@/pages/Sparks"));
 const TitleDetail = lazy(() => import("@/pages/TitleDetail"));
 const Catalog = lazy(() => import("@/pages/Catalog"));
-const Watch = lazy(() => import("@/pages/Watch"));
+const Watch = lazy(() => import("@/pages/BingrWatch"));
 const Settings = lazy(() => import("@/pages/Settings"));
 const SettingsAccount = lazy(() => import("@/pages/SettingsAccount"));
 const SettingsParental = lazy(() => import("@/pages/SettingsParental"));
