@@ -1,14 +1,13 @@
 const TMDB_BASE = "https://api.themoviedb.org/3";
 const IMAGE_BASE = "https://image.tmdb.org/t/p";
 const ANIMATION_GENRE_ID = 16;
-const CINEPRO_URL = process.env.CINEPRO_URL ?? "";
+const CINEPRO_URL = process.env.CINEPRO_URL || "";
 
-// ========== IN-MEMORY STORES ==========
-const users = new Map(); // email -> { id, email, username, passwordHash }
-const sessions = new Map(); // sessionId -> { userId, email, expiresAt }
-const watchlists = new Map(); // sessionId -> [{ titleId, mediaType, titleSnapshot, addedAt }]
-const ratings = new Map(); // sessionId -> [{ titleId, mediaType, rating, titleSnapshot, ratedAt }]
-
+// In-memory stores
+const users = new Map();
+const sessions = new Map();
+const watchlists = new Map();
+const ratingsStore = new Map();
 const SESSION_TTL = 7 * 24 * 60 * 60 * 1000;
 
 function randomUUID() {
@@ -34,7 +33,6 @@ function getSession(sessionId) {
   return s;
 }
 
-// ========== HELPERS ==========
 function mapTitle(raw, fallbackMediaType) {
   const mediaType = raw.media_type || fallbackMediaType || "movie";
   const date = raw.release_date || raw.first_air_date || null;
@@ -51,12 +49,12 @@ function mapTitle(raw, fallbackMediaType) {
   };
 }
 
-async function tmdbFetch(path, params = {}) {
+async function tmdbFetch(path, params) {
   const key = process.env.TMDB_API_KEY;
   if (!key) return null;
   const url = new URL(`${TMDB_BASE}${path}`);
   url.searchParams.set("api_key", key);
-  for (const [k, value] of Object.entries(params)) {
+  for (const [k, value] of Object.entries(params || {})) {
     if (value !== undefined) url.searchParams.set(k, String(value));
   }
   const res = await fetch(url.toString());
@@ -86,16 +84,20 @@ function parseCookies(req) {
 }
 
 function setCookie(res, name, value, maxAge) {
-  res.setHeader("Set-Cookie", `${name}=${value}; HttpOnly; SameSite=Lax; Max-Age=${maxAge}; Path=/`);
+  const existing = res.getHeader("Set-Cookie") || [];
+  const arr = Array.isArray(existing) ? existing : [existing];
+  arr.push(`${name}=${value}; HttpOnly; SameSite=Lax; Max-Age=${maxAge}; Path=/`);
+  res.setHeader("Set-Cookie", arr);
 }
 
 function clearCookie(res, name) {
-  res.setHeader("Set-Cookie", `${name}=; HttpOnly; SameSite=Lax; Max-Age=0; Path=/`);
+  const existing = res.getHeader("Set-Cookie") || [];
+  const arr = Array.isArray(existing) ? existing : [existing];
+  arr.push(`${name}=; HttpOnly; SameSite=Lax; Max-Age=0; Path=/`);
+  res.setHeader("Set-Cookie", arr);
 }
 
-// ========== MAIN HANDLER ==========
-export default async function handler(req, res) {
-  // CORS
+module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS, PATCH");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Cookie, Range");
@@ -109,40 +111,37 @@ export default async function handler(req, res) {
   const cookies = parseCookies(req);
   const region = query.region || "IN";
 
-  // ========== HEALTH ==========
-  if (path === "/health") {
-    res.status(200).json({ status: "ok" });
-    return;
-  }
+  // Health
+  if (path === "/health") { res.json({ status: "ok" }); return; }
 
-  // ========== AUTH ==========
+  // Auth Register
   if (path === "/auth/register" && req.method === "POST") {
     const { email, password, username } = body;
     if (!email || !password || !username) { res.status(400).json({ error: "Missing fields" }); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { res.status(400).json({ error: "Invalid email" }); return; }
     if (password.length < 8) { res.status(400).json({ error: "Password too short" }); return; }
     if (users.has(email)) { res.status(409).json({ error: "Email exists" }); return; }
-
     const id = randomUUID();
-    users.set(email, { id, email, username, passwordHash: password }); // plain text for demo
+    users.set(email, { id, email, username, passwordHash: password });
     const sessionId = createSession(id, email);
     setCookie(res, "sessionId", sessionId, SESSION_TTL / 1000);
     res.status(201).json({ id, email, username });
     return;
   }
 
+  // Auth Login
   if (path === "/auth/login" && req.method === "POST") {
     const { email, password } = body;
     if (!email || !password) { res.status(400).json({ error: "Missing fields" }); return; }
     const user = users.get(email);
     if (!user || user.passwordHash !== password) { res.status(401).json({ error: "Invalid credentials" }); return; }
-
     const sessionId = createSession(user.id, user.email);
     setCookie(res, "sessionId", sessionId, SESSION_TTL / 1000);
     res.json({ id: user.id, email: user.email, username: user.username });
     return;
   }
 
+  // Auth Logout
   if (path === "/auth/logout" && req.method === "POST") {
     const sid = cookies.sessionId;
     if (sid) sessions.delete(sid);
@@ -151,6 +150,7 @@ export default async function handler(req, res) {
     return;
   }
 
+  // Auth Me
   if (path === "/auth/me" && req.method === "GET") {
     const session = getSession(cookies.sessionId);
     if (!session) { res.status(401).json({ error: "Not authenticated" }); return; }
@@ -158,15 +158,15 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ========== WATCHLIST ==========
+  // Watchlist GET
   if (path === "/watchlist" && req.method === "GET") {
     const sid = query.sessionId;
     if (!sid) { res.status(400).json({ error: "sessionId required" }); return; }
-    const list = watchlists.get(sid) || [];
-    res.json(list);
+    res.json(watchlists.get(sid) || []);
     return;
   }
 
+  // Watchlist POST
   if (path === "/watchlist" && req.method === "POST") {
     const { sessionId: sid, titleId, mediaType, titleSnapshot } = body;
     if (!sid || !titleId || !mediaType || typeof titleSnapshot !== "object") { res.status(400).json({ error: "Invalid body" }); return; }
@@ -179,6 +179,7 @@ export default async function handler(req, res) {
     return;
   }
 
+  // Watchlist DELETE
   const watchlistDelMatch = path.match(/^\/watchlist\/(movie|tv)\/(\d+)$/);
   if (watchlistDelMatch && req.method === "DELETE") {
     const [, mediaType, titleId] = watchlistDelMatch;
@@ -190,6 +191,7 @@ export default async function handler(req, res) {
     return;
   }
 
+  // Watchlist GET single
   const watchlistGetMatch = path.match(/^\/watchlist\/(movie|tv)\/(\d+)$/);
   if (watchlistGetMatch && req.method === "GET") {
     const [, mediaType, titleId] = watchlistGetMatch;
@@ -201,50 +203,53 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ========== RATINGS ==========
+  // Ratings GET
   if (path === "/ratings" && req.method === "GET") {
     const sid = query.sessionId;
     if (!sid) { res.status(400).json({ error: "sessionId required" }); return; }
-    res.json(ratings.get(sid) || []);
+    res.json(ratingsStore.get(sid) || []);
     return;
   }
 
+  // Ratings POST
   if (path === "/ratings" && req.method === "POST") {
     const { sessionId: sid, titleId, mediaType, rating, titleSnapshot } = body;
     if (!sid || !titleId || !mediaType || !rating || typeof titleSnapshot !== "object") { res.status(400).json({ error: "Invalid body" }); return; }
-    const list = ratings.get(sid) || [];
+    const list = ratingsStore.get(sid) || [];
     const idx = list.findIndex((x) => x.titleId === titleId && x.mediaType === mediaType);
     const entry = { titleId, mediaType, rating, titleSnapshot, ratedAt: new Date().toISOString() };
     if (idx >= 0) list[idx] = entry;
     else list.push(entry);
-    ratings.set(sid, list);
+    ratingsStore.set(sid, list);
     res.json({ ok: true });
     return;
   }
 
+  // Ratings DELETE
   const ratingsDelMatch = path.match(/^\/ratings\/(movie|tv)\/(\d+)$/);
   if (ratingsDelMatch && req.method === "DELETE") {
     const [, mediaType, titleId] = ratingsDelMatch;
     const sid = query.sessionId;
     if (!sid) { res.status(400).json({ error: "sessionId required" }); return; }
-    const list = ratings.get(sid) || [];
-    ratings.set(sid, list.filter((x) => !(x.titleId === Number(titleId) && x.mediaType === mediaType)));
+    const list = ratingsStore.get(sid) || [];
+    ratingsStore.set(sid, list.filter((x) => !(x.titleId === Number(titleId) && x.mediaType === mediaType)));
     res.json({ ok: true });
     return;
   }
 
+  // Ratings GET single
   const ratingsGetMatch = path.match(/^\/ratings\/(movie|tv)\/(\d+)$/);
   if (ratingsGetMatch && req.method === "GET") {
     const [, mediaType, titleId] = ratingsGetMatch;
     const sid = query.sessionId;
     if (!sid) { res.status(400).json({ error: "sessionId required" }); return; }
-    const list = ratings.get(sid) || [];
+    const list = ratingsStore.get(sid) || [];
     const found = list.find((x) => x.titleId === Number(titleId) && x.mediaType === mediaType);
-    res.json({ rating: found?.rating ?? null });
+    res.json({ rating: found ? found.rating : null });
     return;
   }
 
-  // ========== CATALOG: TRENDING ==========
+  // Catalog Trending
   if (path === "/catalog/trending") {
     const mediaType = query.mediaType || "all";
     const window = query.window || "week";
@@ -255,42 +260,31 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ========== CATALOG: LIST ==========
+  // Catalog List
   if (path === "/catalog/list") {
     const mediaType = query.mediaType || "movie";
     const category = query.category || "popular";
     const page = query.page || "1";
 
+    if (category === "animation") {
+      const data = await tmdbFetch(`/discover/${mediaType}`, { with_genres: ANIMATION_GENRE_ID, sort_by: "popularity.desc", page, region });
+      res.json(data?.results.map((r) => mapTitle(r, mediaType)) || []);
+      return;
+    }
+
+    if (region && region !== "US") {
+      const sortBy = category === "top_rated" ? "vote_average.desc" : "popularity.desc";
+      const params = { sort_by: sortBy, with_origin_country: region, page };
+      if (category === "top_rated") params["vote_count.gte"] = 100;
+      const data = await tmdbFetch(`/discover/${mediaType}`, params);
+      res.json(data?.results.map((r) => mapTitle(r, mediaType)) || []);
+      return;
+    }
+
     const endpoints = {
       movie: { popular: "/movie/popular", top_rated: "/movie/top_rated", now_playing: "/movie/now_playing" },
       tv: { popular: "/tv/popular", top_rated: "/tv/top_rated", on_the_air: "/tv/on_the_air" },
     };
-
-    if (category === "animation") {
-      const data = await tmdbFetch(`/discover/${mediaType}`, {
-        with_genres: ANIMATION_GENRE_ID,
-        sort_by: "popularity.desc",
-        page,
-        region,
-      });
-      res.json(data?.results.map((r) => mapTitle(r, mediaType)) || []);
-      return;
-    }
-
-    // For non-US regions, use /discover with origin country for REAL regional filtering
-    if (region && region !== "US") {
-      const sortBy = category === "top_rated" ? "vote_average.desc" : "popularity.desc";
-      const voteCountGte = category === "top_rated" ? 100 : undefined;
-      const data = await tmdbFetch(`/discover/${mediaType}`, {
-        sort_by: sortBy,
-        with_origin_country: region,
-        ...(voteCountGte ? { "vote_count.gte": voteCountGte } : {}),
-        page,
-      });
-      res.json(data?.results.map((r) => mapTitle(r, mediaType)) || []);
-      return;
-    }
-
     const endpoint = endpoints[mediaType]?.[category];
     if (!endpoint) { res.status(400).json({ error: "Invalid category" }); return; }
     const data = await tmdbFetch(endpoint, { page, region });
@@ -298,35 +292,27 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ========== CATALOG: REGIONAL ==========
+  // Catalog Regional
   if (path === "/catalog/regional") {
     const mediaType = query.mediaType || "movie";
     const country = query.country || "IN";
     const page = query.page || "1";
-    const data = await tmdbFetch(`/discover/${mediaType}`, {
-      with_origin_country: country,
-      sort_by: "popularity.desc",
-      page,
-    });
+    const data = await tmdbFetch(`/discover/${mediaType}`, { with_origin_country: country, sort_by: "popularity.desc", page });
     res.json(data?.results.map((r) => mapTitle(r, mediaType)) || []);
     return;
   }
 
-  // ========== CATALOG: LANGUAGE ==========
+  // Catalog Language
   if (path === "/catalog/language") {
     const mediaType = query.mediaType || "movie";
     const language = query.language || "hi";
     const page = query.page || "1";
-    const data = await tmdbFetch(`/discover/${mediaType}`, {
-      with_original_language: language,
-      sort_by: "popularity.desc",
-      page,
-    });
+    const data = await tmdbFetch(`/discover/${mediaType}`, { with_original_language: language, sort_by: "popularity.desc", page });
     res.json(data?.results.map((r) => mapTitle(r, mediaType)) || []);
     return;
   }
 
-  // ========== CATALOG: ANIME ==========
+  // Catalog Anime
   if (path === "/catalog/anime") {
     const [movies, shows] = await Promise.all([
       tmdbFetch("/discover/movie", { with_genres: ANIMATION_GENRE_ID, with_origin_country: "JP", sort_by: "popularity.desc" }),
@@ -341,7 +327,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ========== CATALOG: SEARCH ==========
+  // Catalog Search
   if (path === "/catalog/search") {
     const q = query.query || "";
     const data = await tmdbFetch("/search/multi", { query: q, region });
@@ -349,7 +335,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ========== CATALOG: GENRES ==========
+  // Catalog Genres
   if (path === "/catalog/genres") {
     const mediaType = query.mediaType || "movie";
     const data = await tmdbFetch(`/genre/${mediaType}/list`);
@@ -357,7 +343,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ========== CATALOG: TITLE DETAIL ==========
+  // Title Detail
   const titleMatch = path.match(/^\/catalog\/title\/(movie|tv)\/(\d+)$/);
   if (titleMatch) {
     const [, mediaType, id] = titleMatch;
@@ -385,7 +371,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ========== CATALOG: VIDEOS ==========
+  // Videos
   const videosMatch = path.match(/^\/catalog\/title\/(movie|tv)\/(\d+)\/videos$/);
   if (videosMatch) {
     const [, mediaType, id] = videosMatch;
@@ -396,7 +382,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ========== CATALOG: TRAILER (frontend calls this) ==========
+  // Trailer (frontend alias)
   const trailerMatch = path.match(/^\/catalog\/title\/(movie|tv)\/(\d+)\/trailer$/);
   if (trailerMatch) {
     const [, mediaType, id] = trailerMatch;
@@ -407,7 +393,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ========== CATALOG: LOGO ==========
+  // Logo
   const logoMatch = path.match(/^\/catalog\/title\/(movie|tv)\/(\d+)\/logo$/);
   if (logoMatch) {
     const [, mediaType, id] = logoMatch;
@@ -418,7 +404,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ========== CATALOG: TV SEASON ==========
+  // TV Season
   const seasonMatch = path.match(/^\/catalog\/tv\/(\d+)\/season\/(\d+)$/);
   if (seasonMatch) {
     const [, showId, seasonNumber] = seasonMatch;
@@ -435,44 +421,39 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ========== STREAM: MOVIE ==========
+  // Stream Movie
   const streamMovieMatch = path.match(/^\/stream\/movie\/(\d+)$/);
   if (streamMovieMatch && req.method === "GET") {
     const [, id] = streamMovieMatch;
-    if (!CINEPRO_URL) { res.status(503).json({ error: "Stream service unavailable", sources: [], subtitles: [] }); return; }
+    if (!CINEPRO_URL) { res.status(503).json({ error: "Stream unavailable", sources: [], subtitles: [] }); return; }
     try {
       const upstream = await fetch(`${CINEPRO_URL}/v1/movies/${id}`, { headers: { Accept: "application/json" } });
       const data = await upstream.json();
       res.status(upstream.status).json(data);
-    } catch {
-      res.status(503).json({ error: "Stream service unavailable", sources: [], subtitles: [] });
-    }
+    } catch { res.status(503).json({ error: "Stream unavailable", sources: [], subtitles: [] }); }
     return;
   }
 
-  // ========== STREAM: TV EPISODE ==========
+  // Stream TV
   const streamTvMatch = path.match(/^\/stream\/tv\/(\d+)\/season\/(\d+)\/episode\/(\d+)$/);
   if (streamTvMatch && req.method === "GET") {
     const [, id, s, e] = streamTvMatch;
-    if (!CINEPRO_URL) { res.status(503).json({ error: "Stream service unavailable", sources: [], subtitles: [] }); return; }
+    if (!CINEPRO_URL) { res.status(503).json({ error: "Stream unavailable", sources: [], subtitles: [] }); return; }
     try {
       const upstream = await fetch(`${CINEPRO_URL}/v1/tv/${id}/seasons/${s}/episodes/${e}`, { headers: { Accept: "application/json" } });
       const data = await upstream.json();
       res.status(upstream.status).json(data);
-    } catch {
-      res.status(503).json({ error: "Stream service unavailable", sources: [], subtitles: [] });
-    }
+    } catch { res.status(503).json({ error: "Stream unavailable", sources: [], subtitles: [] }); }
     return;
   }
 
-  // ========== PROXY ==========
+  // Proxy
   if (path === "/proxy") {
     const rawUrl = query.url;
     if (!rawUrl) { res.status(400).send("Missing url"); return; }
     let parsedUrl;
     try { parsedUrl = new URL(rawUrl); } catch { res.status(400).send("Invalid url"); return; }
     if (!["http:", "https:"].includes(parsedUrl.protocol)) { res.status(400).send("Protocol not allowed"); return; }
-
     try {
       const headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
@@ -481,7 +462,6 @@ export default async function handler(req, res) {
         Accept: "*/*",
       };
       if (req.headers.range) headers["Range"] = req.headers.range;
-
       const upstream = await fetch(rawUrl, { headers });
       res.setHeader("Access-Control-Allow-Origin", "*");
       res.setHeader("Access-Control-Allow-Headers", "Range");
@@ -492,12 +472,9 @@ export default async function handler(req, res) {
       res.status(upstream.status);
       const buf = await upstream.arrayBuffer();
       res.end(Buffer.from(buf));
-    } catch {
-      res.status(502).send("Proxy error");
-    }
+    } catch { res.status(502).send("Proxy error"); }
     return;
   }
 
-  // ========== 404 ==========
   res.status(404).json({ error: "Not found", path });
-}
+};
