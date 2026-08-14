@@ -1,0 +1,14 @@
+{
+  "framework": null,
+  "buildCommand": "cd artifacts/allrated && pnpm run build",
+  "outputDirectory": "artifacts/allrated/dist/public",
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
