@@ -1,33 +1,28 @@
 # SESSION STATUS
 
-## 2026-08-15 — Bingr stream + player interaction
+## 2026-08-15 — Bingr player interaction fixes
 
-The supplied DevTools HAR established the real Bingr request path: `POST https://api.bingr.one/api/stream`, returning HTTP 200 JSON. The Allrated deployment had been failing earlier at `POST /api/bingr/stream` with HTTP 404.
+Bingr and CinePro remain separate systems. No CinePro routing was introduced for the Bingr player.
 
-Bingr and CinePro are intentionally separate. The dedicated Vercel function at `artifacts/allrated/api/bingr/stream.js` forwards the existing Bingr request body to the user's Bingr API and returns its JSON response. No CinePro routing was used for the Bingr player.
-
-### Player work completed
-- `BingrWatch.tsx` layout matches the supplied bingr.one screenshots: top title/back + Quality/Audio controls, bottom Server 1/2 pill, More Like This, seekbar, transport controls and fullscreen.
-- Quality profiles switch the selected source and preserve playback position.
-- Server 1/2 and the full server list switch the Bingr source and preserve playback position.
-- Rewind/forward 10s, play/pause, seekbar, volume/mute and fullscreen are connected to the actual video element.
-- Subtitle selection controls actual `TextTrack` visibility.
-- HLS audio-track selection is exposed by `useHlsPlayer`; the UI only shows tracks the manifest actually provides.
-- More Like This now loads live TMDB similar-title data from `/api/catalog/title/:mediaType/:id/similar`; cards navigate through the SPA and render real backdrop/poster, rating, year and media type data.
-- Report an Issue uses the device share sheet or clipboard fallback.
+### Bugs fixed in this pass
+- **Fullscreen:** player root now enters fullscreen with browser UI hidden where supported, then requests `screen.orientation.lock('landscape')`; fullscreen exit unlocks orientation. The API is best-effort because orientation locking is browser/device dependent.
+- **Subtitles:** external subtitle URLs now use the existing `/api/proxy` before being attached to `<track>` elements. Selected subtitle tracks are explicitly enabled and all other tracks disabled.
+- **10-second controls:** replaced the curved rewind/fast-forward glyphs with left/right double-chevron icons matching the supplied Bingr reference.
+- **Controls auto-hide:** removed the stale timer dependency on React menu/loading state. Refs keep the timer state current; controls hide after 3.2s during playback, while menus/More Like This/loading keep them visible. Pointer movement only wakes hidden controls.
+- **More Like This:** API now requests TMDB `recommendations` first and only falls back to `similar` when recommendations are empty. Current title is excluded and results are deduplicated before returning 20 cards.
 
 ### Commits
-- `859a50b3334609840da71d7afa74bb3b373fde01` — add API-server similar-title endpoint
-- `0553522f96e62aad2db53365a0a9952dd49b5fe7` — add Vercel similar-title function
-- `52a58f1ee3f1c3e39156aaa674021ee51f1ae901` — route similar-title endpoint in Vercel
-- `54f13716d65ceb4e0d9755d105208650d8a25b00` — load live data in Bingr More Like This
-- `2de37f186c3af4ba30f349f50ac23f702aa65f10` — handoff update
+- `737d32d0aa84217fe0fdaa6ae7d1dcfa79eedc44` — recommendations-first More Like This API
+- `5bd82acf43607c05c0e439f3116d17e7f90b64ae` — fullscreen, subtitle, transport icon, auto-hide and More Like This player fixes
+- `aacdd827c1ba392d5ab4a46a988ce595f2fb82e0` — handoff update
 
 ### Verification still required
-Deploy `main` to Vercel, then verify:
-1. `POST /api/bingr/stream` returns HTTP 200 with `sources`/`subtitles`.
-2. `GET /api/catalog/title/movie/969681/similar` returns a non-empty `results` array when TMDB has similar titles.
-3. More Like This opens with real cards and each card navigates correctly.
-4. Mobile/desktop runtime QA against the supplied bingr.one screenshots.
+Deploy `main` to Vercel and runtime-test:
+1. Fullscreen from mobile portrait rotates to landscape when the browser/device permits orientation lock.
+2. Subtitle selection visibly renders the selected WebVTT track.
+3. Rewind/forward buttons show the correct chevron icons and seek exactly ±10 seconds.
+4. More Like This contains title-relevant TMDB recommendations, not generic/random fallback data.
+5. Controls auto-hide about 3.2 seconds after being shown while playing and do not remain permanently visible after blank taps.
+6. Existing Bingr streaming remains HTTP 200 with the original Bingr request path.
 
-Pixel-perfect/runtime parity should only be claimed after that visual check.
+Do not claim runtime parity until these are checked on the deployed build.
