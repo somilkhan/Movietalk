@@ -1,7 +1,3 @@
 {
-  "buildCommand": "cd artifacts/allrated && pnpm run build",
-  "outputDirectory": "artifacts/allrated/dist/public",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  "buildCommand": "cd artifacts/allrated && pnpm run build"
 }
