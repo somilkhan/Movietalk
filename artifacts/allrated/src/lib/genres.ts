@@ -42,7 +42,6 @@ export const LANGUAGES = [
   { name: 'Bengali', sublabel: 'Bengali', image: 'https://api.bingr.one/static/categories/1526659-a-7271cf19114e.webp' },
 ] as const;
 
-/** Browse section: top-level content types — image cards matching bingr.one. */
 export const CATEGORY_GROUPS = [
   { name: 'Sports', href: '/sports', image: 'https://api.bingr.one/static/categories/Sports.webp' },
   { name: 'Sparks', href: '/spark', image: 'https://api.bingr.one/static/categories/Sparks.webp' },
@@ -52,16 +51,17 @@ export const CATEGORY_GROUPS = [
   { name: 'News', href: '/categories', image: 'https://api.bingr.one/static/categories/News.webp' },
 ] as const;
 
-/** Popular sports for the Categories page sports rail — image cards */
 export const POPULAR_SPORTS = [
-  { name: 'Cricket', image: 'https://api.bingr.one/static/categories/cricket.webp' },
-  { name: 'Football', image: 'https://api.bingr.one/static/categories/football.webp' },
-  { name: 'Hockey', image: 'https://api.bingr.one/static/categories/hockey.webp' },
-  { name: 'Formula 1', image: 'https://api.bingr.one/static/categories/f1.webp' },
-  { name: 'Tennis', image: 'https://api.bingr.one/static/categories/tennis.webp' },
-  { name: 'WWE', image: 'https://api.bingr.one/static/categories/wwe.webp' },
-  { name: 'Kabaddi', image: 'https://api.bingr.one/static/categories/kabaddi.webp' },
-  { name: 'Basketball', image: 'https://api.bingr.one/static/categories/basketball.webp' },
+  { name: 'Cricket', image: 'https://api.bingr.one/static/categories/1526630-a-9b9ea791cdaf.webp' },
+  { name: 'Football', image: 'https://api.bingr.one/static/categories/1534550-a-fc4b5ad51967.webp' },
+  { name: 'Badminton', image: 'https://api.bingr.one/static/categories/1735026006470-a.webp' },
+  { name: 'Mixed Martial Arts', image: 'https://api.bingr.one/static/categories/1526638-a-db7e5efc1703.webp' },
+  { name: 'Motorsports', image: 'https://api.bingr.one/static/categories/1745908675037-a.webp' },
+  { name: 'Tennis', image: 'https://api.bingr.one/static/categories/1526639-a-741d71091ea7.webp' },
+  { name: 'ESports', image: 'https://api.bingr.one/static/categories/1745908815213-a.webp' },
+  { name: 'Kabaddi', image: 'https://api.bingr.one/static/categories/1526635-a-453e30065a30.webp' },
+  { name: 'Hockey', image: 'https://api.bingr.one/static/categories/1526643-a-95b16247c411.webp' },
+  { name: 'American Football', image: 'https://api.bingr.one/static/categories/1526634-a-fbbbeb6daa07.webp' },
 ] as const;
 
 export const GENRE_GRADIENTS = [
