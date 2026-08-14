@@ -53,24 +53,13 @@ const NAV_ITEMS = [
     ),
   },
   {
-    href: '/sports',
-    label: 'Sports',
+    href: '/categories',
+    label: 'Categories',
     svg: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 256 256" className="w-6 h-6 md:w-7 md:h-7">
-        <rect width="256" height="256" fill="none"/>
-        <circle cx="128" cy="128" r="96" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="16"/>
-        <line x1="167.52" y1="40.48" x2="40.48" y2="167.52" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="16"/>
-        <line x1="195.88" y1="60.12" x2="60.12" y2="195.88" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="16"/>
-        <line x1="215.52" y1="88.48" x2="88.48" y2="215.52" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="16"/>
-      </svg>
-    ),
-  },
-  {
-    href: '/spark',
-    label: 'Spark',
-    svg: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 md:w-7 md:h-7">
-        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 md:w-7 md:h-7">
+        <rect x="4" y="4" width="6" height="16" rx="1"/>
+        <circle cx="17" cy="8" r="3"/>
+        <rect x="14" y="14" width="6" height="6" rx="1"/>
       </svg>
     ),
   },
