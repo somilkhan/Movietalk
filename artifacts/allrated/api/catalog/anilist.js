@@ -53,6 +53,9 @@ const MEDIA_FIELDS = `
   type
   format
   title { romaji english native }
+  coverImage { large extraLarge }
+  bannerImage
+  description(asHtml: false)
   startDate { year month day }
   endDate { year month day }
   episodes
@@ -65,10 +68,10 @@ const MEDIA_FIELDS = `
   externalLinks { site url }
 `;
 
-async function getMedia({ status, sort, format, startDateGreater }) {
-  const query = `query($status: MediaStatus, $sort: [MediaSort], $format: MediaFormat, $startDateGreater: FuzzyDateInt) {
+async function getMedia({ status, sort, format }) {
+  const query = `query($status: MediaStatus, $sort: [MediaSort], $format: MediaFormat) {
     Page(page: 1, perPage: 30) {
-      media(type: ANIME, status: $status, sort: $sort, format: $format, startDate_greater: $startDateGreater) {
+      media(type: ANIME, status: $status, sort: $sort, format: $format) {
         ${MEDIA_FIELDS}
       }
     }
@@ -77,13 +80,26 @@ async function getMedia({ status, sort, format, startDateGreater }) {
     status: status || null,
     sort: sort || ["POPULARITY_DESC"],
     format: format || null,
-    startDateGreater: startDateGreater || null,
   });
   return data?.Page?.media || [];
 }
 
 function displayName(media) {
   return media.title?.english || media.title?.romaji || media.title?.native || "Untitled";
+}
+
+function fromAniListMedia(media, tmdbId, mediaType) {
+  return {
+    id: tmdbId,
+    mediaType,
+    title: displayName(media),
+    posterPath: media.coverImage?.extraLarge || media.coverImage?.large || null,
+    backdropPath: media.bannerImage || null,
+    overview: media.description || "",
+    voteAverage: media.averageScore ? media.averageScore / 10 : 0,
+    year: media.startDate?.year ? String(media.startDate.year) : null,
+    genreIds: [],
+  };
 }
 
 async function resolveMedia(media, cache) {
@@ -93,10 +109,8 @@ async function resolveMedia(media, cache) {
     if (match) {
       const mediaType = /\/tv\//i.test(tmdbLink.url) ? "tv" : "movie";
       const key = `${mediaType}:${match[1]}`;
-      if (cache.has(key)) return cache.get(key);
-      const value = { id: Number(match[1]), mediaType, title: displayName(media), posterPath: null, backdropPath: null, overview: "", voteAverage: (media.averageScore || 0) / 10, year: media.startDate?.year ? String(media.startDate.year) : null, genreIds: [] };
-      cache.set(key, value);
-      return value;
+      if (!cache.has(key)) cache.set(key, fromAniListMedia(media, Number(match[1]), mediaType));
+      return cache.get(key);
     }
   }
 
@@ -104,22 +118,22 @@ async function resolveMedia(media, cache) {
   const cacheKey = `search:${mediaType}:${displayName(media).toLowerCase()}`;
   if (cache.has(cacheKey)) return cache.get(cacheKey);
   const raw = await tmdbSearch(displayName(media), mediaType);
-  const value = titleFromTmdb(raw, mediaType);
+  const value = raw ? titleFromTmdb(raw, mediaType) : null;
   if (value) {
     value.title = displayName(media);
-    if (media.averageScore) value.voteAverage = media.averageScore / 10;
+    value.overview = media.description || value.overview;
+    value.voteAverage = media.averageScore ? media.averageScore / 10 : value.voteAverage;
+    value.year = media.startDate?.year ? String(media.startDate.year) : value.year;
+    value.posterPath = media.coverImage?.extraLarge || media.coverImage?.large || value.posterPath;
+    value.backdropPath = media.bannerImage || value.backdropPath;
   }
   cache.set(cacheKey, value);
   return value;
 }
 
 async function resolveList(list, cache) {
-  const resolved = [];
-  for (const media of list) {
-    const title = await resolveMedia(media, cache);
-    if (title) resolved.push(title);
-  }
-  return resolved;
+  const resolved = await Promise.all(list.map((media) => resolveMedia(media, cache)));
+  return resolved.filter(Boolean);
 }
 
 export default async function handler(req, res) {
@@ -160,7 +174,7 @@ export default async function handler(req, res) {
       movies: movieTitles.slice(0, 12),
       latest: latestTitles.slice(0, 12),
     }));
-  } catch (error) {
+  } catch {
     res.statusCode = 502;
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify({ error: "AniList unavailable" }));
