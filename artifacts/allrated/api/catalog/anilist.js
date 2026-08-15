@@ -68,10 +68,10 @@ const MEDIA_FIELDS = `
   externalLinks { site url }
 `;
 
-async function getMedia({ status, sort, format }) {
-  const query = `query($status: MediaStatus, $sort: [MediaSort], $format: MediaFormat) {
-    Page(page: 1, perPage: 30) {
-      media(type: ANIME, status: $status, sort: $sort, format: $format) {
+async function getMedia({ status, sort, format, countryOfOrigin }) {
+  const query = `query($status: MediaStatus, $sort: [MediaSort], $format: MediaFormat, $countryOfOrigin: CountryCode) {
+    Page(page: 1, perPage: 50) {
+      media(type: ANIME, status: $status, sort: $sort, format: $format, countryOfOrigin: $countryOfOrigin) {
         ${MEDIA_FIELDS}
       }
     }
@@ -80,6 +80,7 @@ async function getMedia({ status, sort, format }) {
     status: status || null,
     sort: sort || ["POPULARITY_DESC"],
     format: format || null,
+    countryOfOrigin: countryOfOrigin || null,
   });
   return data?.Page?.media || [];
 }
@@ -136,21 +137,32 @@ async function resolveList(list, cache) {
   return resolved.filter(Boolean);
 }
 
+function hasFutureAiring(media, nowSeconds) {
+  return Number.isFinite(media.nextAiringEpisode?.airingAt) && media.nextAiringEpisode.airingAt > nowSeconds;
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=600");
   if (req.method === "OPTIONS") { res.statusCode = 204; res.end(); return; }
   try {
     const cache = new Map();
-    const [trending, airing, upcoming, topRated, series, movies, latest] = await Promise.all([
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const [trending, airingCandidates, upcoming, topRated, series, movies, latest] = await Promise.all([
       getMedia({ sort: ["TRENDING_DESC"] }),
-      getMedia({ status: "RELEASING", sort: ["POPULARITY_DESC"] }),
+      getMedia({ status: "RELEASING", format: "TV", countryOfOrigin: "JP", sort: ["POPULARITY_DESC"] }),
       getMedia({ status: "NOT_YET_RELEASED", sort: ["START_DATE"] }),
       getMedia({ sort: ["SCORE_DESC"] }),
       getMedia({ format: "TV", sort: ["POPULARITY_DESC"] }),
       getMedia({ format: "MOVIE", sort: ["POPULARITY_DESC"] }),
       getMedia({ sort: ["START_DATE_DESC"] }),
     ]);
+
+    // "Airing Anime" means an active Japanese TV anime with a known future episode.
+    // AniList's nextAiringEpisode is the source of truth for the next scheduled episode.
+    const airing = airingCandidates
+      .filter((media) => hasFutureAiring(media, nowSeconds))
+      .sort((a, b) => (a.nextAiringEpisode.airingAt || 0) - (b.nextAiringEpisode.airingAt || 0));
 
     const [trendingTitles, airingTitles, upcomingTitles, topRatedTitles, seriesTitles, movieTitles, latestTitles] = await Promise.all([
       resolveList(trending, cache),
