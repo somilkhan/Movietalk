@@ -1,19 +1,7 @@
 import { Link } from "wouter";
 import { useRef, type ReactNode } from "react";
+import { useGetTrending } from "@workspace/api-client-react";
 import { CompletedBingrTray } from "@/components/CompletedBingrTray";
-
-const TRENDING = [
-  { id: 969681, mediaType: "movie", title: "Spider-Man: Brand New Day", posterPath: "https://image.tmdb.org/t/p/w500/iPOn6DinuVyLY17YM9mKuPofV08.jpg" },
-  { id: 1339713, mediaType: "movie", title: "Obsession", posterPath: "https://image.tmdb.org/t/p/w500/bRwnj8WEKBCvmfeUNOukJPwB43K.jpg" },
-  { id: 1368337, mediaType: "movie", title: "The Odyssey", posterPath: "https://image.tmdb.org/t/p/w500/5rhTDKUhPYvpdQIijFIs5VoWsON.jpg" },
-  { id: 1315772, mediaType: "movie", title: "Minions & Monsters", posterPath: "https://image.tmdb.org/t/p/w500/nz7i42yhLIJ4ve9JKgM6NthoLHO.jpg" },
-  { id: 108978, mediaType: "tv", title: "Reacher", posterPath: "https://image.tmdb.org/t/p/w500/f1VCQIG2iCyOookdgOzwtUpwWC0.jpg" },
-  { id: 1284041, mediaType: "movie", title: "The Last House", posterPath: "https://image.tmdb.org/t/p/w500/6JU7E8Vv2M11egkctWVOScxWR75.jpg" },
-  { id: 94997, mediaType: "tv", title: "House of the Dragon", posterPath: "https://image.tmdb.org/t/p/w500/7V0Ebks0GgpKvQ7QbLAIdX5dos4.jpg" },
-  { id: 950028, mediaType: "movie", title: "The Invite", posterPath: "https://image.tmdb.org/t/p/w500/b7Dr8Chzse8VagexAporUu2RtLx.jpg" },
-  { id: 1101383, mediaType: "movie", title: "The End of Oak Street", posterPath: "https://image.tmdb.org/t/p/w500/fYXqpgPmHMphSF2W30GbTeJVIa5.jpg" },
-  { id: 125988, mediaType: "tv", title: "Silo", posterPath: "https://image.tmdb.org/t/p/w500/gMYZZvnkVNTqSVnVCphWbPXwWwb.jpg" },
-];
 
 const STUDIOS = [
   ["Specials", "https://api.bingr.one/static/categories/1739441155598-a.webp"],
@@ -70,11 +58,13 @@ function RowHeader({ title }: { title: string }) {
 }
 
 function TrendingRow() {
-  return <section className="px-6 lg:px-20 pt-8"><RowHeader title="Trending Right Now" /><ScrollRow className="pt-4">{TRENDING.map((item, index) => <Link key={item.id} href={`/title/${item.mediaType}/${item.id}`} className="flex-shrink-0 group/card relative flex items-center pr-2 lg:pr-6 snap-start"><div className="select-none z-10 pl-2 lg:pl-4 text-[100px] md:text-[120px] lg:text-[140px]" style={{ fontFamily: '"Alfa Slab One", "Arial Black", Impact, sans-serif', fontWeight: 400, lineHeight: 1, letterSpacing: '-0.05em', marginRight: '-10px', transform: 'scaleX(1.2)', transformOrigin: 'left center', background: 'linear-gradient(to right, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 40%, rgba(255, 255, 255, 0) 100%) padding-box text', WebkitTextFillColor: 'transparent' }}>{index + 1}</div><div className="relative flex flex-col w-[110px] sm:w-[130px] lg:w-[160px] z-20 shrink-0"><div className="relative rounded-lg overflow-hidden aspect-[2/3] bg-[#1a1c24] ring-1 ring-white/5 transition-all duration-300 group-hover/card:ring-white/20 group-hover/card:-translate-y-2"><img alt={item.title} className="w-full h-full object-cover" loading={index < 3 ? "eager" : "lazy"} src={item.posterPath} /></div></div></Link>)}</ScrollRow></section>;
+  const trending = useGetTrending({ mediaType: "all", window: "week" });
+  const items = trending.data ?? [];
+  return <section className="px-6 lg:px-20 pt-8"><RowHeader title="Trending Right Now" /><ScrollRow className="pt-4">{items.map((item, index) => <Link key={`${item.mediaType}-${item.id}`} href={`/title/${item.mediaType}/${item.id}`} className="flex-shrink-0 group/card relative flex items-center pr-2 lg:pr-6 snap-start"><div className="select-none z-10 pl-2 lg:pl-4 text-[100px] md:text-[120px] lg:text-[140px]" style={{ fontFamily: '"Alfa Slab One", "Arial Black", Impact, sans-serif', fontWeight: 400, lineHeight: 1, letterSpacing: '-0.05em', marginRight: '-10px', transform: 'scaleX(1.2)', transformOrigin: 'left center', background: 'linear-gradient(to right, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 40%, rgba(255, 255, 255, 0) 100%) padding-box text', WebkitTextFillColor: 'transparent' }}>{index + 1}</div><div className="relative flex flex-col w-[110px] sm:w-[130px] lg:w-[160px] z-20 shrink-0"><div className="relative rounded-lg overflow-hidden aspect-[2/3] bg-[#1a1c24] ring-1 ring-white/5 transition-all duration-300 group-hover/card:ring-white/20 group-hover/card:-translate-y-2"><img alt={item.title} className="w-full h-full object-cover" loading={index < 3 ? "eager" : "lazy"} src={item.posterPath || ""} /></div></div></Link>)}</ScrollRow></section>;
 }
 
 function ImageRow({ title, items }: { title: string; items: readonly (readonly [string, string])[] }) {
-  return <section className="w-full relative px-6 lg:px-20 pt-8"><RowHeader title={title} /><ScrollRow className="py-4 snap-x">{items.map(([name, image]) => <div key={name} className="snap-start shrink-0"><div className="flex-none cursor-pointer group/cat relative rounded-md overflow-hidden transition-all duration-300 transform hover:scale-105 hover:z-10 bg-[#16181f] w-[160px] md:w-[220px] lg:w-[280px] aspect-[16/9]"><img alt={name} className="w-full h-full object-cover transition-transform duration-300 group-hover/cat:scale-105" loading="lazy" src={image} /><div className="absolute inset-0 bg-black/0 group-hover/cat:bg-white/5 transition-colors duration-300" /></div></div>)}</ScrollRow></section>;
+  return <section className="w-full relative px-6 lg:px-20 pt-8"><RowHeader title={title} /><ScrollRow className="py-4 snap-x">{items.map(([name, image]) => <div key={name} className="snap-start shrink-0"><Link href="/categories" className="block"><div className="flex-none cursor-pointer group/cat relative rounded-md overflow-hidden transition-all duration-300 transform hover:scale-105 hover:z-10 bg-[#16181f] w-[160px] md:w-[220px] lg:w-[280px] aspect-[16/9]"><img alt={name} className="w-full h-full object-cover transition-transform duration-300 group-hover/cat:scale-105" loading="lazy" src={image} /><div className="absolute inset-0 bg-black/0 group-hover/cat:bg-white/5 transition-colors duration-300" /></div></Link></div>)}</ScrollRow></section>;
 }
 
 export function BingrHomeSections() {
