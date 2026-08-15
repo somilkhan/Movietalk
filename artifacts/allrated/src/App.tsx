@@ -67,7 +67,12 @@ function Router() {
     <>
       <ScrollToTop />
       <Switch>
-        {/* Full-screen watch — NO sidebar, nav, or footer */}
+        {/* Full-screen watch — TV episode route must come before the generic watch route. */}
+        <Route path="/watch/:mediaType/:id/:season/:episode">
+          <Suspense fallback={<PageLoader />}>
+            <Watch />
+          </Suspense>
+        </Route>
         <Route path="/watch/:mediaType/:id">
           <Suspense fallback={<PageLoader />}>
             <Watch />
