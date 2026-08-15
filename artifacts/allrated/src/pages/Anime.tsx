@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useGetAnime } from '@workspace/api-client-react';
 import { ContentTray } from '@/components/ContentTray';
 import { HeroSection } from '@/components/HeroSection';
@@ -13,9 +13,44 @@ function byYearDesc(a: Title, b: Title) {
   return Number(b.year || 0) - Number(a.year || 0);
 }
 
+async function fetchAnimeSection(path: string, signal: AbortSignal): Promise<Title[]> {
+  const response = await fetch(path, { signal });
+  if (!response.ok) return [];
+  const data = await response.json();
+  return Array.isArray(data) ? data : [];
+}
+
 export default function Anime() {
   const anime = useGetAnime();
   const titles = anime.data ?? [];
+  const [airing, setAiring] = useState<Title[]>([]);
+  const [upcoming, setUpcoming] = useState<Title[]>([]);
+  const [specialLoading, setSpecialLoading] = useState(true);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setSpecialLoading(true);
+
+    Promise.all([
+      fetchAnimeSection('/api/catalog/anime/airing', controller.signal),
+      fetchAnimeSection('/api/catalog/anime/upcoming', controller.signal),
+    ])
+      .then(([airingTitles, upcomingTitles]) => {
+        setAiring(airingTitles.slice(0, 12));
+        setUpcoming(upcomingTitles.slice(0, 12));
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setAiring([]);
+          setUpcoming([]);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setSpecialLoading(false);
+      });
+
+    return () => controller.abort();
+  }, []);
 
   const sections = useMemo(() => {
     const movies = titles.filter((t) => t.mediaType === 'movie');
@@ -48,6 +83,20 @@ export default function Anime() {
             Anime
           </h1>
         </div>
+
+        <ContentTray
+          heading="Airing Anime"
+          titles={airing}
+          loading={specialLoading}
+          size="md"
+        />
+
+        <ContentTray
+          heading="Upcoming Anime"
+          titles={upcoming}
+          loading={specialLoading}
+          size="md"
+        />
 
         <ContentTray
           heading="Trending Anime"
