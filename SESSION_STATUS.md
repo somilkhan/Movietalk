@@ -1,6 +1,6 @@
 # SESSION STATUS
 
-## 2026-08-15 — Bingr player polish
+## 2026-08-15 — Bingr player and home polish
 
 Bingr and CinePro remain separate systems. No CinePro routing was introduced for the Bingr player.
 
@@ -12,11 +12,17 @@ Bingr and CinePro remain separate systems. No CinePro routing was introduced for
 - **10-second controls:** left/right double-chevron icons are used for rewind/forward.
 - **Controls auto-hide:** controls hide after 3.2s during playback; menus/More Like This/loading keep them visible, and pointer movement wakes hidden controls.
 - **More Like This:** TMDB recommendations are requested first with similar-title fallback; current title is excluded and cards navigate through the SPA.
-- **Player identity:** the Allrated watermark is shown only while controls are hidden, moved to the top-right corner, and reduced to about 48% opacity. The duplicate logo inside the control overlay is hidden. Compact Netflix-style genre metadata remains under the title when available.
-- **Animations:** added restrained play/pause and ±10s feedback, menu/More Like This entrance, button press/hover, and seek-thumb transitions. No unnecessary player features were added.
+- **Player identity:** the Allrated watermark is shown only while controls are hidden, moved to the top-right corner, and reduced to about 48% opacity. The duplicate logo inside the control overlay is hidden. Compact genre metadata remains under the title when available.
+- **Bingr home sections:** added the supplied home-page data and visual structure for Trending Right Now, Your next Bingr after Reacher, Studios, and Popular Genres. Studio/genre cards use the supplied Bingr artwork URLs and the supplied ordering. Trending titles and the Reacher follow-up row use the supplied title IDs, artwork, years, and ratings. Existing app routes are used for title navigation.
+- **Home cleanup:** replaced the previous placeholder Studios and Popular Genres tray components so there is no duplicate/obsolete home implementation.
 - **Streaming:** existing Bingr request/playback path remains `POST /api/bingr/stream`; only the TV query now uses the actual requested season/episode.
 
 ### Latest commits
+- `05bdb7314aefb48c0865e4736c6b8c787879c4a3` — clean Bingr home carousel interactions and types.
+- `3c706a5c7a5ff24aba12b729701689a1875ed367` — use supplied Bingr home sections in Home.
+- `10484be54520eb515aa369268312ef0eab10eeb1` — add supplied Bingr home data/sections.
+- `bb12b59e9a2af3a4e5be84f216c5f4f4b013f832` — remove obsolete Studios tray.
+- `4b21b11b6717be1679a852041f821844a68a722e` — remove obsolete Popular Genres tray.
 - `97ccf344152fd35cea49fa156dbdfeafa50ce5b4` — support Bingr TV season/episode watch routes.
 - `501842034ffd5672c5953cd1bb0001452a551618` — pass selected Bingr TV season/episode to the stream request.
 - `a6f0c613c39056ba61b853cf87797aa8c5034955` — keep only subtle top-right hidden-controls watermark.
@@ -31,6 +37,7 @@ Deploy `main` to Vercel and runtime-test:
 4. More Like This contains title-relevant TMDB recommendations.
 5. Only one Allrated watermark is visible, at the top-right, around 48% opacity, when controls are hidden.
 6. Controls auto-hide about 3.2 seconds after being shown while playing.
-7. Existing Bingr streaming remains HTTP 200 with the original Bingr request path.
+7. Bingr home sections match the supplied order/artwork and carousel interaction.
+8. Existing Bingr streaming remains HTTP 200 with the original Bingr request path.
 
 Do not claim runtime parity until these are checked on the deployed build.
