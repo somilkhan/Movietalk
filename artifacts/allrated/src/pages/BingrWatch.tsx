@@ -13,6 +13,7 @@ const SERVERS = [
 const QUALITIES = [
   { id: 'cinematic', label: 'Cinematic', cap: 1080 }, { id: 'theatrical', label: 'Theatrical', cap: 720 }, { id: 'smooth', label: 'Smooth', cap: 480 },
 ] as const;
+const COMPLETED_BINGR_KEY = 'movietalk:last-completed-bingr';
 type Menu = 'quality' | 'audio' | null;
 type SimilarTitle = { id: number; mediaType?: 'movie' | 'tv'; title?: string; name?: string; posterPath?: string | null; backdropPath?: string | null; voteAverage?: number; year?: string | null };
 type Feedback = 'play' | 'pause' | 'back' | 'forward' | null;
@@ -27,13 +28,14 @@ function ServerIcon({ kind }: { kind: 'logo' | 'us' | 'in' }) {
 function SettingButton({ selected, children, onClick, subtitle }: { selected: boolean; children: ReactNode; onClick: () => void; subtitle?: string }) { return <button type="button" onClick={onClick} className="flex items-start gap-3 px-5 py-2.5 text-left transition-colors hover:bg-white/10"><span className="mt-0.5 w-4 shrink-0 text-blue-400" style={{ opacity: selected ? 1 : 0 }}>✓</span><div><div className="font-semibold text-[15px] leading-tight">{children}</div>{subtitle ? <div className="mt-0.5 text-[13px] text-white/50">{subtitle}</div> : null}</div></button>; }
 
 export default function BingrWatch() {
-  const params = useParams<{ mediaType: string; id: string }>(); const [, navigate] = useLocation(); const mediaType = params.mediaType === 'tv' ? 'tv' : 'movie'; const tmdbId = Number(params.id);
+  const params = useParams<{ mediaType: string; id: string; season?: string; episode?: string }>(); const [, navigate] = useLocation(); const mediaType = params.mediaType === 'tv' ? 'tv' : 'movie'; const tmdbId = Number(params.id);
+  const season = params.season ? Number(params.season) : undefined; const episode = params.episode ? Number(params.episode) : undefined;
   const [serverId, setServerId] = useState('s11'); const [qualityId, setQualityId] = useState<(typeof QUALITIES)[number]['id']>('cinematic'); const [menu, setMenu] = useState<Menu>(null); const [playing, setPlaying] = useState(false); const [controls, setControls] = useState(true); const [currentTime, setCurrentTime] = useState(0); const [duration, setDuration] = useState(0); const [buffered, setBuffered] = useState(0); const [volume, setVolume] = useState(1); const [muted, setMuted] = useState(false); const [moreLike, setMoreLike] = useState(false); const [similarTitles, setSimilarTitles] = useState<SimilarTitle[]>([]); const [similarLoading, setSimilarLoading] = useState(false); const [audio, setAudio] = useState(''); const [subtitle, setSubtitle] = useState('Off'); const [showVolume, setShowVolume] = useState(false); const [loading, setLoading] = useState(false); const [notice, setNotice] = useState(''); const [feedback, setFeedback] = useState<Feedback>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null); const noticeRef = useRef<ReturnType<typeof setTimeout> | null>(null); const feedbackRef = useRef<ReturnType<typeof setTimeout> | null>(null); const videoRef = useRef<HTMLVideoElement>(null); const rootRef = useRef<HTMLDivElement>(null); const fatalRef = useRef<(() => void) | null>(null); const restoreTimeRef = useRef(0); const firstSourceRef = useRef(true); const playingRef = useRef(false); const menuRef = useRef<Menu>(null); const moreLikeRef = useRef(false); const loadingRef = useRef(false);
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null); const seekingRef = useRef(false);
   const { data: title } = useGetTitleDetail(mediaType, tmdbId, { query: { enabled: Number.isFinite(tmdbId) } }); const titleName = title?.title || title?.name || ''; const year = (title?.release_date || title?.first_air_date || '').slice(0, 4);
   const genreSource = (title as any)?.genres ?? (title as any)?.genre_names ?? []; const genres = Array.isArray(genreSource) ? genreSource.map((genre: any) => typeof genre === 'string' ? genre : genre?.name).filter(Boolean).slice(0, 3).join(' • ') : '';
-  const { sources, subtitles, loading: sourceLoading } = useBingrSources(serverId, mediaType, tmdbId, titleName, year, 1, 1); const quality = QUALITIES.find((q) => q.id === qualityId) || QUALITIES[0];
+  const { sources, subtitles, loading: sourceLoading } = useBingrSources(serverId, mediaType, tmdbId, titleName, year, season, episode); const quality = QUALITIES.find((q) => q.id === qualityId) || QUALITIES[0];
   const selectedSource = useMemo(() => { if (!sources.length) return null; const ranked = sources.map((source) => ({ source, rank: qualityRank(source.quality) })).filter(({ rank }) => rank > 0 && rank <= quality.cap).sort((a, b) => b.rank - a.rank); return ranked[0]?.source || sources[0]; }, [sources, quality.cap]);
   const scheduleHide = useCallback(() => { if (timerRef.current) clearTimeout(timerRef.current); if (!playingRef.current || menuRef.current || moreLikeRef.current || loadingRef.current) return; timerRef.current = setTimeout(() => setControls(false), 3200); }, []);
   const resetControls = useCallback(() => { setControls(true); scheduleHide(); }, [scheduleHide]);
@@ -44,7 +46,31 @@ export default function BingrWatch() {
   useEffect(() => { if (!moreLike || !Number.isFinite(tmdbId)) return; let cancelled = false; setSimilarLoading(true); setSimilarTitles([]); fetch(`/api/catalog/title/${mediaType}/${tmdbId}/similar`, { headers: { Accept: 'application/json' } }).then((response) => { if (!response.ok) throw new Error(`HTTP ${response.status}`); return response.json(); }).then((data) => { if (!cancelled) setSimilarTitles(Array.isArray(data?.results) ? data.results : []); }).catch(() => { if (!cancelled) setSimilarTitles([]); }).finally(() => { if (!cancelled) setSimilarLoading(false); }); return () => { cancelled = true; }; }, [moreLike, mediaType, tmdbId]);
   useEffect(() => { if (!audioTracks.length) { setAudio(''); return; } const preferred = audioTracks.find((track) => /english|en/i.test(`${track.label} ${track.language}`)) || audioTracks[0]; setAudio(preferred.label); selectAudioTrack(preferred.id); }, [audioTracks, selectAudioTrack]);
   useEffect(() => { if (!selectedSource) return; restoreTimeRef.current = videoRef.current?.currentTime || 0; setLoading(true); load(selectedSource.url, selectedSource.type); }, [load, selectedSource?.url, selectedSource?.type]);
-  useEffect(() => { const video = videoRef.current; if (!video) return; const onLoadedMetadata = () => { setDuration(video.duration || 0); if (!firstSourceRef.current && restoreTimeRef.current > 0 && Number.isFinite(video.duration)) video.currentTime = Math.min(restoreTimeRef.current, Math.max(0, video.duration - 0.5)); firstSourceRef.current = false; }; const onPlay = () => { setPlaying(true); setLoading(false); resetControls(); }; const onPause = () => setPlaying(false); const onTime = () => setCurrentTime(video.currentTime || 0); const onDuration = () => setDuration(video.duration || 0); const onProgress = () => { if (video.buffered.length) setBuffered(video.buffered.end(video.buffered.length - 1)); }; const onWaiting = () => setLoading(true); const onPlaying = () => setLoading(false); video.addEventListener('loadedmetadata', onLoadedMetadata); video.addEventListener('play', onPlay); video.addEventListener('pause', onPause); video.addEventListener('timeupdate', onTime); video.addEventListener('durationchange', onDuration); video.addEventListener('progress', onProgress); video.addEventListener('waiting', onWaiting); video.addEventListener('playing', onPlaying); return () => { video.removeEventListener('loadedmetadata', onLoadedMetadata); video.removeEventListener('play', onPlay); video.removeEventListener('pause', onPause); video.removeEventListener('timeupdate', onTime); video.removeEventListener('durationchange', onDuration); video.removeEventListener('progress', onProgress); video.removeEventListener('waiting', onWaiting); video.removeEventListener('playing', onPlaying); }; }, [resetControls]);
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const onLoadedMetadata = () => { setDuration(video.duration || 0); if (!firstSourceRef.current && restoreTimeRef.current > 0 && Number.isFinite(video.duration)) video.currentTime = Math.min(restoreTimeRef.current, Math.max(0, video.duration - 0.5)); firstSourceRef.current = false; };
+    const onPlay = () => { setPlaying(true); setLoading(false); resetControls(); };
+    const onPause = () => setPlaying(false);
+    const onTime = () => setCurrentTime(video.currentTime || 0);
+    const onDuration = () => setDuration(video.duration || 0);
+    const onProgress = () => { if (video.buffered.length) setBuffered(video.buffered.end(video.buffered.length - 1)); };
+    const onWaiting = () => setLoading(true);
+    const onPlaying = () => setLoading(false);
+    const onEnded = () => {
+      if (!titleName || !Number.isFinite(tmdbId)) return;
+      const completed = {
+        id: tmdbId,
+        mediaType,
+        title: titleName,
+        posterPath: (title as any)?.posterPath ?? (title as any)?.poster_path ?? null,
+        completedAt: Date.now(),
+      };
+      try { localStorage.setItem(COMPLETED_BINGR_KEY, JSON.stringify(completed)); window.dispatchEvent(new Event('bingr:completed')); } catch {}
+    };
+    video.addEventListener('loadedmetadata', onLoadedMetadata); video.addEventListener('play', onPlay); video.addEventListener('pause', onPause); video.addEventListener('timeupdate', onTime); video.addEventListener('durationchange', onDuration); video.addEventListener('progress', onProgress); video.addEventListener('waiting', onWaiting); video.addEventListener('playing', onPlaying); video.addEventListener('ended', onEnded);
+    return () => { video.removeEventListener('loadedmetadata', onLoadedMetadata); video.removeEventListener('play', onPlay); video.removeEventListener('pause', onPause); video.removeEventListener('timeupdate', onTime); video.removeEventListener('durationchange', onDuration); video.removeEventListener('progress', onProgress); video.removeEventListener('waiting', onWaiting); video.removeEventListener('playing', onPlaying); video.removeEventListener('ended', onEnded); };
+  }, [resetControls, title, titleName, mediaType, tmdbId]);
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); if (noticeRef.current) clearTimeout(noticeRef.current); if (feedbackRef.current) clearTimeout(feedbackRef.current); }, []);
   useEffect(() => { const video = videoRef.current; if (!video) return; video.querySelectorAll('track').forEach((track) => track.remove()); subtitles.forEach((sub) => { const track = document.createElement('track'); track.kind = 'subtitles'; track.src = proxiedUrl(sub.url); track.label = sub.label; track.srclang = (sub.language || 'en').slice(0, 2).toLowerCase(); video.appendChild(track); }); }, [subtitles]);
   useEffect(() => { const video = videoRef.current; if (!video) return; Array.from(video.textTracks).forEach((track) => { track.mode = 'disabled'; }); if (subtitle !== 'Off') { const track = Array.from(video.textTracks).find((item) => item.label === subtitle); if (track) track.mode = 'showing'; } }, [subtitle, subtitles]);
