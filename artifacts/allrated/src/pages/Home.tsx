@@ -31,15 +31,12 @@ export default function Home() {
       <HeroSection titles={trending.data} />
       <div className="relative z-10 pt-6 md:pt-10 space-y-2">
         {continueTitles.length > 0 && <ContentTray heading="Continue Watching" titles={continueTitles} size="md" />}
-
-        {isIndia && regionalMovies.data && regionalMovies.data.length > 0 && <ContentTray heading="Indian Movies" titles={regionalMovies.data} loading={regionalMovies.isLoading} viewAllHref="/catalog/movie/regional" size="md" />}
-        {isIndia && regionalTv.data && regionalTv.data.length > 0 && <ContentTray heading="Indian TV Shows" titles={regionalTv.data} loading={regionalTv.isLoading} viewAllHref="/catalog/tv/regional" size="md" />}
-        {isIndia && hindiMovies.data && hindiMovies.data.length > 0 && <ContentTray heading="Hindi Movies" titles={hindiMovies.data} loading={hindiMovies.isLoading} viewAllHref="/catalog/movie/hindi" size="md" />}
-        {isIndia && tamilMovies.data && tamilMovies.data.length > 0 && <ContentTray heading="Tamil Movies" titles={tamilMovies.data} loading={tamilMovies.isLoading} viewAllHref="/catalog/movie/tamil" size="md" />}
-        {isIndia && teluguMovies.data && teluguMovies.data.length > 0 && <ContentTray heading="Telugu Movies" titles={teluguMovies.data} loading={teluguMovies.isLoading} viewAllHref="/catalog/movie/telugu" size="md" />}
-
+        {isIndia && regionalMovies.data && regionalMovies.data.length > 0 && <ContentTray heading="Indian Movies" titles={regionalMovies.data} loading={regionalMovies.isLoading} size="md" />}
+        {isIndia && regionalTv.data && regionalTv.data.length > 0 && <ContentTray heading="Indian TV Shows" titles={regionalTv.data} loading={regionalTv.isLoading} size="md" />}
+        {isIndia && hindiMovies.data && hindiMovies.data.length > 0 && <ContentTray heading="Hindi Movies" titles={hindiMovies.data} loading={hindiMovies.isLoading} size="md" />}
+        {isIndia && tamilMovies.data && tamilMovies.data.length > 0 && <ContentTray heading="Tamil Movies" titles={tamilMovies.data} loading={tamilMovies.isLoading} size="md" />}
+        {isIndia && teluguMovies.data && teluguMovies.data.length > 0 && <ContentTray heading="Telugu Movies" titles={teluguMovies.data} loading={teluguMovies.isLoading} size="md" />}
         <BingrHomeSections />
-
         <ContentTray heading="New Movies" titles={popularMovies.data} loading={popularMovies.isLoading} viewAllHref="/catalog/movie/New%20Movies" size="md" />
         <ContentTray heading="Popular TV Shows" titles={popularTv.data} loading={popularTv.isLoading} viewAllHref="/catalog/tv/Popular%20TV%20Shows" size="md" />
         <ContentTray heading="Top Rated Movies" titles={topRatedMovies.data} loading={topRatedMovies.isLoading} viewAllHref="/catalog/movie/Top%20Rated%20Movies" size="md" />
