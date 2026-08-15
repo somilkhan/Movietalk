@@ -5,68 +5,87 @@ import { HeroSection } from '@/components/HeroSection';
 import { Seo } from '@/components/Seo';
 import type { Title } from '@workspace/api-client-react';
 
-function byRating(a: Title, b: Title) {
-  return b.voteAverage - a.voteAverage;
-}
+type AnimeCatalog = {
+  featured: Title[];
+  trending: Title[];
+  airing: Title[];
+  upcoming: Title[];
+  topRated: Title[];
+  series: Title[];
+  movies: Title[];
+  latest: Title[];
+};
 
-function byYearDesc(a: Title, b: Title) {
-  return Number(b.year || 0) - Number(a.year || 0);
-}
+const EMPTY_CATALOG: AnimeCatalog = {
+  featured: [], trending: [], airing: [], upcoming: [], topRated: [], series: [], movies: [], latest: [],
+};
 
-async function fetchAnimeSection(path: string, signal: AbortSignal): Promise<Title[]> {
-  const response = await fetch(path, { signal });
-  if (!response.ok) return [];
+async function fetchAniListCatalog(signal: AbortSignal): Promise<AnimeCatalog> {
+  const response = await fetch('/api/catalog/anilist', { signal });
+  if (!response.ok) throw new Error('AniList catalog unavailable');
   const data = await response.json();
-  return Array.isArray(data) ? data : [];
+  return {
+    featured: Array.isArray(data.featured) ? data.featured : [],
+    trending: Array.isArray(data.trending) ? data.trending : [],
+    airing: Array.isArray(data.airing) ? data.airing : [],
+    upcoming: Array.isArray(data.upcoming) ? data.upcoming : [],
+    topRated: Array.isArray(data.topRated) ? data.topRated : [],
+    series: Array.isArray(data.series) ? data.series : [],
+    movies: Array.isArray(data.movies) ? data.movies : [],
+    latest: Array.isArray(data.latest) ? data.latest : [],
+  };
 }
 
 export default function Anime() {
-  const anime = useGetAnime();
-  const titles = anime.data ?? [];
-  const [airing, setAiring] = useState<Title[]>([]);
-  const [upcoming, setUpcoming] = useState<Title[]>([]);
-  const [specialLoading, setSpecialLoading] = useState(true);
+  const fallbackAnime = useGetAnime();
+  const fallbackTitles = fallbackAnime.data ?? [];
+  const [catalog, setCatalog] = useState<AnimeCatalog>(EMPTY_CATALOG);
+  const [loading, setLoading] = useState(true);
+  const [usingFallback, setUsingFallback] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
-    setSpecialLoading(true);
+    setLoading(true);
+    setUsingFallback(false);
 
-    Promise.all([
-      fetchAnimeSection('/api/catalog/anime/airing', controller.signal),
-      fetchAnimeSection('/api/catalog/anime/upcoming', controller.signal),
-    ])
-      .then(([airingTitles, upcomingTitles]) => {
-        setAiring(airingTitles.slice(0, 12));
-        setUpcoming(upcomingTitles.slice(0, 12));
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) {
-          setAiring([]);
-          setUpcoming([]);
+    fetchAniListCatalog(controller.signal)
+      .then((data) => {
+        const hasContent = Object.values(data).some((section) => section.length > 0);
+        if (hasContent) {
+          setCatalog(data);
+        } else {
+          setUsingFallback(true);
         }
       })
+      .catch(() => {
+        if (!controller.signal.aborted) setUsingFallback(true);
+      })
       .finally(() => {
-        if (!controller.signal.aborted) setSpecialLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       });
 
     return () => controller.abort();
   }, []);
 
   const sections = useMemo(() => {
-    const movies = titles.filter((t) => t.mediaType === 'movie');
-    const series = titles.filter((t) => t.mediaType === 'tv');
-    const topRated = [...titles].sort(byRating);
-    const latest = [...titles].sort(byYearDesc);
+    if (!usingFallback) return catalog;
+
+    const movies = fallbackTitles.filter((t) => t.mediaType === 'movie');
+    const series = fallbackTitles.filter((t) => t.mediaType === 'tv');
+    const topRated = [...fallbackTitles].sort((a, b) => b.voteAverage - a.voteAverage);
+    const latest = [...fallbackTitles].sort((a, b) => Number(b.year || 0) - Number(a.year || 0));
 
     return {
       featured: topRated.slice(0, 8),
-      trending: titles.slice(0, 12),
+      trending: fallbackTitles.slice(0, 12),
+      airing: series.slice(0, 12),
+      upcoming: latest.slice(0, 12),
       topRated: topRated.slice(0, 12),
       series: series.slice(0, 12),
       movies: movies.slice(0, 12),
       latest: latest.slice(0, 12),
     };
-  }, [titles]);
+  }, [catalog, fallbackTitles, usingFallback]);
 
   return (
     <div className="pb-28 md:pb-0" data-testid="page-anime">
@@ -84,54 +103,13 @@ export default function Anime() {
           </h1>
         </div>
 
-        <ContentTray
-          heading="Airing Anime"
-          titles={airing}
-          loading={specialLoading}
-          size="md"
-        />
-
-        <ContentTray
-          heading="Upcoming Anime"
-          titles={upcoming}
-          loading={specialLoading}
-          size="md"
-        />
-
-        <ContentTray
-          heading="Trending Anime"
-          titles={sections.trending}
-          loading={anime.isLoading}
-          size="md"
-        />
-
-        <ContentTray
-          heading="Top Rated Anime"
-          titles={sections.topRated}
-          loading={anime.isLoading}
-          size="md"
-        />
-
-        <ContentTray
-          heading="Anime Series"
-          titles={sections.series}
-          loading={anime.isLoading}
-          size="md"
-        />
-
-        <ContentTray
-          heading="Anime Movies"
-          titles={sections.movies}
-          loading={anime.isLoading}
-          size="md"
-        />
-
-        <ContentTray
-          heading="Latest Anime"
-          titles={sections.latest}
-          loading={anime.isLoading}
-          size="md"
-        />
+        <ContentTray heading="Airing Anime" titles={sections.airing} loading={loading} size="md" />
+        <ContentTray heading="Upcoming Anime" titles={sections.upcoming} loading={loading} size="md" />
+        <ContentTray heading="Trending Anime" titles={sections.trending} loading={loading} size="md" />
+        <ContentTray heading="Top Rated Anime" titles={sections.topRated} loading={loading} size="md" />
+        <ContentTray heading="Anime Series" titles={sections.series} loading={loading} size="md" />
+        <ContentTray heading="Anime Movies" titles={sections.movies} loading={loading} size="md" />
+        <ContentTray heading="Latest Anime" titles={sections.latest} loading={loading} size="md" />
       </div>
     </div>
   );
