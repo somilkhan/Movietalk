@@ -13,6 +13,18 @@ function qualityLabel(value: DownloadOption['quality']) {
   return 'HD';
 }
 
+function openDownload(url: string) {
+  if (!url) return;
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.target = '_blank';
+  anchor.rel = 'noopener noreferrer';
+  anchor.style.display = 'none';
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+}
+
 export default function BingrWatchWithDownloads() {
   const params = useParams<{ mediaType: string; id: string; season?: string; episode?: string }>();
   const mediaType = params.mediaType === 'tv' ? 'tv' : 'movie';
@@ -34,13 +46,16 @@ export default function BingrWatchWithDownloads() {
     }
     setLoading(true);
     setError('');
+    setDownloads([]);
     fetch(`/api/bingr/download?${query.toString()}`, { headers: { Accept: 'application/json' }, signal: controller.signal })
       .then((response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json() as Promise<DownloadResponse>;
       })
       .then((data) => {
-        const options = Array.isArray(data.downloads) ? data.downloads.filter((item) => typeof item?.url === 'string' && item.url.length > 0) : [];
+        const options = Array.isArray(data.downloads)
+          ? data.downloads.filter((item) => typeof item?.url === 'string' && item.url.trim().length > 0)
+          : [];
         setDownloads(options);
         if (!options.length) setError('No download options found for this episode.');
       })
@@ -84,25 +99,33 @@ export default function BingrWatchWithDownloads() {
               ) : (
                 <div className="flex flex-col gap-3">
                   {downloads.map((item, index) => {
+                    const url = typeof item.url === 'string' ? item.url.trim() : '';
                     const label = qualityLabel(item.quality);
                     const provider = item.server || item.source || 'Download';
                     const size = item.size?.trim() || 'Unknown Size';
                     return (
-                      <a
-                        key={`${item.url}-${index}`}
-                        href={item.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <div
+                        key={`${url}-${index}`}
                         className="group/dl flex w-full items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/5 p-3 text-left transition-all hover:border-white/20 hover:bg-white/10"
                       >
                         <div className="flex min-w-0 flex-1 flex-col">
                           <span className="text-sm font-semibold text-white transition-colors group-hover/dl:text-[#4ade80] md:text-base">{label}</span>
                           <span className="mt-1 break-words text-xs text-white/50 transition-colors group-hover/dl:text-white/70">{provider} • {size}</span>
                         </div>
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors group-hover/dl:bg-[#4ade80]/20 group-hover/dl:text-[#4ade80]">
-                          <Download className="h-4 w-4" />
-                        </span>
-                      </a>
+                        <button
+                          type="button"
+                          disabled={!url}
+                          aria-label={`Download ${label} from ${provider}`}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            openDownload(url);
+                          }}
+                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-[#4ade80]/20 hover:text-[#4ade80] disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <Download className="h-4 w-4 pointer-events-none" />
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
