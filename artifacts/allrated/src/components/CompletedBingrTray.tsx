@@ -1,14 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
+import { useContinueWatching, type ContinueItem } from "@/hooks/useContinueWatching";
 
-const COMPLETED_BINGR_KEY = "movietalk:last-completed-bingr";
-
-type CompletedTitle = {
-  id: number;
-  mediaType: "movie" | "tv";
-  title: string;
-  posterPath?: string | null;
-};
+const LEGACY_COMPLETED_KEY = "movietalk:last-completed-bingr";
 
 type Recommendation = {
   id: number;
@@ -21,39 +15,44 @@ type Recommendation = {
   year?: string | null;
 };
 
-function readCompletedTitle(): CompletedTitle | null {
+function migrateLegacyCompletion(markCompleted: (item: Omit<ContinueItem, "timestamp" | "progress" | "completedAt">) => void) {
   try {
-    const raw = localStorage.getItem(COMPLETED_BINGR_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<CompletedTitle>;
-    if (!parsed.id || !parsed.mediaType || !parsed.title) return null;
-    if (parsed.mediaType !== "movie" && parsed.mediaType !== "tv") return null;
-    return {
+    const raw = localStorage.getItem(LEGACY_COMPLETED_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw) as Partial<ContinueItem>;
+    if (!parsed.id || !parsed.mediaType || !parsed.title) return;
+    if (parsed.mediaType !== "movie" && parsed.mediaType !== "tv") return;
+    markCompleted({
       id: Number(parsed.id),
       mediaType: parsed.mediaType,
       title: String(parsed.title),
       posterPath: parsed.posterPath || null,
-    };
-  } catch {
-    return null;
-  }
+      backdropPath: parsed.backdropPath || null,
+      season: parsed.season,
+      episode: parsed.episode,
+      episodeTitle: parsed.episodeTitle,
+      duration: parsed.duration,
+      timeLeft: 0,
+    });
+    localStorage.removeItem(LEGACY_COMPLETED_KEY);
+  } catch {}
 }
 
 export function CompletedBingrTray() {
   const rowRef = useRef<HTMLDivElement>(null);
-  const [completed, setCompleted] = useState<CompletedTitle | null>(null);
+  const { completed, markCompleted } = useContinueWatching();
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
 
   useEffect(() => {
-    const load = () => setCompleted(readCompletedTitle());
-    load();
+    migrateLegacyCompletion(markCompleted);
+    const load = () => migrateLegacyCompletion(markCompleted);
     window.addEventListener("bingr:completed", load);
     window.addEventListener("storage", load);
     return () => {
       window.removeEventListener("bingr:completed", load);
       window.removeEventListener("storage", load);
     };
-  }, []);
+  }, [markCompleted]);
 
   useEffect(() => {
     if (!completed) {
@@ -61,9 +60,7 @@ export function CompletedBingrTray() {
       return;
     }
     let cancelled = false;
-    fetch(`/api/catalog/title/${completed.mediaType}/${completed.id}/similar`, {
-      headers: { Accept: "application/json" },
-    })
+    fetch(`/api/catalog/title/${completed.mediaType}/${completed.id}/similar`, { headers: { Accept: "application/json" } })
       .then((response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
@@ -78,9 +75,7 @@ export function CompletedBingrTray() {
       .catch(() => {
         if (!cancelled) setRecommendations([]);
       });
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [completed]);
 
   if (!completed || !recommendations.length) return null;
@@ -88,9 +83,7 @@ export function CompletedBingrTray() {
   return (
     <section className="px-6 lg:px-20 pt-8 pb-4">
       <div className="flex items-center gap-4 mb-4">
-        {completed.posterPath ? (
-          <img alt={completed.title} className="w-10 h-14 md:w-12 md:h-16 rounded object-cover border border-white/10 shadow-lg" src={completed.posterPath} />
-        ) : null}
+        {completed.posterPath ? <img alt={completed.title} className="w-10 h-14 md:w-12 md:h-16 rounded object-cover border border-white/10 shadow-lg" src={completed.posterPath} /> : null}
         <div className="flex flex-col min-w-0">
           <div className="flex items-center gap-2">
             <div className="w-1 h-5 md:h-6 bg-white rounded-sm shadow-[0_0_8px_rgba(255,255,255,0.4)]" />
@@ -128,9 +121,7 @@ export function CompletedBingrTray() {
             );
           })}
         </div>
-        <button type="button" onClick={() => rowRef.current?.scrollBy({ left: 300, behavior: "smooth" })} className="absolute right-0 top-0 bottom-0 z-30 w-10 bg-gradient-to-l from-black to-transparent flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition-opacity" aria-label="Next recommendations">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg>
-        </button>
+        <button type="button" onClick={() => rowRef.current?.scrollBy({ left: 300, behavior: "smooth" })} className="absolute right-0 top-0 bottom-0 z-30 w-10 bg-gradient-to-l from-black to-transparent flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition-opacity" aria-label="Next recommendations"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg></button>
       </div>
     </section>
   );
