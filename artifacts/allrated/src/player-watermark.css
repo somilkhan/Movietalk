@@ -1,0 +1,23 @@
+/* Bingr player watermark: independent of the fading control overlay. */
+div:has(> video + div.opacity-0)::after {
+  content: "";
+  position: absolute;
+  z-index: 220;
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  width: 92px;
+  height: 30px;
+  pointer-events: none;
+  background: url('/brand/logo.svg') center / contain no-repeat;
+  opacity: 0.55;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.45));
+}
+
+@media (min-width: 768px) {
+  div:has(> video + div.opacity-0)::after {
+    top: max(24px, env(safe-area-inset-top));
+    right: max(24px, env(safe-area-inset-right));
+    width: 112px;
+    height: 34px;
+  }
+}
