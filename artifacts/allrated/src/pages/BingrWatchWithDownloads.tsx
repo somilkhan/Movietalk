@@ -35,9 +35,21 @@ export default function BingrWatchWithDownloads() {
     setLoading(true);
     setError('');
     fetch(`/api/bingr/download?${query.toString()}`, { headers: { Accept: 'application/json' }, signal: controller.signal })
-      .then((response) => { if (!response.ok) throw new Error(`HTTP ${response.status}`); return response.json() as Promise<DownloadResponse>; })
-      .then((data) => setDownloads(Array.isArray(data.downloads) ? data.downloads.filter((item) => item?.url) : []))
-      .catch((err) => { if (err?.name !== 'AbortError') { setDownloads([]); setError('Download options are unavailable right now.'); } })
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json() as Promise<DownloadResponse>;
+      })
+      .then((data) => {
+        const options = Array.isArray(data.downloads) ? data.downloads.filter((item) => typeof item?.url === 'string' && item.url.length > 0) : [];
+        setDownloads(options);
+        if (!options.length) setError('No download options found for this episode.');
+      })
+      .catch((err) => {
+        if (err?.name !== 'AbortError') {
+          setDownloads([]);
+          setError('Download options are unavailable right now.');
+        }
+      })
       .finally(() => setLoading(false));
     return () => controller.abort();
   }, [open, id, mediaType, params.season, params.episode]);
@@ -45,7 +57,12 @@ export default function BingrWatchWithDownloads() {
   return (
     <>
       <BingrWatch />
-      <button type="button" onClick={() => setOpen(true)} className="fixed right-4 top-4 z-[430] flex items-center gap-2 rounded-full border border-white/10 bg-black/60 px-4 py-2.5 text-sm font-semibold text-white shadow-xl backdrop-blur-xl transition-all hover:bg-white/15" aria-label="Download options">
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="fixed right-4 top-4 z-[430] flex items-center gap-2 rounded-full border border-white/10 bg-black/60 px-4 py-2.5 text-sm font-semibold text-white shadow-xl backdrop-blur-xl transition-all hover:bg-white/15"
+        aria-label="Download options"
+      >
         <Download className="h-4 w-4" />
         <span className="hidden sm:inline">Download</span>
       </button>
@@ -55,20 +72,41 @@ export default function BingrWatchWithDownloads() {
           <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-white/10 bg-[#0d0d0f] shadow-2xl">
             <div className="flex items-center justify-between border-b border-white/10 p-4">
               <h3 className="text-lg font-bold text-white">Download Options</h3>
-              <button type="button" onClick={() => setOpen(false)} className="rounded-full p-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white" aria-label="Close"><X className="h-5 w-5" /></button>
+              <button type="button" onClick={() => setOpen(false)} className="rounded-full p-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white" aria-label="Close">
+                <X className="h-5 w-5" />
+              </button>
             </div>
             <div className="max-h-[60vh] overflow-y-auto p-4">
-              {loading ? <div className="flex min-h-32 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-white/60" /></div> : error ? <div className="py-10 text-center text-sm text-white/50">{error}</div> : downloads.length ? <div className="flex flex-col gap-3">
-                {downloads.map((item, index) => {
-                  const label = qualityLabel(item.quality);
-                  const provider = item.server || item.source || 'Download';
-                  const size = item.size?.trim() || 'Unknown Size';
-                  return <button type="button" key={`${item.url}-${index}`} onClick={() => { if (item.url) window.open(item.url, '_blank', 'noopener,noreferrer'); }} className="group/dl flex w-full items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/5 p-3 text-left transition-all hover:border-white/20 hover:bg-white/10">
-                    <div className="flex min-w-0 flex-1 flex-col"><span className="text-sm font-semibold text-white transition-colors group-hover/dl:text-[#4ade80] md:text-base">{label}</span><span className="mt-1 break-words text-xs text-white/50 transition-colors group-hover/dl:text-white/70">{provider} • {size}</span></div>
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors group-hover/dl:bg-[#4ade80]/20 group-hover/dl:text-[#4ade80]"><Download className="h-4 w-4" /></span>
-                  </button>;
-                })}
-              </div> : <div className="py-10 text-center text-sm text-white/50">No download options found.</div>}
+              {loading ? (
+                <div className="flex min-h-32 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-white/60" /></div>
+              ) : error ? (
+                <div className="py-10 text-center text-sm text-white/50">{error}</div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {downloads.map((item, index) => {
+                    const label = qualityLabel(item.quality);
+                    const provider = item.server || item.source || 'Download';
+                    const size = item.size?.trim() || 'Unknown Size';
+                    return (
+                      <a
+                        key={`${item.url}-${index}`}
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group/dl flex w-full items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/5 p-3 text-left transition-all hover:border-white/20 hover:bg-white/10"
+                      >
+                        <div className="flex min-w-0 flex-1 flex-col">
+                          <span className="text-sm font-semibold text-white transition-colors group-hover/dl:text-[#4ade80] md:text-base">{label}</span>
+                          <span className="mt-1 break-words text-xs text-white/50 transition-colors group-hover/dl:text-white/70">{provider} • {size}</span>
+                        </div>
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors group-hover/dl:bg-[#4ade80]/20 group-hover/dl:text-[#4ade80]">
+                          <Download className="h-4 w-4" />
+                        </span>
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
