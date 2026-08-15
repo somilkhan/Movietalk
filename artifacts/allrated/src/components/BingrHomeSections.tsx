@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { useRef } from "react";
+import { useRef, type ReactNode } from "react";
 
 const TRENDING = [
   { id: 969681, mediaType: "movie", title: "Spider-Man: Brand New Day", posterPath: "https://image.tmdb.org/t/p/w500/iPOn6DinuVyLY17YM9mKuPofV08.jpg" },
@@ -67,9 +67,13 @@ const GENRES = [
   ["Science and Technology", "https://api.bingr.one/static/categories/1568791-a-e50a43088a1a.webp"],
 ] as const;
 
-function ScrollRow({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+function ScrollRow({ children, className = "" }: { children: ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
-  return <div ref={ref} className={`flex overflow-x-auto gap-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-smooth snap-x ${className}`}>{children}</div>;
+  const scroll = (direction: "left" | "right") => {
+    const el = ref.current;
+    if (el) el.scrollBy({ left: direction === "right" ? el.clientWidth * 0.72 : -el.clientWidth * 0.72, behavior: "smooth" });
+  };
+  return <div className={`relative group/row ${className}`}><div ref={ref} className="flex overflow-x-auto gap-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-smooth snap-x">{children}</div><button type="button" onClick={() => scroll("right")} className="absolute right-0 top-0 bottom-0 z-30 w-12 md:w-16 bg-gradient-to-l from-black to-transparent flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition-opacity duration-300" aria-label="Next"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg></button></div>;
 }
 
 function RowHeader({ title }: { title: string }) {
@@ -77,7 +81,7 @@ function RowHeader({ title }: { title: string }) {
 }
 
 function TrendingRow() {
-  return <section className="px-6 lg:px-20 pt-8"><RowHeader title="Trending Right Now" /><div className="relative group"><ScrollRow className="pt-4">{TRENDING.map((item, index) => <Link key={item.id} href={`/title/${item.mediaType}/${item.id}`} className="flex-shrink-0 group/card relative flex items-center pr-2 lg:pr-6 snap-start"><div className="select-none z-10 pl-2 lg:pl-4 text-[100px] md:text-[120px] lg:text-[140px]" style={{ fontFamily: '"Alfa Slab One", "Arial Black", Impact, sans-serif', fontWeight: 400, lineHeight: 1, letterSpacing: '-0.05em', marginRight: '-10px', transform: 'scaleX(1.2)', transformOrigin: 'left center', background: 'linear-gradient(to right, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 40%, rgba(255, 255, 255, 0) 100%) padding-box text', WebkitTextFillColor: 'transparent' }}>{index + 1}</div><div className="relative flex flex-col w-[110px] sm:w-[130px] lg:w-[160px] z-20 shrink-0"><div className="relative rounded-lg overflow-hidden aspect-[2/3] bg-[#1a1c24] ring-1 ring-white/5 transition-all duration-300 group-hover/card:ring-white/20 group-hover/card:-translate-y-2"><img alt={item.title} className="w-full h-full object-cover" loading={index < 3 ? "eager" : "lazy"} src={item.posterPath} /></div></div></Link>)}</ScrollRow><button className="absolute right-0 top-0 bottom-0 z-30 w-10 bg-gradient-to-l from-black to-transparent flex items-center justify-center opacity-0 group-hover:opacity-100 transition" aria-label="Next"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg></button></div></section>;
+  return <section className="px-6 lg:px-20 pt-8"><RowHeader title="Trending Right Now" /><ScrollRow className="pt-4">{TRENDING.map((item, index) => <Link key={item.id} href={`/title/${item.mediaType}/${item.id}`} className="flex-shrink-0 group/card relative flex items-center pr-2 lg:pr-6 snap-start"><div className="select-none z-10 pl-2 lg:pl-4 text-[100px] md:text-[120px] lg:text-[140px]" style={{ fontFamily: '"Alfa Slab One", "Arial Black", Impact, sans-serif', fontWeight: 400, lineHeight: 1, letterSpacing: '-0.05em', marginRight: '-10px', transform: 'scaleX(1.2)', transformOrigin: 'left center', background: 'linear-gradient(to right, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 40%, rgba(255, 255, 255, 0) 100%) padding-box text', WebkitTextFillColor: 'transparent' }}>{index + 1}</div><div className="relative flex flex-col w-[110px] sm:w-[130px] lg:w-[160px] z-20 shrink-0"><div className="relative rounded-lg overflow-hidden aspect-[2/3] bg-[#1a1c24] ring-1 ring-white/5 transition-all duration-300 group-hover/card:ring-white/20 group-hover/card:-translate-y-2"><img alt={item.title} className="w-full h-full object-cover" loading={index < 3 ? "eager" : "lazy"} src={item.posterPath} /></div></div></Link>)}</ScrollRow></section>;
 }
 
 function AfterReacherRow() {
@@ -85,14 +89,9 @@ function AfterReacherRow() {
 }
 
 function ImageRow({ title, items }: { title: string; items: readonly (readonly [string, string])[] }) {
-  return <section className="w-full relative px-6 lg:px-20 pt-8"><RowHeader title={title} /><div className="relative group"><ScrollRow className="py-4 snap-x">{items.map(([name, image]) => <div key={name} className="snap-start shrink-0"><div className="flex-none cursor-pointer group/cat relative rounded-md overflow-hidden transition-all duration-300 transform hover:scale-105 hover:z-10 bg-[#16181f] w-[160px] md:w-[220px] lg:w-[280px] aspect-[16/9]"><img alt={name} className="w-full h-full object-cover transition-transform duration-300 group-hover/cat:scale-105" loading="lazy" src={image} /><div className="absolute inset-0 bg-black/0 group-hover/cat:bg-white/5 transition-colors duration-300" /></div></div>)}</ScrollRow><button className="absolute right-0 top-0 bottom-0 z-30 w-12 md:w-16 bg-gradient-to-l from-black to-transparent flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300" aria-label={`Next ${title}`}><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg></button></div></section>;
+  return <section className="w-full relative px-6 lg:px-20 pt-8"><RowHeader title={title} /><ScrollRow className="py-4">{items.map(([name, image]) => <div key={name} className="snap-start shrink-0"><div className="flex-none cursor-pointer group/cat relative rounded-md overflow-hidden transition-all duration-300 transform hover:scale-105 hover:z-10 bg-[#16181f] w-[160px] md:w-[220px] lg:w-[280px] aspect-[16/9]"><img alt={name} className="w-full h-full object-cover transition-transform duration-300 group-hover/cat:scale-105" loading="lazy" src={image} /><div className="absolute inset-0 bg-black/0 group-hover/cat:bg-white/5 transition-colors duration-300" /></div></div>)}</ScrollRow></section>;
 }
 
 export function BingrHomeSections() {
-  return <>
-    <TrendingRow />
-    <AfterReacherRow />
-    <ImageRow title="Studios" items={STUDIOS} />
-    <ImageRow title="Popular Genres" items={GENRES} />
-  </>;
+  return <><TrendingRow /><AfterReacherRow /><ImageRow title="Studios" items={STUDIOS} /><ImageRow title="Popular Genres" items={GENRES} /></>;
 }
