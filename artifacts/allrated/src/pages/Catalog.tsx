@@ -86,12 +86,13 @@ function PosterCard({ title }: { title: Title }) {
 }
 
 export default function Catalog() {
-  const params = useParams<{ name: string }>();
-  const name = decodeURIComponent(params.name ?? '');
+  const { mediaType, category } = useParams<{ mediaType: string; category: string }>();
+  const name = decodeURIComponent(category ?? '');
+  const routeMediaType = decodeURIComponent(mediaType ?? '');
   const fetcher = useCallback(buildFetcher(name), [name]);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError } = useInfiniteQuery({
-    queryKey: ['catalog-page', name],
+    queryKey: ['catalog-page', routeMediaType, name],
     queryFn: ({ pageParam }) => fetcher(pageParam as number),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => lastPage.nextPage ?? undefined,
