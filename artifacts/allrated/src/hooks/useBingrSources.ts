@@ -23,7 +23,26 @@ export function useBingrSources(serverId: string, mediaType: 'movie' | 'tv', tmd
     const controller = new AbortController(); abortRef.current = controller;
     setLoading(true); setError(null); setSources([]); setSubtitles([]);
     const body: Record<string, unknown> = { srv: serverId, t: mediaType, id: tmdbId, query: { title, year: String(year) } };
-    if (mediaType === 'tv' && typeof season === 'number' && typeof episode === 'number') body.query = { ...(body.query as Record<string, unknown>), season, episode };
+
+    // Bingr's TV watch URLs are /watch/tv/:id/:season/:episode.
+    // The player component historically passed 1/1, so prefer the actual
+    // URL segments when present while keeping the existing API contract.
+    let requestedSeason = season;
+    let requestedEpisode = episode;
+    if (mediaType === 'tv' && typeof window !== 'undefined') {
+      const parts = window.location.pathname.split('/').filter(Boolean);
+      const watchIndex = parts.indexOf('watch');
+      const urlSeason = Number(parts[watchIndex + 3]);
+      const urlEpisode = Number(parts[watchIndex + 4]);
+      if (watchIndex >= 0 && parts[watchIndex + 1] === 'tv' && Number.isInteger(urlSeason) && urlSeason > 0 && Number.isInteger(urlEpisode) && urlEpisode > 0) {
+        requestedSeason = urlSeason;
+        requestedEpisode = urlEpisode;
+      }
+    }
+
+    if (mediaType === 'tv' && typeof requestedSeason === 'number' && typeof requestedEpisode === 'number') {
+      body.query = { ...(body.query as Record<string, unknown>), season: requestedSeason, episode: requestedEpisode };
+    }
     try {
       const response = await fetch('/api/bingr/stream', { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: controller.signal });
       if (!response.ok) throw new Error(`Bingr returned HTTP ${response.status}`);
