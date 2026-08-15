@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import './index.css';
 import './player-watermark.css';
+import './subtitle-polyfill';
 import { initAnalytics } from '@/hooks/useAnalytics';
 
 // Register Service Worker
