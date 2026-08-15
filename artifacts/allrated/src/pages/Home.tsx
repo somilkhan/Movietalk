@@ -42,21 +42,21 @@ export default function Home() {
         <ContentTray heading="New Movies" titles={popularMovies.data} loading={popularMovies.isLoading} viewAllHref="/catalog/movie/New%20Movies" size="md" />
         <ContentTray heading="Popular TV Shows" titles={popularTv.data} loading={popularTv.isLoading} viewAllHref="/catalog/tv/Popular%20TV%20Shows" size="md" />
         <ContentTray heading="Top Rated Movies" titles={topRatedMovies.data} loading={topRatedMovies.isLoading} viewAllHref="/catalog/movie/Top%20Rated%20Movies" size="md" />
-        <ContentTray heading="Blockbuster Action" titles={trendingMovies.data} loading={trendingMovies.isLoading} viewAllHref="/catalog/movie/Trending%20Movies" size="md" />
-        <ContentTray heading="Laugh Out Loud" titles={popularMovies.data?.slice().reverse()} loading={popularMovies.isLoading} viewAllHref="/catalog/movie/Popular%20Movies" size="md" />
+        <ContentTray heading="Blockbuster Action" titles={trendingMovies.data} loading={trendingMovies.isLoading} viewAllHref="/catalog/movie/Action%20Movies" size="md" />
+        <ContentTray heading="Laugh Out Loud" titles={popularMovies.data?.slice().reverse()} loading={popularMovies.isLoading} viewAllHref="/catalog/movie/Comedy%20Movies" size="md" />
 
         <PopularGenresSection />
 
-        <ContentTray heading="Sci-Fi & Fantasy" titles={trending.data?.slice(4)} loading={trending.isLoading} viewAllHref="/catalog/movie/Trending%20Right%20Now" size="md" />
+        <ContentTray heading="Sci-Fi & Fantasy" titles={trending.data?.slice(4)} loading={trending.isLoading} viewAllHref="/catalog/movie/Sci-Fi%20Movies" size="md" />
         <ContentTray heading="Anime Series" titles={anime.data} loading={anime.isLoading} viewAllHref="/anime" size="md" />
-        <ContentTray heading="Spine-Chilling Horror" titles={trendingMovies.data?.slice(2)} loading={trendingMovies.isLoading} viewAllHref="/catalog/movie/Trending%20Movies" size="md" />
-        <ContentTray heading="Heartwarming Romance" titles={popularMovies.data?.slice(3)} loading={popularMovies.isLoading} viewAllHref="/catalog/movie/Popular%20Movies" size="md" />
+        <ContentTray heading="Spine-Chilling Horror" titles={trendingMovies.data?.slice(2)} loading={trendingMovies.isLoading} viewAllHref="/catalog/movie/Horror%20Movies" size="md" />
+        <ContentTray heading="Heartwarming Romance" titles={popularMovies.data?.slice(3)} loading={popularMovies.isLoading} viewAllHref="/catalog/movie/Romance%20Movies" size="md" />
         <ContentTray heading="Top Rated TV" titles={topRatedTv.data} loading={topRatedTv.isLoading} viewAllHref="/catalog/tv/Top%20Rated%20TV%20Shows" size="md" />
 
         <PopularGenresSection />
 
         <ContentTray heading="Trending TV" titles={trendingTv.data} loading={trendingTv.isLoading} viewAllHref="/catalog/tv/Trending%20TV%20Shows" size="md" />
-        <ContentTray heading="Crime Thrillers" titles={trending.data?.slice(1)} loading={trending.isLoading} viewAllHref="/catalog/movie/Trending%20Right%20Now" size="md" />
+        <ContentTray heading="Crime Thrillers" titles={trending.data?.slice(1)} loading={trending.isLoading} viewAllHref="/catalog/movie/Crime%20Movies" size="md" />
         <PopularLanguagesTray />
       </div>
     </div>
