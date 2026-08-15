@@ -252,7 +252,7 @@ export default async function handler(req, res) {
     if (path === "/auth/register" && req.method === "POST") {
       const { email, password, username } = body;
       if (!email || !password || !username) { safeStatus(res, 400); safeJson(res, { error: "Missing fields" }); return; }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { safeStatus(res, 400); safeJson(res, { error: "Invalid email" }); return; }
+      if (!/^([^\s@]+)@([^\s@]+)\.([^\s@]+)$/.test(email)) { safeStatus(res, 400); safeJson(res, { error: "Invalid email" }); return; }
       if (password.length < 8) { safeStatus(res, 400); safeJson(res, { error: "Password too short" }); return; }
       if (users.has(email)) { safeStatus(res, 409); safeJson(res, { error: "Email exists" }); return; }
       const id = randomUUID();
@@ -434,6 +434,32 @@ export default async function handler(req, res) {
       const page = query.page || "1";
       const data = await tmdbFetch(`/discover/${mediaType}`, { with_original_language: language, sort_by: "popularity.desc", page });
       safeJson(res, (data?.results || []).map((r) => mapTitle(r, mediaType)));
+      return;
+    }
+
+    if (path === "/catalog/anime/airing") {
+      const page = query.page || "1";
+      const data = await tmdbFetch("/tv/on_the_air", { page, region });
+      const results = (data?.results || [])
+        .filter((r) => r.genre_ids?.includes(ANIMATION_GENRE_ID) && r.origin_country?.includes("JP"))
+        .map((r) => mapTitle(r, "tv"));
+      safeJson(res, results);
+      return;
+    }
+
+    if (path === "/catalog/anime/upcoming") {
+      const page = query.page || "1";
+      const today = new Date().toISOString().slice(0, 10);
+      const future = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const data = await tmdbFetch("/discover/tv", {
+        with_genres: ANIMATION_GENRE_ID,
+        with_origin_country: "JP",
+        first_air_date_gte: today,
+        first_air_date_lte: future,
+        sort_by: "first_air_date.asc",
+        page,
+      });
+      safeJson(res, (data?.results || []).map((r) => mapTitle(r, "tv")));
       return;
     }
 
