@@ -3,7 +3,7 @@ import { useContinueWatching } from "@/hooks/useContinueWatching";
 import { useRegion } from "@/hooks/useRegion";
 import { HeroSection } from "@/components/HeroSection";
 import { ContentTray } from "@/components/ContentTray";
-import { BingrHomeSections } from "@/components/BingrHomeSections";
+import { BingrHomeSections, PopularGenresSection } from "@/components/BingrHomeSections";
 import { PopularLanguagesTray } from "@/components/PopularLanguagesTray";
 import { Seo } from "@/components/Seo";
 
@@ -36,17 +36,25 @@ export default function Home() {
         {isIndia && hindiMovies.data && hindiMovies.data.length > 0 && <ContentTray heading="Hindi Movies" titles={hindiMovies.data} loading={hindiMovies.isLoading} size="md" />}
         {isIndia && tamilMovies.data && tamilMovies.data.length > 0 && <ContentTray heading="Tamil Movies" titles={tamilMovies.data} loading={tamilMovies.isLoading} size="md" />}
         {isIndia && teluguMovies.data && teluguMovies.data.length > 0 && <ContentTray heading="Telugu Movies" titles={teluguMovies.data} loading={teluguMovies.isLoading} size="md" />}
+
         <BingrHomeSections />
+
         <ContentTray heading="New Movies" titles={popularMovies.data} loading={popularMovies.isLoading} viewAllHref="/catalog/movie/New%20Movies" size="md" />
         <ContentTray heading="Popular TV Shows" titles={popularTv.data} loading={popularTv.isLoading} viewAllHref="/catalog/tv/Popular%20TV%20Shows" size="md" />
         <ContentTray heading="Top Rated Movies" titles={topRatedMovies.data} loading={topRatedMovies.isLoading} viewAllHref="/catalog/movie/Top%20Rated%20Movies" size="md" />
         <ContentTray heading="Blockbuster Action" titles={trendingMovies.data} loading={trendingMovies.isLoading} viewAllHref="/categories" size="md" />
         <ContentTray heading="Laugh Out Loud" titles={popularMovies.data?.slice().reverse()} loading={popularMovies.isLoading} viewAllHref="/categories" size="md" />
+
+        <PopularGenresSection />
+
         <ContentTray heading="Sci-Fi & Fantasy" titles={trending.data?.slice(4)} loading={trending.isLoading} viewAllHref="/categories" size="md" />
         <ContentTray heading="Anime Series" titles={anime.data} loading={anime.isLoading} viewAllHref="/anime" size="md" />
         <ContentTray heading="Spine-Chilling Horror" titles={trendingMovies.data?.slice(2)} loading={trendingMovies.isLoading} viewAllHref="/categories" size="md" />
         <ContentTray heading="Heartwarming Romance" titles={popularMovies.data?.slice(3)} loading={popularMovies.isLoading} viewAllHref="/categories" size="md" />
         <ContentTray heading="Top Rated TV" titles={topRatedTv.data} loading={topRatedTv.isLoading} viewAllHref="/catalog/tv/Top%20Rated%20TV%20Shows" size="md" />
+
+        <PopularGenresSection />
+
         <ContentTray heading="Trending TV" titles={trendingTv.data} loading={trendingTv.isLoading} viewAllHref="/catalog/tv/Trending%20TV%20Shows" size="md" />
         <ContentTray heading="Crime Thrillers" titles={trending.data?.slice(1)} loading={trending.isLoading} viewAllHref="/categories" size="md" />
         <PopularLanguagesTray />

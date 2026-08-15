@@ -67,11 +67,14 @@ function ImageRow({ title, items }: { title: string; items: readonly (readonly [
   return <section className="w-full relative px-6 lg:px-20 pt-8"><RowHeader title={title} /><ScrollRow className="py-4 snap-x">{items.map(([name, image]) => <div key={name} className="snap-start shrink-0"><Link href="/categories" className="block"><div className="flex-none cursor-pointer group/cat relative rounded-md overflow-hidden transition-all duration-300 transform hover:scale-105 hover:z-10 bg-[#16181f] w-[160px] md:w-[220px] lg:w-[280px] aspect-[16/9]"><img alt={name} className="w-full h-full object-cover transition-transform duration-300 group-hover/cat:scale-105" loading="lazy" src={image} /><div className="absolute inset-0 bg-black/0 group-hover/cat:bg-white/5 transition-colors duration-300" /></div></Link></div>)}</ScrollRow></section>;
 }
 
+export function PopularGenresSection() {
+  return <ImageRow title="Popular Genres" items={GENRES} />;
+}
+
 export function BingrHomeSections() {
   return <>
     <TrendingRow />
     <CompletedBingrTray />
     <ImageRow title="Studios" items={STUDIOS} />
-    <ImageRow title="Popular Genres" items={GENRES} />
   </>;
 }
