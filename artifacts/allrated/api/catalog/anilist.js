@@ -14,7 +14,7 @@ async function anilistQuery(query, variables = {}) {
   return json.data;
 }
 
-async function tmdbSearch(title, mediaType) {
+async function tmdbSearch(title, mediaType, year) {
   const key = process.env.TMDB_API_KEY;
   if (!key) return null;
   const endpoint = mediaType === "movie" ? "/search/movie" : "/search/tv";
@@ -22,6 +22,7 @@ async function tmdbSearch(title, mediaType) {
   url.searchParams.set("api_key", key);
   url.searchParams.set("query", title);
   url.searchParams.set("page", "1");
+  if (year) url.searchParams.set("first_air_date_year", String(year));
   try {
     const response = await fetch(url);
     if (!response.ok) return null;
@@ -103,7 +104,7 @@ function fromAniListMedia(media, tmdbId, mediaType) {
   };
 }
 
-async function resolveMedia(media, cache) {
+async function resolveMedia(media, cache, strictTmdbLink = false) {
   const tmdbLink = media.externalLinks?.find((link) => link.site === "TMDB");
   if (tmdbLink) {
     const match = tmdbLink.url.match(/(?:movie|tv)\/(\d+)/i);
@@ -115,10 +116,14 @@ async function resolveMedia(media, cache) {
     }
   }
 
+  // For Airing Anime, never guess a TMDB title from a loose text search.
+  // A wrong mapping is worse than omitting one title from the row.
+  if (strictTmdbLink) return null;
+
   const mediaType = media.format === "MOVIE" ? "movie" : "tv";
-  const cacheKey = `search:${mediaType}:${displayName(media).toLowerCase()}`;
+  const cacheKey = `search:${mediaType}:${displayName(media).toLowerCase()}:${media.startDate?.year || ""}`;
   if (cache.has(cacheKey)) return cache.get(cacheKey);
-  const raw = await tmdbSearch(displayName(media), mediaType);
+  const raw = await tmdbSearch(displayName(media), mediaType, media.startDate?.year);
   const value = raw ? titleFromTmdb(raw, mediaType) : null;
   if (value) {
     value.title = displayName(media);
@@ -132,8 +137,8 @@ async function resolveMedia(media, cache) {
   return value;
 }
 
-async function resolveList(list, cache) {
-  const resolved = await Promise.all(list.map((media) => resolveMedia(media, cache)));
+async function resolveList(list, cache, strictTmdbLink = false) {
+  const resolved = await Promise.all(list.map((media) => resolveMedia(media, cache, strictTmdbLink)));
   return resolved.filter(Boolean);
 }
 
@@ -143,7 +148,7 @@ function hasFutureAiring(media, nowSeconds) {
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=600");
+  res.setHeader("Cache-Control", "s-maxage=120, stale-while-revalidate=300");
   if (req.method === "OPTIONS") { res.statusCode = 204; res.end(); return; }
   try {
     const cache = new Map();
@@ -158,15 +163,14 @@ export default async function handler(req, res) {
       getMedia({ sort: ["START_DATE_DESC"] }),
     ]);
 
-    // "Airing Anime" means an active Japanese TV anime with a known future episode.
-    // AniList's nextAiringEpisode is the source of truth for the next scheduled episode.
+    // Airing means: Japanese TV anime + RELEASING + a real future next-episode timestamp.
     const airing = airingCandidates
       .filter((media) => hasFutureAiring(media, nowSeconds))
       .sort((a, b) => (a.nextAiringEpisode.airingAt || 0) - (b.nextAiringEpisode.airingAt || 0));
 
     const [trendingTitles, airingTitles, upcomingTitles, topRatedTitles, seriesTitles, movieTitles, latestTitles] = await Promise.all([
       resolveList(trending, cache),
-      resolveList(airing, cache),
+      resolveList(airing, cache, true),
       resolveList(upcoming, cache),
       resolveList(topRated, cache),
       resolveList(series, cache),
