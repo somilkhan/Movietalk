@@ -25,6 +25,83 @@ function openDownload(url: string) {
   anchor.remove();
 }
 
+function BingrProgressPersistence({ mediaType, id, season, episode }: { mediaType: 'movie' | 'tv'; id: number; season?: string; episode?: string }) {
+  useEffect(() => {
+    if (!Number.isFinite(id)) return;
+    const key = `movietalk:bingr-progress:${mediaType}:${id}:${season || ''}:${episode || ''}`;
+    let video: HTMLVideoElement | null = null;
+    let lastSaved = 0;
+    let observer: MutationObserver | null = null;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const save = (force = false) => {
+      if (!video || !Number.isFinite(video.currentTime) || video.currentTime <= 0) return;
+      const now = Date.now();
+      if (!force && now - lastSaved < 1000) return;
+      lastSaved = now;
+      try {
+        localStorage.setItem(key, JSON.stringify({ currentTime: video.currentTime, duration: Number.isFinite(video.duration) ? video.duration : 0, updatedAt: now }));
+      } catch {}
+    };
+
+    const restore = () => {
+      if (!video || !Number.isFinite(video.duration) || video.duration <= 0) return;
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        const position = Number(saved?.currentTime);
+        if (!Number.isFinite(position) || position < 5 || position >= video.duration - 2) return;
+        if (Math.abs(video.currentTime - position) > 2) video.currentTime = Math.min(position, video.duration - 2);
+      } catch {}
+    };
+
+    const attach = () => {
+      const next = document.querySelector('video');
+      if (!next) {
+        retryTimer = setTimeout(attach, 250);
+        return;
+      }
+      if (video === next) return;
+      if (video) {
+        video.removeEventListener('timeupdate', onTimeUpdate);
+        video.removeEventListener('loadedmetadata', onLoadedMetadata);
+        video.removeEventListener('durationchange', onLoadedMetadata);
+      }
+      video = next;
+      video.addEventListener('timeupdate', onTimeUpdate);
+      video.addEventListener('loadedmetadata', onLoadedMetadata);
+      video.addEventListener('durationchange', onLoadedMetadata);
+      restore();
+    };
+
+    const onTimeUpdate = () => save(false);
+    const onLoadedMetadata = () => restore();
+
+    const onPageExit = () => save(true);
+    window.addEventListener('pagehide', onPageExit);
+    window.addEventListener('beforeunload', onPageExit);
+    observer = new MutationObserver(attach);
+    observer.observe(document.body, { childList: true, subtree: true });
+    attach();
+
+    return () => {
+      save(true);
+      window.removeEventListener('pagehide', onPageExit);
+      window.removeEventListener('beforeunload', onPageExit);
+      if (retryTimer) clearTimeout(retryTimer);
+      observer?.disconnect();
+      if (video) {
+        video.removeEventListener('timeupdate', onTimeUpdate);
+        video.removeEventListener('loadedmetadata', onLoadedMetadata);
+        video.removeEventListener('durationchange', onLoadedMetadata);
+      }
+    };
+  }, [mediaType, id, season, episode]);
+
+  return null;
+}
+
 export default function BingrWatchWithDownloads() {
   const params = useParams<{ mediaType: string; id: string; season?: string; episode?: string }>();
   const mediaType = params.mediaType === 'tv' ? 'tv' : 'movie';
@@ -72,6 +149,7 @@ export default function BingrWatchWithDownloads() {
   return (
     <>
       <BingrWatch />
+      <BingrProgressPersistence mediaType={mediaType} id={id} season={params.season} episode={params.episode} />
       <button
         type="button"
         onClick={() => setOpen(true)}
