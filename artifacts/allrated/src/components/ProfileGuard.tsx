@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useProfiles } from "@/hooks/useProfiles";
 import { useAuth } from "@/hooks/useAuth";
 
-const PUBLIC_ROUTES = ["/login", "/register"];
+const PUBLIC_ROUTES = ["/login", "/register", "/space"];
 
 export function ProfileGuard({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useLocation();
@@ -20,7 +20,7 @@ export function ProfileGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    if (profile && isPublic) {
+    if (profile && (location === "/login" || location === "/register")) {
       navigate("/home");
       return;
     }
