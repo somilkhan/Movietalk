@@ -33,7 +33,7 @@ function openDownload(url: string) {
 }
 
 function progressStorageKey(mediaType: string, id: number, season?: number, episode?: number) {
-  return `movietalk:bingr-progress:${mediaType}:${id}:${season ?? 'movie'}:${episode ?? 'movie'}`;
+  return `rabbitrip:progress:${mediaType}:${id}:${season ?? 'movie'}:${episode ?? 'movie'}`;
 }
 
 function readLocalProgress(key: string): ProgressRecord | null {
