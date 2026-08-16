@@ -14,6 +14,8 @@ import { Footer } from "@/components/Footer";
 
 import Home from "@/pages/Home";
 import NotFound from "@/pages/not-found";
+import Login from "@/pages/Login";
+import Register from "@/pages/Register";
 
 const Movies = lazy(() => import("@/pages/Movies"));
 const Tv = lazy(() => import("@/pages/Tv"));
@@ -55,6 +57,12 @@ function Router() {
     <>
       <ScrollToTop />
       <Switch>
+        <Route path="/login">
+          <Login />
+        </Route>
+        <Route path="/register">
+          <Register />
+        </Route>
         <Route path="/watch/:mediaType/:id/:season/:episode">
           <Suspense fallback={<PageLoader />}><Watch /></Suspense>
         </Route>
