@@ -9,7 +9,7 @@ export function Seo({
   title,
   description = "Discover and stream movies, TV shows, anime and live sports. Personalised recommendations, watchlists — all in one place.",
 }: SeoProps) {
-  const fullTitle = title ? (title.includes("Movie Talk") ? title : `${title} — Movie Talk`) : "Movie Talk — Stream Movies, Shows, Anime & Live Sports";
+  const fullTitle = title ? (title.includes("RabbitRip") ? title : `${title} — RabbitRip`) : "RabbitRip — Stream Movies, Shows, Anime & Live Sports";
 
   useEffect(() => {
     document.title = fullTitle;
@@ -35,7 +35,7 @@ export function Seo({
     setMeta("twitter:description", description, true);
 
     return () => {
-      document.title = "Movie Talk — Stream Movies, Shows, Anime & Live Sports";
+      document.title = "RabbitRip — Stream Movies, Shows, Anime & Live Sports";
     };
   }, [fullTitle, description]);
 
