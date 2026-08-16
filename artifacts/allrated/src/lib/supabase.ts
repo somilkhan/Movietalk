@@ -1,7 +1,7 @@
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
 
-const SESSION_KEY = 'movietalk.supabase.session';
+const SESSION_KEY = 'rabbitrip.supabase.session';
 
 export interface SupabaseUser {
   id: string;
@@ -41,7 +41,7 @@ function storeSession(session: SupabaseSession | null) {
     if (session) localStorage.setItem(SESSION_KEY, JSON.stringify(session));
     else localStorage.removeItem(SESSION_KEY);
   } catch {}
-  window.dispatchEvent(new Event('movietalk:auth-changed'));
+  window.dispatchEvent(new Event('rabbitrip:auth-changed'));
 }
 
 export function getStoredSession() { return readStoredSession(); }
@@ -146,10 +146,10 @@ export async function getSession() {
 
 export function subscribeToAuthChanges(callback: (session: SupabaseSession | null) => void) {
   const handler = () => callback(readStoredSession());
-  window.addEventListener('movietalk:auth-changed', handler);
+  window.addEventListener('rabbitrip:auth-changed', handler);
   window.addEventListener('storage', handler);
   return () => {
-    window.removeEventListener('movietalk:auth-changed', handler);
+    window.removeEventListener('rabbitrip:auth-changed', handler);
     window.removeEventListener('storage', handler);
   };
 }
