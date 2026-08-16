@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 
-const CW_KEY = "movietalk.continue-watching";
+const CW_KEY = "rabbitrip.continue-watching";
 
 export interface ContinueItem {
   id: number;
