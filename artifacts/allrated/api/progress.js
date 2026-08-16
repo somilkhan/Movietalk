@@ -58,17 +58,30 @@ function finiteNumber(value) {
   return Number.isFinite(n) && n >= 0 ? n : null;
 }
 
-function normalizeUserId(value) {
-  if (typeof value !== 'string') return null;
-  const id = value.trim();
-  return id && id.length <= 128 ? id : null;
+async function getSupabaseUser(req) {
+  const authorization = req.headers?.authorization || req.headers?.Authorization;
+  if (typeof authorization !== 'string' || !authorization.startsWith('Bearer ')) return null;
+
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
+  if (!supabaseUrl || !supabaseKey) throw new Error('Supabase Auth is not configured');
+
+  const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    headers: {
+      apikey: supabaseKey,
+      Authorization: authorization,
+    },
+  });
+  if (!response.ok) return null;
+  const user = await response.json();
+  return typeof user?.id === 'string' && user.id ? user : null;
 }
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
     res.status(204).end();
@@ -76,17 +89,23 @@ export default async function handler(req, res) {
   }
 
   try {
+    const user = await getSupabaseUser(req);
+    if (!user) {
+      res.status(401).json({ error: 'Authentication required' });
+      return;
+    }
+
     await ensureSchema();
+    const userId = user.id;
 
     if (req.method === 'GET') {
-      const userId = normalizeUserId(req.query?.userId);
       const mediaType = req.query?.mediaType === 'tv' ? 'tv' : 'movie';
       const tmdbId = positiveInt(req.query?.id);
       const season = req.query?.season === undefined ? null : positiveInt(req.query?.season);
       const episode = req.query?.episode === undefined ? null : positiveInt(req.query?.episode);
 
-      if (!userId || !tmdbId) {
-        res.status(400).json({ error: 'Missing userId or id' });
+      if (!tmdbId) {
+        res.status(400).json({ error: 'Missing id' });
         return;
       }
 
@@ -106,7 +125,6 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       const body = req.body || {};
-      const userId = normalizeUserId(body.userId);
       const mediaType = body.mediaType === 'tv' ? 'tv' : body.mediaType === 'movie' ? 'movie' : null;
       const tmdbId = positiveInt(body.id);
       const season = body.season === undefined || body.season === null ? null : positiveInt(body.season);
@@ -114,7 +132,7 @@ export default async function handler(req, res) {
       const position = finiteNumber(body.position);
       const duration = finiteNumber(body.duration) ?? 0;
 
-      if (!userId || !mediaType || !tmdbId || position === null) {
+      if (!mediaType || !tmdbId || position === null) {
         res.status(400).json({ error: 'Invalid progress payload' });
         return;
       }
