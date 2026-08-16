@@ -77,7 +77,7 @@ export async function consumeOAuthCallback() {
   const refreshToken = hash.get('refresh_token');
   if (!accessToken || !refreshToken) return null;
 
-  const session = await request('/auth/v1/user', {
+  const sessionUser = await request('/auth/v1/user', {
     method: 'GET',
     headers: { Authorization: `Bearer ${accessToken}` },
   }) as SupabaseUser;
@@ -89,7 +89,7 @@ export async function consumeOAuthCallback() {
     refresh_token: refreshToken,
     expires_in: expiresIn,
     expires_at: expiresAt,
-    user: session,
+    user: sessionUser,
   };
   storeSession(next);
   window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.search}`);
@@ -111,6 +111,13 @@ export async function signUp(email: string, password: string, username?: string)
   }) as SupabaseSession & { user: SupabaseUser; session: SupabaseSession | null };
   if (payload.session) storeSession(payload.session);
   return payload;
+}
+
+export async function resetPassword(email: string) {
+  await request('/auth/v1/recover', {
+    method: 'POST',
+    body: JSON.stringify({ email, redirect_to: `${window.location.origin}/login` }),
+  });
 }
 
 export async function signOut() {
