@@ -8,7 +8,7 @@ const NAV_ITEMS = [
     label: 'Home',
     svg: (
       <svg width="24" height="24" strokeWidth="1.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="currentColor" className="w-6 h-6 md:w-7 md:h-7">
-        <path d="M9 21H7C4.79086 21 3 19.2091 3 17V10.7076C3 9.30887 3.73061 8.01175 4.92679 7.28679L9.92679 4.25649C11.2011 3.48421 12.7989 3.48421 14.0732 4.25649L19.0732 7.28679C20.2694 8.01175 21 9.30887 21 10.7076V17C21 19.2091 19.2091 21 17 21H15M9 21V17C9 15.3431 10.3431 14 12 14V14C13.6569 14 15 15.3431 15 17V21M9 21H15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M9 21H7C4.79086 21 3 19.2091 3 17V10.7076C3 9.30887 3.73061 8.01175 4.92679 7.28679L9.92679 4.25649C11.2011 3.48489 12.7989 3.48489 14.0732 4.25649L19.0732 7.28679C20.2694 8.01175 21 9.30887 21 10.7076V17C21 19.2091 19.2091 21 17 21H15M9 21V17C9 15.3431 10.3431 14 12 14V14C13.6569 14 15 15.3431 15 17V21M9 21H15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     ),
   },
@@ -86,22 +86,17 @@ export function DesktopSidebar() {
       onMouseLeave={() => setHovered(false)}
       aria-label="Main navigation"
     >
-      {/* Left edge gradient */}
       <div className="absolute left-0 top-0 bottom-0 w-[120px] bg-gradient-to-r from-black/80 to-transparent pointer-events-none z-[-2]" />
-
-      {/* Expand gradient backdrop */}
       <div
         className={cn(
           "absolute left-0 top-0 bottom-0 w-[350px] lg:w-[450px] bg-gradient-to-r from-black/95 via-black/70 to-transparent transition-opacity duration-500 pointer-events-none z-[-1]",
           hovered ? 'opacity-100' : 'opacity-0'
         )}
       />
-
-      {/* Logo */}
       <div className="absolute top-8 left-0 w-[80px] flex justify-center z-[60]">
         <Link href="/home" className="flex items-center justify-center transition-transform hover:scale-110">
           <img
-            alt="Bingr Logo"
+            alt="RabbitRip Logo"
             className="w-[60px] h-[60px] object-contain drop-shadow-lg"
             src="/brand/logo.png"
             onError={(e) => {
@@ -110,41 +105,21 @@ export function DesktopSidebar() {
           />
         </Link>
       </div>
-
-      {/* Nav */}
       <nav className="flex flex-col py-10 w-full z-10">
         <div className="flex flex-col no-scrollbar">
           {NAV_ITEMS.map((item) => {
-            const isActive =
-              location === item.href ||
-              (item.href === '/home' && location === '/');
+            const isActive = location === item.href || (item.href === '/home' && location === '/');
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="group relative flex items-center px-8 py-4 cursor-pointer"
-              >
-                <span
-                  className={cn(
-                    "flex-shrink-0 flex items-center justify-center transition-all duration-300 rounded-full w-5 h-5 md:w-[22px] md:h-[22px]",
-                    isActive
-                      ? "text-white scale-125"
-                      : "text-[#8f98a2] group-hover:text-white group-hover:scale-110"
-                  )}
-                >
-                  {item.svg}
-                </span>
-                <span
-                  className={cn(
-                    "ml-6 text-[16px] tracking-wide whitespace-nowrap transition-all duration-300",
-                    isActive
-                      ? "font-extrabold text-white"
-                      : "font-bold text-[#8f98a2] group-hover:text-white",
-                    hovered ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 -translate-x-4 pointer-events-none'
-                  )}
-                >
-                  {item.label}
-                </span>
+              <Link key={item.href} href={item.href} className="group relative flex items-center px-8 py-4 cursor-pointer">
+                <span className={cn(
+                  "flex-shrink-0 flex items-center justify-center transition-all duration-300 rounded-full w-5 h-5 md:w-[22px] md:h-[22px]",
+                  isActive ? "text-white scale-125" : "text-[#8f98a2] group-hover:text-white group-hover:scale-110"
+                )}>{item.svg}</span>
+                <span className={cn(
+                  "ml-6 text-[16px] tracking-wide whitespace-nowrap transition-all duration-300",
+                  isActive ? "font-extrabold text-white" : "font-bold text-[#8f98a2] group-hover:text-white",
+                  hovered ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 -translate-x-4 pointer-events-none'
+                )}>{item.label}</span>
               </Link>
             );
           })}
