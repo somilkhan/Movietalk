@@ -8,8 +8,8 @@ import {
   type SupabaseSession,
 } from '@/lib/supabase';
 
-const PROFILE_KEY = 'bingr.profile';
-const SESSION_KEY = 'allrated_session_id';
+const PROFILE_KEY = 'rabbitrip.profile';
+const SESSION_KEY = 'rabbitrip_session_id';
 
 interface Profile {
   id: string;
@@ -34,7 +34,7 @@ function storeProfile(profile: Profile | null) {
     if (profile) localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
     else localStorage.removeItem(PROFILE_KEY);
   } catch { /* ignore */ }
-  window.dispatchEvent(new Event('bingr:profile-updated'));
+  window.dispatchEvent(new Event('rabbitrip:profile-updated'));
 }
 
 export function useAuth() {
