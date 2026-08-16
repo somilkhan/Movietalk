@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 
-const ADS_KEY = "bingr.show_ads";
+const ADS_KEY = "rabbitrip.show_ads";
 
 export function useAds() {
   const [showAds, setShowAdsState] = useState(() => {
