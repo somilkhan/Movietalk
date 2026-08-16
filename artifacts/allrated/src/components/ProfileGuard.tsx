@@ -1,19 +1,42 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useProfiles } from "@/hooks/useProfiles";
+import { useAuth } from "@/hooks/useAuth";
 
-const PUBLIC_ROUTES = ["/profiles", "/login", "/register", "/watch", "/title"];
+const PUBLIC_ROUTES = ["/login", "/register"];
 
 export function ProfileGuard({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useLocation();
+  const { profile, isReady } = useAuth();
   const { activeProfile, profiles } = useProfiles();
 
   useEffect(() => {
-    const isPublic = PUBLIC_ROUTES.some((r) => location.startsWith(r));
-    if (!isPublic && profiles.length > 0 && !activeProfile) {
+    if (!isReady) return;
+
+    const isPublic = PUBLIC_ROUTES.some((route) => location === route || location.startsWith(`${route}/`));
+
+    if (!profile && !isPublic) {
+      navigate("/login");
+      return;
+    }
+
+    if (profile && isPublic) {
+      navigate("/home");
+      return;
+    }
+
+    if (profile && !isPublic && profiles.length > 0 && !activeProfile && location !== "/profiles") {
       navigate("/profiles");
     }
-  }, [location, activeProfile, profiles.length, navigate]);
+  }, [location, profile, isReady, activeProfile, profiles.length, navigate]);
+
+  if (!isReady) {
+    return (
+      <div className="min-h-screen bg-[#050507] flex items-center justify-center text-white">
+        <div className="h-8 w-8 rounded-full border-2 border-white/10 border-t-white animate-spin" />
+      </div>
+    );
+  }
 
   return <>{children}</>;
 }
