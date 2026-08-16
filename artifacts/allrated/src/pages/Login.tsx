@@ -63,17 +63,15 @@ export default function Login() {
         <section className="auth-reveal w-full max-w-[430px]">
           <div className="mb-8 text-center">
             <div className="relative mx-auto mb-6 flex h-[72px] w-[72px] items-center justify-center rounded-[22px] border border-white/15 bg-white/[0.07] shadow-[0_20px_70px_rgba(0,0,0,.45)] backdrop-blur-xl">
-              <img src="/brand/logo.png" alt="Bingr" className="h-12 w-12 object-contain" />
+              <img src="/brand/logo.png" alt="RabbitRip" className="h-12 w-12 object-contain" />
               <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border border-[#040405] bg-white text-black shadow-lg"><Sparkles className="h-3 w-3" /></span>
             </div>
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.32em] text-white/35">Bingr</p>
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.32em] text-white/35">RabbitRip</p>
             <h1 className="text-[34px] font-semibold tracking-[-0.04em] sm:text-[38px]">Welcome back.</h1>
             <p className="mx-auto mt-3 max-w-[320px] text-sm leading-6 text-white/40">Sign in to continue watching and keep your progress synced across devices.</p>
           </div>
-
           <form onSubmit={handleSubmit} className="relative overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.055] p-6 shadow-[0_30px_100px_rgba(0,0,0,.48)] backdrop-blur-2xl sm:p-7">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px overflow-hidden bg-white/10"><div className="auth-shimmer h-full w-1/3 bg-gradient-to-r from-transparent via-white/60 to-transparent" /></div>
-
             <div className="grid grid-cols-2 gap-3">
               <button type="button" onClick={() => handleOAuth('google')} disabled={!!oauthLoading || loading} className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.045] text-sm font-semibold text-white/80 transition duration-300 hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.08] hover:text-white disabled:pointer-events-none disabled:opacity-50">
                 {oauthLoading === 'google' ? <Loader2 className="h-4 w-4 animate-spin" /> : <GoogleIcon />} Google
@@ -82,14 +80,11 @@ export default function Login() {
                 {oauthLoading === 'github' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Github className="h-4 w-4" />} GitHub
               </button>
             </div>
-
             <div className="my-6 flex items-center gap-3"><span className="h-px flex-1 bg-white/8" /><span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/20">or continue with email</span><span className="h-px flex-1 bg-white/8" /></div>
-
             <div className="space-y-4">
               <div><label htmlFor="login-email" className="mb-2.5 block text-xs font-semibold uppercase tracking-[0.12em] text-white/45">Email</label><input id="login-email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="h-13 w-full rounded-2xl border border-white/10 bg-black/25 px-4 text-[15px] text-white placeholder:text-white/20 outline-none transition duration-300 focus:border-white/30 focus:bg-white/[0.06] focus:ring-4 focus:ring-white/[0.04]" /></div>
               <div><label htmlFor="login-password" className="mb-2.5 block text-xs font-semibold uppercase tracking-[0.12em] text-white/45">Password</label><div className="relative"><input id="login-password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="h-13 w-full rounded-2xl border border-white/10 bg-black/25 px-4 pr-12 text-[15px] text-white placeholder:text-white/20 outline-none transition duration-300 focus:border-white/30 focus:bg-white/[0.06] focus:ring-4 focus:ring-white/[0.04]" /><button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-white/30 transition hover:bg-white/10 hover:text-white/75" aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></div></div>
             </div>
-
             {error && <div className="mt-4 rounded-2xl border border-red-400/15 bg-red-500/[0.07] px-4 py-3 text-sm leading-5 text-red-200">{error}</div>}
             <button type="submit" disabled={loading || !!oauthLoading} className="group relative mt-6 flex h-13 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-white px-4 text-[15px] font-bold text-black shadow-[0_14px_40px_rgba(255,255,255,.08)] transition duration-300 hover:-translate-y-0.5 hover:bg-white/95 hover:shadow-[0_18px_50px_rgba(255,255,255,.14)] disabled:pointer-events-none disabled:opacity-60">
               <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-black/[0.06] to-transparent transition-transform duration-700 group-hover:translate-x-full" />
