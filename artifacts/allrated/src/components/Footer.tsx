@@ -5,13 +5,7 @@ export function Footer() {
         RabbitRip does not store any content — all media is fetched from third-party sources.
       </p>
       <p className="text-white/30 text-xs">
-        For removal or DMCA requests, contact:{" "}
-        <a
-          href="mailto:support@movietalk.app"
-          className="underline hover:text-white/60 transition-colors"
-        >
-          support@movietalk.app
-        </a>
+        For removal or DMCA requests, contact the RabbitRip site operator.
       </p>
     </footer>
   );
