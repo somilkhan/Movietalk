@@ -8,7 +8,7 @@ import type { Title } from '@workspace/api-client-react';
 
 interface TitleCardProps {
   title: Title;
-  progress?: number; // 0-100 for continue watching
+  progress?: number;
   isInWatchlist?: boolean;
   onWatchlistToggle?: (id: number, type: string) => void;
   index?: number;
@@ -39,14 +39,14 @@ function TitleCardComponent({
     [id, mediaType, onWatchlistToggle, isInWatchlist]
   );
 
-  const posterUrl = buildImageUrl(posterPath, 'w200') ?? '/placeholder-poster.jpg';
+  const posterUrl = buildImageUrl(posterPath, 'w500') ?? '/placeholder-poster.jpg';
 
   const posterUrlWebp = posterPath
-    ? `${buildImageUrl(posterPath, 'w200')}?format=webp`
+    ? `${buildImageUrl(posterPath, 'w500')}?format=webp`
     : null;
 
   const srcSet = posterPath
-    ? `${buildImageUrl(posterPath, 'w200')} 200w`
+    ? `${buildImageUrl(posterPath, 'w500')} 500w`
     : undefined;
 
   const typeLabel = mediaType === 'movie' ? 'Movie' : mediaType === 'tv' ? 'TV' : mediaType;
@@ -60,7 +60,6 @@ function TitleCardComponent({
         aria-label={`${title}${year ? ` (${year})` : ''}`}
       >
         <div className="relative flex flex-col w-full">
-          {/* Poster container */}
           <div
             className={cn(
               'relative rounded-lg overflow-hidden aspect-[2/3] bg-[#1a1c24]',
@@ -68,12 +67,10 @@ function TitleCardComponent({
               'group-hover/card:ring-white/20 group-hover/card:-translate-y-2'
             )}
           >
-            {/* Skeleton */}
             {!imageLoaded && !imageError && (
               <div className="absolute inset-0 bg-[#1a1c24] animate-pulse" />
             )}
 
-            {/* Poster — WebP with JPG fallback */}
             {posterUrlWebp ? (
               <picture>
                 <source
@@ -109,14 +106,12 @@ function TitleCardComponent({
               />
             )}
 
-            {/* Error fallback */}
             {imageError && (
               <div className="absolute inset-0 bg-[#1a1c24] flex items-center justify-center">
                 <span className="text-white/40 text-xs text-center px-2">{title}</span>
               </div>
             )}
 
-            {/* Progress bar for continue watching */}
             {progress !== undefined && progress > 0 && (
               <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 overflow-hidden">
                 <div
@@ -126,7 +121,6 @@ function TitleCardComponent({
               </div>
             )}
 
-            {/* Watchlist badge */}
             {isInWatchlist && (
               <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-[#4752c4] flex items-center justify-center shadow-lg">
                 <Bookmark className="w-3 h-3 text-black fill-current" />
@@ -134,12 +128,10 @@ function TitleCardComponent({
             )}
           </div>
 
-          {/* Title — below card */}
           <div className="mt-2 truncate text-[14px] font-semibold text-white/90 tracking-tight">
             {title}
           </div>
 
-          {/* Metadata row — rating · year · type */}
           <div className="flex items-center mt-1 text-[11px] font-medium text-white/50">
             {voteAverage !== undefined && voteAverage > 0 && (
               <span className="flex items-center">
@@ -166,13 +158,12 @@ function TitleCardComponent({
 
 export const TitleCard = memo(TitleCardComponent);
 
-// NumberedTitleCard — used by Row for top-10 lists (Bingr style)
 export function NumberedTitleCard({ title, index }: { title: Title; index: number }) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
 
   const { id, mediaType, posterPath } = title;
-  const posterUrl = buildImageUrl(posterPath, 'w200') ?? '/placeholder-poster.jpg';
+  const posterUrl = buildImageUrl(posterPath, 'w500') ?? '/placeholder-poster.jpg';
 
   return (
     <Link href={`/title/${mediaType}/${id}`}>
@@ -180,7 +171,6 @@ export function NumberedTitleCard({ title, index }: { title: Title; index: numbe
         className="flex-shrink-0 group/card relative flex items-center pr-2 lg:pr-6 cursor-pointer"
         data-testid="numbered-title-card"
       >
-        {/* Number — Alfa Slab One style with gradient fade */}
         <div
           className="select-none z-10 pl-2 lg:pl-4 text-[100px] md:text-[120px] lg:text-[140px]"
           style={{
@@ -199,7 +189,6 @@ export function NumberedTitleCard({ title, index }: { title: Title; index: numbe
           {index + 1}
         </div>
 
-        {/* Card */}
         <div className="relative flex flex-col w-[110px] sm:w-[130px] lg:w-[160px] z-20 shrink-0">
           <div
             className={cn(
