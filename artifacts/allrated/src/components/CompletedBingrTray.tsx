@@ -87,7 +87,7 @@ export function CompletedBingrTray() {
         <div className="flex flex-col min-w-0">
           <div className="flex items-center gap-2">
             <div className="w-1 h-5 md:h-6 bg-white rounded-sm shadow-[0_0_8px_rgba(255,255,255,0.4)]" />
-            <h2 className="text-[17px] lg:text-[19px] font-bold text-white tracking-wide">Your next Bingr after</h2>
+            <h2 className="text-[17px] lg:text-[19px] font-bold text-white tracking-wide">Your next RabbitRip after</h2>
           </div>
           <span className="text-[12px] md:text-[13px] text-white/50 uppercase font-semibold tracking-wider mt-0.5 ml-3 truncate">{completed.title}</span>
         </div>
