@@ -1,10 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'wouter';
 import { Download, Loader2, X } from 'lucide-react';
 import BingrWatch from './BingrWatch';
 
 type DownloadOption = { server?: string; url?: string; quality?: number | string; size?: string; source?: string };
 type DownloadResponse = { ok?: boolean; title?: string; downloads?: DownloadOption[] };
+
+type ProgressRecord = {
+  position_seconds?: number;
+  duration_seconds?: number;
+  updated_at?: string;
+};
 
 function qualityLabel(value: DownloadOption['quality']) {
   const n = Number(value);
@@ -25,77 +31,185 @@ function openDownload(url: string) {
   anchor.remove();
 }
 
-function BingrProgressPersistence({ mediaType, id, season, episode }: { mediaType: 'movie' | 'tv'; id: number; season?: string; episode?: string }) {
+function getProfileId() {
+  try {
+    const raw = localStorage.getItem('bingr.profile');
+    if (!raw) return null;
+    const profile = JSON.parse(raw);
+    return typeof profile?.id === 'string' ? profile.id : null;
+  } catch {
+    return null;
+  }
+}
+
+function progressStorageKey(mediaType: string, id: number, season?: number, episode?: number) {
+  return `movietalk:bingr-progress:${mediaType}:${id}:${season ?? 'movie'}:${episode ?? 'movie'}`;
+}
+
+function readLocalProgress(key: string): ProgressRecord | null {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return Number.isFinite(Number(parsed?.position_seconds)) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeLocalProgress(key: string, position: number, duration: number) {
+  try {
+    localStorage.setItem(key, JSON.stringify({
+      position_seconds: position,
+      duration_seconds: duration,
+      updated_at: new Date().toISOString(),
+    }));
+  } catch {}
+}
+
+function PersistentBingrProgress({
+  mediaType,
+  id,
+  season,
+  episode,
+}: {
+  mediaType: 'movie' | 'tv';
+  id: number;
+  season?: number;
+  episode?: number;
+}) {
+  const lastSaveRef = useRef(0);
+  const restoreRef = useRef<ProgressRecord | null>(null);
+
   useEffect(() => {
     if (!Number.isFinite(id)) return;
-    const key = `movietalk:bingr-progress:${mediaType}:${id}:${season || ''}:${episode || ''}`;
-    let video: HTMLVideoElement | null = null;
-    let lastSaved = 0;
-    let observer: MutationObserver | null = null;
-    let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
-    const save = (force = false) => {
-      if (!video || !Number.isFinite(video.currentTime) || video.currentTime <= 0) return;
-      const now = Date.now();
-      if (!force && now - lastSaved < 1000) return;
-      lastSaved = now;
+    const localKey = progressStorageKey(mediaType, id, season, episode);
+    let cancelled = false;
+    let video: HTMLVideoElement | null = null;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+    let saveTimer: ReturnType<typeof setInterval> | null = null;
+
+    const userId = getProfileId();
+
+    const applyRestore = () => {
+      if (!video || !restoreRef.current) return;
+      const position = Number(restoreRef.current.position_seconds);
+      const duration = Number(video.duration || restoreRef.current.duration_seconds || 0);
+      if (!Number.isFinite(position) || position <= 3 || !Number.isFinite(duration) || duration <= 0) return;
+      const safePosition = Math.min(position, Math.max(0, duration - 1));
+      if (safePosition > 0 && Math.abs(video.currentTime - safePosition) > 2) {
+        try { video.currentTime = safePosition; } catch {}
+      }
+    };
+
+    const fetchDatabaseProgress = async () => {
+      if (!userId || cancelled) return;
       try {
-        localStorage.setItem(key, JSON.stringify({ currentTime: video.currentTime, duration: Number.isFinite(video.duration) ? video.duration : 0, updatedAt: now }));
+        const query = new URLSearchParams({
+          userId,
+          mediaType,
+          id: String(id),
+        });
+        if (season !== undefined) query.set('season', String(season));
+        if (episode !== undefined) query.set('episode', String(episode));
+        const response = await fetch(`/api/progress?${query.toString()}`, { credentials: 'include' });
+        if (!response.ok) return;
+        const data = await response.json() as { progress?: ProgressRecord | null };
+        const remote = data.progress || null;
+        if (!remote || cancelled) return;
+
+        const local = readLocalProgress(localKey);
+        const remoteTime = Number(remote.position_seconds || 0);
+        const localTime = Number(local?.position_seconds || 0);
+        if (!local || remoteTime >= localTime) {
+          restoreRef.current = remote;
+          writeLocalProgress(localKey, remoteTime, Number(remote.duration_seconds || 0));
+          applyRestore();
+        }
       } catch {}
     };
 
-    const restore = () => {
-      if (!video || !Number.isFinite(video.duration) || video.duration <= 0) return;
+    const save = async () => {
+      if (cancelled || !video) return;
+      const position = Number(video.currentTime || 0);
+      const duration = Number(video.duration || 0);
+      if (!Number.isFinite(position) || position < 1) return;
+      if (duration && position >= duration - 2) return;
+
+      writeLocalProgress(localKey, position, duration);
+      if (!userId) return;
+
+      const now = Date.now();
+      if (now - lastSaveRef.current < 2500) return;
+      lastSaveRef.current = now;
+
       try {
-        const raw = localStorage.getItem(key);
-        if (!raw) return;
-        const saved = JSON.parse(raw);
-        const position = Number(saved?.currentTime);
-        if (!Number.isFinite(position) || position < 5 || position >= video.duration - 2) return;
-        if (Math.abs(video.currentTime - position) > 2) video.currentTime = Math.min(position, video.duration - 2);
+        await fetch('/api/progress', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            mediaType,
+            id,
+            season,
+            episode,
+            position,
+            duration,
+          }),
+          keepalive: true,
+        });
       } catch {}
     };
 
     const attach = () => {
-      const next = document.querySelector('video');
-      if (!next) {
-        retryTimer = setTimeout(attach, 250);
-        return;
-      }
-      if (video === next) return;
+      if (cancelled) return;
+      const candidate = document.querySelector('video');
+      if (!(candidate instanceof HTMLVideoElement)) return;
+      if (video === candidate) return;
+
       if (video) {
-        video.removeEventListener('timeupdate', onTimeUpdate);
-        video.removeEventListener('loadedmetadata', onLoadedMetadata);
-        video.removeEventListener('durationchange', onLoadedMetadata);
+        video.removeEventListener('loadedmetadata', applyRestore);
+        video.removeEventListener('pause', save);
+        video.removeEventListener('ended', save);
       }
-      video = next;
-      video.addEventListener('timeupdate', onTimeUpdate);
-      video.addEventListener('loadedmetadata', onLoadedMetadata);
-      video.addEventListener('durationchange', onLoadedMetadata);
-      restore();
+
+      video = candidate;
+      video.addEventListener('loadedmetadata', applyRestore);
+      video.addEventListener('pause', save);
+      video.addEventListener('ended', save);
+      applyRestore();
+
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = null;
+      if (!saveTimer) saveTimer = setInterval(save, 5000);
     };
 
-    const onTimeUpdate = () => save(false);
-    const onLoadedMetadata = () => restore();
-
-    const onPageExit = () => save(true);
-    window.addEventListener('pagehide', onPageExit);
-    window.addEventListener('beforeunload', onPageExit);
-    observer = new MutationObserver(attach);
-    observer.observe(document.body, { childList: true, subtree: true });
+    const local = readLocalProgress(localKey);
+    if (local) restoreRef.current = local;
+    fetchDatabaseProgress();
     attach();
+    if (!video) pollTimer = setInterval(attach, 250);
+
+    const saveOnExit = () => { void save(); };
+    window.addEventListener('pagehide', saveOnExit);
+    window.addEventListener('beforeunload', saveOnExit);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') saveOnExit();
+    });
 
     return () => {
-      save(true);
-      window.removeEventListener('pagehide', onPageExit);
-      window.removeEventListener('beforeunload', onPageExit);
-      if (retryTimer) clearTimeout(retryTimer);
-      observer?.disconnect();
+      cancelled = true;
+      if (pollTimer) clearInterval(pollTimer);
+      if (saveTimer) clearInterval(saveTimer);
       if (video) {
-        video.removeEventListener('timeupdate', onTimeUpdate);
-        video.removeEventListener('loadedmetadata', onLoadedMetadata);
-        video.removeEventListener('durationchange', onLoadedMetadata);
+        video.removeEventListener('loadedmetadata', applyRestore);
+        video.removeEventListener('pause', save);
+        video.removeEventListener('ended', save);
       }
+      window.removeEventListener('pagehide', saveOnExit);
+      window.removeEventListener('beforeunload', saveOnExit);
     };
   }, [mediaType, id, season, episode]);
 
@@ -106,6 +220,8 @@ export default function BingrWatchWithDownloads() {
   const params = useParams<{ mediaType: string; id: string; season?: string; episode?: string }>();
   const mediaType = params.mediaType === 'tv' ? 'tv' : 'movie';
   const id = Number(params.id);
+  const season = params.season ? Number(params.season) : undefined;
+  const episode = params.episode ? Number(params.episode) : undefined;
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -149,7 +265,7 @@ export default function BingrWatchWithDownloads() {
   return (
     <>
       <BingrWatch />
-      <BingrProgressPersistence mediaType={mediaType} id={id} season={params.season} episode={params.episode} />
+      <PersistentBingrProgress mediaType={mediaType} id={id} season={season} episode={episode} />
       <button
         type="button"
         onClick={() => setOpen(true)}
