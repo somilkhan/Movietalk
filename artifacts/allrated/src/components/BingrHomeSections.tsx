@@ -4,15 +4,14 @@ import { useGetTrending } from "@workspace/api-client-react";
 import { CompletedBingrTray } from "@/components/CompletedBingrTray";
 
 const STUDIOS = [
-  ["Specials", "https://api.bingr.one/static/categories/1739441155598-a.webp"],
-  ["Disney Plus", "https://api.bingr.one/static/categories/1747996723703-a.webp"],
-  ["HBO Max", "https://api.bingr.one/static/categories/1775539725531-a.webp"],
-  ["Peacock", "https://api.bingr.one/static/categories/1739359307816-a.webp"],
-  ["Paramount", "https://api.bingr.one/static/categories/1739358280583-a.webp"],
-  ["Netflix", "https://api.bingr.one/static/netflix.webp"],
-  ["Hulu", "https://api.bingr.one/static/hulu.webp"],
-  ["Prime Video", "https://api.bingr.one/static/prime-video.webp"],
-  ["Apple TV+", "https://api.bingr.one/static/apple-tv.webp"],
+  ["Disney Plus", 2, "https://api.bingr.one/static/categories/1747996723703-a.webp"],
+  ["HBO Max", 3268, "https://api.bingr.one/static/categories/1775539725531-a.webp"],
+  ["Peacock", 3353, "https://api.bingr.one/static/categories/1739359307816-a.webp"],
+  ["Paramount", 4, "https://api.bingr.one/static/categories/1739358280583-a.webp"],
+  ["Netflix", 213, "https://api.bingr.one/static/netflix.webp"],
+  ["Hulu", 453, "https://api.bingr.one/static/hulu.webp"],
+  ["Prime Video", 1024, "https://api.bingr.one/static/prime-video.webp"],
+  ["Apple TV+", 350, "https://api.bingr.one/static/apple-tv.webp"],
 ] as const;
 
 const GENRES = [
@@ -44,6 +43,35 @@ const GENRES = [
   ["Science and Technology", "https://api.bingr.one/static/categories/1568791-a-e50a43088a1a.webp"],
 ] as const;
 
+const GENRE_LINKS: Record<string, string> = {
+  Romance: "/catalog/movie/Romance%20Movies",
+  Drama: "/catalog/movie/Drama%20Movies",
+  Family: "/catalog/movie/Family%20Movies",
+  Reality: "/catalog/movie/Reality%20Movies",
+  Comedy: "/catalog/movie/Comedy%20Movies",
+  Mythology: "/catalog/movie/Mythology%20Movies",
+  Action: "/catalog/movie/Action%20Movies",
+  Thriller: "/catalog/movie/Thriller%20Movies",
+  Crime: "/catalog/movie/Crime%20Movies",
+  Horror: "/catalog/movie/Horror%20Movies",
+  Mystery: "/catalog/movie/Mystery%20Movies",
+  "Sci-Fi": "/catalog/movie/Sci-Fi%20Movies",
+  Fantasy: "/catalog/movie/Fantasy%20Movies",
+  Adventure: "/catalog/movie/Adventure%20Movies",
+  Superhero: "/catalog/movie/Superhero%20Movies",
+  Anime: "/catalog/movie/Anime%20Movies",
+  Animation: "/catalog/movie/Animation%20Movies",
+  Biopic: "/catalog/movie/Biopic%20Movies",
+  Historical: "/catalog/movie/Historical%20Movies",
+  Documentary: "/catalog/movie/Documentary%20Movies",
+  Musical: "/catalog/movie/Musical%20Movies",
+  Devotional: "/catalog/movie/Devotional%20Movies",
+  Teen: "/catalog/movie/Teen%20Movies",
+  Lifestyle: "/catalog/movie/Lifestyle%20Movies",
+  Travel: "/catalog/movie/Travel%20Movies",
+  "Science and Technology": "/catalog/movie/Science%20and%20Technology%20Movies",
+};
+
 function ScrollRow({ children, className = "" }: { children: ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const scroll = (direction: "left" | "right") => {
@@ -63,18 +91,18 @@ function TrendingRow() {
   return <section className="px-6 lg:px-20 pt-8"><RowHeader title="Trending Right Now" viewAllHref="/catalog/all/Trending%20Right%20Now" /><ScrollRow className="pt-4">{items.map((item, index) => <Link key={`${item.mediaType}-${item.id}`} href={`/title/${item.mediaType}/${item.id}`} className="flex-shrink-0 group/card relative flex items-center pr-2 lg:pr-6 snap-start"><div className="select-none z-10 pl-2 lg:pl-4 text-[100px] md:text-[120px] lg:text-[140px]" style={{ fontFamily: '"Alfa Slab One", "Arial Black", Impact, sans-serif', fontWeight: 400, lineHeight: 1, letterSpacing: '-0.05em', marginRight: '-10px', transform: 'scaleX(1.2)', transformOrigin: 'left center', background: 'linear-gradient(to right, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 40%, rgba(255, 255, 255, 0) 100%) padding-box text', WebkitTextFillColor: 'transparent' }}>{index + 1}</div><div className="relative flex flex-col w-[110px] sm:w-[130px] lg:w-[160px] z-20 shrink-0"><div className="relative rounded-lg overflow-hidden aspect-[2/3] bg-[#1a1c24] ring-1 ring-white/5 transition-all duration-300 group-hover/card:ring-white/20 group-hover/card:-translate-y-2"><img alt={item.title} className="w-full h-full object-cover" loading={index < 3 ? "eager" : "lazy"} src={item.posterPath || ""} /></div></div></Link>)}</ScrollRow></section>;
 }
 
-function ImageRow({ title, items }: { title: string; items: readonly (readonly [string, string])[] }) {
-  return <section className="w-full relative px-6 lg:px-20 pt-8"><RowHeader title={title} /><ScrollRow className="py-4 snap-x">{items.map(([name, image]) => <div key={name} className="snap-start shrink-0"><Link href="/categories" className="block"><div className="flex-none cursor-pointer group/cat relative rounded-md overflow-hidden transition-all duration-300 transform hover:scale-105 hover:z-10 bg-[#16181f] w-[160px] md:w-[220px] lg:w-[280px] aspect-[16/9]"><img alt={name} className="w-full h-full object-cover transition-transform duration-300 group-hover/cat:scale-105" loading="lazy" src={image} /><div className="absolute inset-0 bg-black/0 group-hover/cat:bg-white/5 transition-colors duration-300" /></div></Link></div>)}</ScrollRow></section>;
+function ImageRow({ title, items, getHref }: { title: string; items: readonly (readonly [string, ...any])[]; getHref: (name: string, item: readonly any[]) => string }) {
+  return <section className="w-full relative px-6 lg:px-20 pt-8"><RowHeader title={title} /><ScrollRow className="py-4 snap-x">{items.map((item) => { const [name, image] = item; return <div key={name} className="snap-start shrink-0"><Link href={getHref(name, item)} className="block"><div className="flex-none cursor-pointer group/cat relative rounded-md overflow-hidden transition-all duration-300 transform hover:scale-105 hover:z-10 bg-[#16181f] w-[160px] md:w-[220px] lg:w-[280px] aspect-[16/9]"><img alt={name} className="w-full h-full object-cover transition-transform duration-300 group-hover/cat:scale-105" loading="lazy" src={image} /><div className="absolute inset-0 bg-black/0 group-hover/cat:bg-white/5 transition-colors duration-300" /></div></Link></div>; })}</ScrollRow></section>;
 }
 
 export function PopularGenresSection() {
-  return <ImageRow title="Popular Genres" items={GENRES} />;
+  return <ImageRow title="Popular Genres" items={GENRES} getHref={(name) => GENRE_LINKS[name] || "/categories"} />;
 }
 
 export function BingrHomeSections() {
   return <>
     <TrendingRow />
     <CompletedBingrTray />
-    <ImageRow title="Studios" items={STUDIOS} />
+    <ImageRow title="Studios" items={STUDIOS} getHref={(name, item) => `/catalog/movie/${encodeURIComponent(name)}?companyId=${item[1]}`} />
   </>;
 }
