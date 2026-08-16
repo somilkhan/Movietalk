@@ -22,7 +22,7 @@ function generateId(): string { return Math.random().toString(36).slice(2, 9); }
 
 export function useProfiles() {
   const { profile } = useAuth();
-  const profileId = profile?.id || 'guest';
+  const profileId = profile?.id || "guest";
   const profilesKey = `rabbitrip.profiles:${profileId}`;
   const activeKey = `rabbitrip.activeProfile:${profileId}`;
 
@@ -43,22 +43,70 @@ export function useProfiles() {
   const [activeId, setActiveIdState] = useState<string | null>(readActiveId);
   const [isEditing, setIsEditing] = useState(false);
 
-  useEffect(() => { setProfiles(readProfiles()); setActiveIdState(readActiveId()); setIsEditing(false); }, [profileId, readProfiles, readActiveId]);
-  useEffect(() => { try { localStorage.setItem(profilesKey, JSON.stringify(profiles)); } catch {} }, [profiles, profilesKey]);
-  useEffect(() => { try { if (activeId) localStorage.setItem(activeKey, activeId); else localStorage.removeItem(activeKey); } catch {} }, [activeId, activeKey]);
+  useEffect(() => {
+    setProfiles(readProfiles());
+    setActiveIdState(readActiveId());
+    setIsEditing(false);
+  }, [profileId, readProfiles, readActiveId]);
+
+  useEffect(() => {
+    try { localStorage.setItem(profilesKey, JSON.stringify(profiles)); } catch {}
+  }, [profiles, profilesKey]);
+
+  useEffect(() => {
+    try {
+      if (activeId) localStorage.setItem(activeKey, activeId);
+      else localStorage.removeItem(activeKey);
+    } catch {}
+  }, [activeId, activeKey]);
+
+  useEffect(() => {
+    const onActiveProfileChanged = () => setActiveIdState(readActiveId());
+    window.addEventListener("rabbitrip:active-profile-updated", onActiveProfileChanged);
+    return () => window.removeEventListener("rabbitrip:active-profile-updated", onActiveProfileChanged);
+  }, [readActiveId]);
 
   const activeProfile = profiles.find((p) => p.id === activeId) || null;
-  const setActiveId = useCallback((id: string) => setActiveIdState(id), []);
+
+  const setActiveId = useCallback((id: string) => {
+    setActiveIdState(id);
+    try { localStorage.setItem(activeKey, id); } catch {}
+    window.dispatchEvent(new Event("rabbitrip:active-profile-updated"));
+  }, [activeKey]);
+
   const addProfile = useCallback((name: string, avatar?: string) => {
-    const newProfile: Profile = { id: generateId(), name: name.trim() || "New Profile", avatar: avatar || DEFAULT_AVATARS[Math.floor(Math.random() * DEFAULT_AVATARS.length)] };
-    setProfiles((prev) => [...prev, newProfile]);
-    if (!activeId) setActiveIdState(newProfile.id);
+    const newProfile: Profile = {
+      id: generateId(),
+      name: name.trim() || "New Profile",
+      avatar: avatar || DEFAULT_AVATARS[Math.floor(Math.random() * DEFAULT_AVATARS.length)],
+    };
+    setProfiles((prev) => {
+      const next = [...prev, newProfile];
+      try { localStorage.setItem(profilesKey, JSON.stringify(next)); } catch {}
+      return next;
+    });
     return newProfile.id;
-  }, [activeId]);
-  const updateProfile = useCallback((id: string, updates: Partial<Profile>) => setProfiles((prev) => prev.map((p) => p.id === id ? { ...p, ...updates } : p)), []);
+  }, [profilesKey]);
+
+  const updateProfile = useCallback((id: string, updates: Partial<Profile>) => {
+    setProfiles((prev) => prev.map((p) => p.id === id ? { ...p, ...updates } : p));
+  }, []);
+
   const deleteProfile = useCallback((id: string) => {
-    setProfiles((prev) => { const next = prev.filter((p) => p.id !== id); if (activeId === id) setActiveIdState(next[0]?.id || null); return next; });
-  }, [activeId]);
+    setProfiles((prev) => {
+      const next = prev.filter((p) => p.id !== id);
+      if (activeId === id) {
+        const nextActiveId = next[0]?.id || null;
+        setActiveIdState(nextActiveId);
+        try {
+          if (nextActiveId) localStorage.setItem(activeKey, nextActiveId);
+          else localStorage.removeItem(activeKey);
+        } catch {}
+        window.dispatchEvent(new Event("rabbitrip:active-profile-updated"));
+      }
+      return next;
+    });
+  }, [activeId, activeKey]);
 
   return { profiles, activeProfile, activeId, setActiveId, addProfile, updateProfile, deleteProfile, isEditing, setIsEditing };
 }
