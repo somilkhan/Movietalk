@@ -1,5 +1,5 @@
-// Bingr Clone — Service Worker v2
-const CACHE_NAME = 'bingr-v2';
+// RabbitRip Service Worker v3
+const CACHE_NAME = 'rabbitrip-v3';
 const STATIC_ASSETS = [
   '/',
   '/home',
