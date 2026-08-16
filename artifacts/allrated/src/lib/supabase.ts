@@ -25,10 +25,7 @@ function assertConfig() {
 
 function headers() {
   assertConfig();
-  return {
-    apikey: SUPABASE_KEY!,
-    'Content-Type': 'application/json',
-  };
+  return { apikey: SUPABASE_KEY!, 'Content-Type': 'application/json' };
 }
 
 function readStoredSession(): SupabaseSession | null {
@@ -36,9 +33,7 @@ function readStoredSession(): SupabaseSession | null {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     return JSON.parse(raw) as SupabaseSession;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 function storeSession(session: SupabaseSession | null) {
@@ -49,13 +44,8 @@ function storeSession(session: SupabaseSession | null) {
   window.dispatchEvent(new Event('movietalk:auth-changed'));
 }
 
-export function getStoredSession() {
-  return readStoredSession();
-}
-
-export function getAccessToken() {
-  return readStoredSession()?.access_token || null;
-}
+export function getStoredSession() { return readStoredSession(); }
+export function getAccessToken() { return readStoredSession()?.access_token || null; }
 
 async function request(path: string, init: RequestInit = {}) {
   assertConfig();
@@ -71,10 +61,44 @@ async function request(path: string, init: RequestInit = {}) {
   return payload;
 }
 
+export function beginOAuth(provider: 'google' | 'github') {
+  assertConfig();
+  const redirectTo = `${window.location.origin}/login`;
+  const url = new URL(`${SUPABASE_URL}/auth/v1/authorize`);
+  url.searchParams.set('provider', provider);
+  url.searchParams.set('redirect_to', redirectTo);
+  window.location.assign(url.toString());
+}
+
+export async function consumeOAuthCallback() {
+  if (typeof window === 'undefined' || !window.location.hash) return null;
+  const hash = new URLSearchParams(window.location.hash.slice(1));
+  const accessToken = hash.get('access_token');
+  const refreshToken = hash.get('refresh_token');
+  if (!accessToken || !refreshToken) return null;
+
+  const session = await request('/auth/v1/user', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  }) as SupabaseUser;
+
+  const expiresIn = Number(hash.get('expires_in') || 3600);
+  const expiresAt = Number(hash.get('expires_at') || Math.floor(Date.now() / 1000) + expiresIn);
+  const next: SupabaseSession = {
+    access_token: accessToken,
+    refresh_token: refreshToken,
+    expires_in: expiresIn,
+    expires_at: expiresAt,
+    user: session,
+  };
+  storeSession(next);
+  window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.search}`);
+  return next;
+}
+
 export async function signIn(email: string, password: string) {
   const session = await request('/auth/v1/token?grant_type=password', {
-    method: 'POST',
-    body: JSON.stringify({ email, password }),
+    method: 'POST', body: JSON.stringify({ email, password }),
   }) as SupabaseSession;
   storeSession(session);
   return session;
@@ -83,13 +107,8 @@ export async function signIn(email: string, password: string) {
 export async function signUp(email: string, password: string, username?: string) {
   const payload = await request('/auth/v1/signup', {
     method: 'POST',
-    body: JSON.stringify({
-      email,
-      password,
-      options: username ? { data: { username } } : undefined,
-    }),
+    body: JSON.stringify({ email, password, options: username ? { data: { username } } : undefined }),
   }) as SupabaseSession & { user: SupabaseUser; session: SupabaseSession | null };
-
   if (payload.session) storeSession(payload.session);
   return payload;
 }
@@ -97,15 +116,8 @@ export async function signUp(email: string, password: string, username?: string)
 export async function signOut() {
   const token = getAccessToken();
   try {
-    if (token) {
-      await request('/auth/v1/logout', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-    }
-  } catch {
-    // Clear the local session even if the remote logout request fails.
-  }
+    if (token) await request('/auth/v1/logout', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+  } catch {}
   storeSession(null);
 }
 
@@ -114,8 +126,7 @@ export async function refreshSession() {
   if (!current?.refresh_token) return null;
   try {
     const session = await request('/auth/v1/token?grant_type=refresh_token', {
-      method: 'POST',
-      body: JSON.stringify({ refresh_token: current.refresh_token }),
+      method: 'POST', body: JSON.stringify({ refresh_token: current.refresh_token }),
     }) as SupabaseSession;
     storeSession(session);
     return session;
@@ -129,9 +140,7 @@ export async function getSession() {
   const current = readStoredSession();
   if (!current) return null;
   const expiresAt = Number(current.expires_at || 0) * 1000;
-  if (expiresAt && expiresAt < Date.now() + 30_000) {
-    return refreshSession();
-  }
+  if (expiresAt && expiresAt < Date.now() + 30_000) return refreshSession();
   return current;
 }
 
