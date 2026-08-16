@@ -34,25 +34,15 @@ const SettingsParental = lazy(() => import("@/pages/SettingsParental"));
 const SettingsHelp = lazy(() => import("@/pages/SettingsHelp"));
 const Profiles = lazy(() => import("@/pages/Profiles"));
 
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { staleTime: 5 * 60 * 1000, retry: 2 } },
-});
+const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 5 * 60 * 1000, retry: 2 } } });
 
-function ScrollToTop() {
-  const [location] = useLocation();
-  useEffect(() => { window.scrollTo(0, 0); }, [location]);
-  return null;
-}
-
-function PageLoader() {
-  return <div className="min-h-screen flex items-center justify-center bg-black"><div className="w-10 h-10 border-2 border-white/10 border-t-[#4752c4] rounded-full animate-spin" /></div>;
-}
+function ScrollToTop() { const [location] = useLocation(); useEffect(() => { window.scrollTo(0, 0); }, [location]); return null; }
+function PageLoader() { return <div className="min-h-screen flex items-center justify-center bg-black"><div className="w-10 h-10 border-2 border-white/10 border-t-[#4752c4] rounded-full animate-spin" /></div>; }
 
 function Router() {
   const [location] = useLocation();
   const isWatchPage = location.startsWith('/watch');
   const isTitlePage = location.startsWith('/title');
-
   return (
     <>
       <ScrollToTop />
@@ -62,6 +52,7 @@ function Router() {
         <Route path="/watch/:mediaType/:id/:season/:episode"><Suspense fallback={<PageLoader />}><Watch /></Suspense></Route>
         <Route path="/watch/:mediaType/:id"><Suspense fallback={<PageLoader />}><Watch /></Suspense></Route>
         <Route path="/profiles"><Suspense fallback={<PageLoader />}><Profiles /></Suspense></Route>
+        <Route path="/help"><Redirect to="/settings/help" /></Route>
         <Route>
           <div className="min-h-screen bg-black text-white flex flex-col">
             <DesktopSidebar />
@@ -96,20 +87,5 @@ function Router() {
 }
 
 export default function App() {
-  return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <WouterRouter>
-          <TooltipProvider>
-            <NetworkStatus />
-            <ProfileGuard>
-              <Router />
-            </ProfileGuard>
-            <Toaster />
-            <SonnerToaster position="bottom-center" toastOptions={{ style: { background: '#1a1c24', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' } }} />
-          </TooltipProvider>
-        </WouterRouter>
-      </QueryClientProvider>
-    </ErrorBoundary>
-  );
+  return <ErrorBoundary><QueryClientProvider client={queryClient}><WouterRouter><TooltipProvider><NetworkStatus /><ProfileGuard><Router /></ProfileGuard><Toaster /><SonnerToaster position="bottom-center" toastOptions={{ style: { background: '#1a1c24', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' } }} /></TooltipProvider></WouterRouter></QueryClientProvider></ErrorBoundary>;
 }
