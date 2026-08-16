@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Pencil, Plus, Check, Trash2, X } from "lucide-react";
+import { Pencil, Plus, Trash2, X } from "lucide-react";
 import { useProfiles, DEFAULT_AVATARS } from "@/hooks/useProfiles";
 import { Seo } from "@/components/Seo";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,12 @@ export default function Profiles() {
   const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
 
+  function closeAddModal() {
+    setShowAddModal(false);
+    setNewProfileName("");
+    setSelectedAvatar(DEFAULT_AVATARS[0]);
+  }
+
   function handleSelectProfile(id: string) {
     if (isEditing) {
       const p = profiles.find((x) => x.id === id);
@@ -26,11 +32,14 @@ export default function Profiles() {
   }
 
   function handleAddProfile() {
-    if (!newProfileName.trim()) return;
-    addProfile(newProfileName.trim(), selectedAvatar);
-    setNewProfileName("");
-    setSelectedAvatar(DEFAULT_AVATARS[Math.floor(Math.random() * DEFAULT_AVATARS.length)]);
-    setShowAddModal(false);
+    const name = newProfileName.trim();
+    if (!name) return;
+    const id = addProfile(name, selectedAvatar);
+    setActiveId(id);
+    closeAddModal();
+    setEditingProfileId(null);
+    setIsEditing(false);
+    navigate("/home");
   }
 
   function saveEdit(id: string) {
@@ -78,13 +87,13 @@ export default function Profiles() {
         </div>
       </main>
       {showAddModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4" onMouseDown={(e) => { if (e.target === e.currentTarget) closeAddModal(); }}>
           <div className="bg-[#1a1c22] rounded-2xl border border-white/10 p-6 w-full max-w-sm">
-            <div className="flex items-center justify-between mb-6"><h3 className="text-lg font-semibold text-white">Add Profile</h3><button onClick={() => setShowAddModal(false)} className="text-white/50 hover:text-white"><X className="w-5 h-5" /></button></div>
+            <div className="flex items-center justify-between mb-6"><h3 className="text-lg font-semibold text-white">Add Profile</h3><button type="button" onClick={closeAddModal} className="text-white/50 hover:text-white"><X className="w-5 h-5" /></button></div>
             <div className="flex justify-center mb-6"><div className="w-24 h-24 rounded-full overflow-hidden ring-2 ring-white/20"><img src={selectedAvatar} alt="Avatar" className="w-full h-full object-cover" /></div></div>
-            <div className="grid grid-cols-4 gap-2 mb-6">{DEFAULT_AVATARS.slice(0, 8).map((avatar) => <button key={avatar} onClick={() => setSelectedAvatar(avatar)} className={cn("w-12 h-12 rounded-full overflow-hidden transition-all", selectedAvatar === avatar ? "ring-2 ring-white scale-110" : "opacity-60 hover:opacity-100")}><img src={avatar} alt="" className="w-full h-full object-cover" /></button>)}</div>
-            <input autoFocus placeholder="Profile name" value={newProfileName} onChange={(e) => setNewProfileName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleAddProfile()} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white text-sm mb-4 focus:outline-none focus:border-white/30 placeholder:text-white/30" />
-            <button onClick={handleAddProfile} disabled={!newProfileName.trim()} className="w-full py-3 rounded-lg bg-white text-black font-semibold text-sm hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">Create Profile</button>
+            <div className="grid grid-cols-4 gap-2 mb-6">{DEFAULT_AVATARS.slice(0, 8).map((avatar) => <button type="button" key={avatar} onClick={() => setSelectedAvatar(avatar)} className={cn("w-12 h-12 rounded-full overflow-hidden transition-all", selectedAvatar === avatar ? "ring-2 ring-white scale-110" : "opacity-60 hover:opacity-100")}><img src={avatar} alt="" className="w-full h-full object-cover" /></button>)}</div>
+            <input autoFocus placeholder="Profile name" value={newProfileName} onChange={(e) => setNewProfileName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddProfile(); } }} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white text-sm mb-4 focus:outline-none focus:border-white/30 placeholder:text-white/30" />
+            <button type="button" onClick={handleAddProfile} disabled={!newProfileName.trim()} className="w-full py-3 rounded-lg bg-white text-black font-semibold text-sm hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">Create Profile</button>
           </div>
         </div>
       )}
