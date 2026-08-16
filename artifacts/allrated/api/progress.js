@@ -19,22 +19,28 @@ function getPool() {
 
 async function ensureSchema() {
   if (!schemaReady) {
-    schemaReady = getPool().query(`
-      CREATE TABLE IF NOT EXISTS watch_progress (
-        id BIGSERIAL PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        media_type TEXT NOT NULL CHECK (media_type IN ('movie', 'tv')),
-        tmdb_id INTEGER NOT NULL,
-        season INTEGER,
-        episode INTEGER,
-        position_seconds DOUBLE PRECISION NOT NULL DEFAULT 0,
-        duration_seconds DOUBLE PRECISION NOT NULL DEFAULT 0,
-        title TEXT,
-        poster_path TEXT,
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        UNIQUE (user_id, media_type, tmdb_id, season, episode)
-      )
-    `).catch((error) => {
+    schemaReady = (async () => {
+      const database = getPool();
+      await database.query(`
+        CREATE TABLE IF NOT EXISTS watch_progress (
+          id BIGSERIAL PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          media_type TEXT NOT NULL CHECK (media_type IN ('movie', 'tv')),
+          tmdb_id INTEGER NOT NULL,
+          season INTEGER,
+          episode INTEGER,
+          position_seconds DOUBLE PRECISION NOT NULL DEFAULT 0,
+          duration_seconds DOUBLE PRECISION NOT NULL DEFAULT 0,
+          title TEXT,
+          poster_path TEXT,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+      await database.query(`
+        CREATE UNIQUE INDEX IF NOT EXISTS watch_progress_content_key
+        ON watch_progress (user_id, media_type, tmdb_id, COALESCE(season, 0), COALESCE(episode, 0))
+      `);
+    })().catch((error) => {
       schemaReady = null;
       throw error;
     });
@@ -89,6 +95,7 @@ export default async function handler(req, res) {
          FROM watch_progress
          WHERE user_id = $1 AND media_type = $2 AND tmdb_id = $3
            AND season IS NOT DISTINCT FROM $4 AND episode IS NOT DISTINCT FROM $5
+         ORDER BY updated_at DESC
          LIMIT 1`,
         [userId, mediaType, tmdbId, season, episode],
       );
@@ -123,7 +130,7 @@ export default async function handler(req, res) {
         `INSERT INTO watch_progress
           (user_id, media_type, tmdb_id, season, episode, position_seconds, duration_seconds, title, poster_path, updated_at)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW())
-         ON CONFLICT (user_id, media_type, tmdb_id, season, episode)
+         ON CONFLICT (user_id, media_type, tmdb_id, (COALESCE(season, 0)), (COALESCE(episode, 0)))
          DO UPDATE SET
            position_seconds = EXCLUDED.position_seconds,
            duration_seconds = EXCLUDED.duration_seconds,
