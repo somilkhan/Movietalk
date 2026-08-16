@@ -22,7 +22,7 @@ const Tv = lazy(() => import("@/pages/Tv"));
 const Anime = lazy(() => import("@/pages/Anime"));
 const Explore = lazy(() => import("@/pages/Explore"));
 const Categories = lazy(() => import("@/pages/Categories"));
-const Space = lazy(() => import("@/pages/Space"));
+const Space = lazy(() => import("@/pages/SpaceEntry"));
 const Sports = lazy(() => import("@/pages/Sports"));
 const Sparks = lazy(() => import("@/pages/Sparks"));
 const TitleDetail = lazy(() => import("@/pages/TitleDetail"));
@@ -57,21 +57,11 @@ function Router() {
     <>
       <ScrollToTop />
       <Switch>
-        <Route path="/login">
-          <Login />
-        </Route>
-        <Route path="/register">
-          <Register />
-        </Route>
-        <Route path="/watch/:mediaType/:id/:season/:episode">
-          <Suspense fallback={<PageLoader />}><Watch /></Suspense>
-        </Route>
-        <Route path="/watch/:mediaType/:id">
-          <Suspense fallback={<PageLoader />}><Watch /></Suspense>
-        </Route>
-        <Route path="/profiles">
-          <Suspense fallback={<PageLoader />}><Profiles /></Suspense>
-        </Route>
+        <Route path="/login"><Login /></Route>
+        <Route path="/register"><Register /></Route>
+        <Route path="/watch/:mediaType/:id/:season/:episode"><Suspense fallback={<PageLoader />}><Watch /></Suspense></Route>
+        <Route path="/watch/:mediaType/:id"><Suspense fallback={<PageLoader />}><Watch /></Suspense></Route>
+        <Route path="/profiles"><Suspense fallback={<PageLoader />}><Profiles /></Suspense></Route>
         <Route>
           <div className="min-h-screen bg-black text-white flex flex-col">
             <DesktopSidebar />
