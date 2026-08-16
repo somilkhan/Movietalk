@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'wouter';
 import { Download, Loader2, X } from 'lucide-react';
 import BingrWatch from './BingrWatch';
+import { getAccessToken } from '@/lib/supabase';
 
 type DownloadOption = { server?: string; url?: string; quality?: number | string; size?: string; source?: string };
 type DownloadResponse = { ok?: boolean; title?: string; downloads?: DownloadOption[] };
@@ -31,17 +32,6 @@ function openDownload(url: string) {
   anchor.remove();
 }
 
-function getProfileId() {
-  try {
-    const raw = localStorage.getItem('bingr.profile');
-    if (!raw) return null;
-    const profile = JSON.parse(raw);
-    return typeof profile?.id === 'string' ? profile.id : null;
-  } catch {
-    return null;
-  }
-}
-
 function progressStorageKey(mediaType: string, id: number, season?: number, episode?: number) {
   return `movietalk:bingr-progress:${mediaType}:${id}:${season ?? 'movie'}:${episode ?? 'movie'}`;
 }
@@ -67,6 +57,11 @@ function writeLocalProgress(key: string, position: number, duration: number) {
   } catch {}
 }
 
+function authHeaders() {
+  const token = getAccessToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 function PersistentBingrProgress({
   mediaType,
   id,
@@ -90,8 +85,6 @@ function PersistentBingrProgress({
     let pollTimer: ReturnType<typeof setInterval> | null = null;
     let saveTimer: ReturnType<typeof setInterval> | null = null;
 
-    const userId = getProfileId();
-
     const applyRestore = () => {
       if (!video || !restoreRef.current) return;
       const position = Number(restoreRef.current.position_seconds);
@@ -104,16 +97,16 @@ function PersistentBingrProgress({
     };
 
     const fetchDatabaseProgress = async () => {
-      if (!userId || cancelled) return;
+      const token = getAccessToken();
+      if (!token || cancelled) return;
       try {
-        const query = new URLSearchParams({
-          userId,
-          mediaType,
-          id: String(id),
-        });
+        const query = new URLSearchParams({ mediaType, id: String(id) });
         if (season !== undefined) query.set('season', String(season));
         if (episode !== undefined) query.set('episode', String(episode));
-        const response = await fetch(`/api/progress?${query.toString()}`, { credentials: 'include' });
+        const response = await fetch(`/api/progress?${query.toString()}`, {
+          credentials: 'include',
+          headers: authHeaders(),
+        });
         if (!response.ok) return;
         const data = await response.json() as { progress?: ProgressRecord | null };
         const remote = data.progress || null;
@@ -138,7 +131,8 @@ function PersistentBingrProgress({
       if (duration && position >= duration - 2) return;
 
       writeLocalProgress(localKey, position, duration);
-      if (!userId) return;
+      const token = getAccessToken();
+      if (!token) return;
 
       const now = Date.now();
       if (now - lastSaveRef.current < 2500) return;
@@ -148,16 +142,8 @@ function PersistentBingrProgress({
         await fetch('/api/progress', {
           method: 'POST',
           credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId,
-            mediaType,
-            id,
-            season,
-            episode,
-            position,
-            duration,
-          }),
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
+          body: JSON.stringify({ mediaType, id, season, episode, position, duration }),
           keepalive: true,
         });
       } catch {}
@@ -179,8 +165,8 @@ function PersistentBingrProgress({
       video.addEventListener('loadedmetadata', applyRestore);
       video.addEventListener('pause', save);
       video.addEventListener('ended', save);
-      applyRestore();
 
+      applyRestore();
       if (pollTimer) clearInterval(pollTimer);
       pollTimer = null;
       if (!saveTimer) saveTimer = setInterval(save, 5000);
@@ -193,11 +179,12 @@ function PersistentBingrProgress({
     if (!video) pollTimer = setInterval(attach, 250);
 
     const saveOnExit = () => { void save(); };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') saveOnExit();
+    };
     window.addEventListener('pagehide', saveOnExit);
     window.addEventListener('beforeunload', saveOnExit);
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') saveOnExit();
-    });
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       cancelled = true;
@@ -210,6 +197,7 @@ function PersistentBingrProgress({
       }
       window.removeEventListener('pagehide', saveOnExit);
       window.removeEventListener('beforeunload', saveOnExit);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [mediaType, id, season, episode]);
 
@@ -266,12 +254,7 @@ export default function BingrWatchWithDownloads() {
     <>
       <BingrWatch />
       <PersistentBingrProgress mediaType={mediaType} id={id} season={season} episode={episode} />
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="fixed right-4 top-4 z-[430] flex items-center gap-2 rounded-full border border-white/10 bg-black/60 px-4 py-2.5 text-sm font-semibold text-white shadow-xl backdrop-blur-xl transition-all hover:bg-white/15"
-        aria-label="Download options"
-      >
+      <button type="button" onClick={() => setOpen(true)} className="fixed right-4 top-4 z-[430] flex items-center gap-2 rounded-full border border-white/10 bg-black/60 px-4 py-2.5 text-sm font-semibold text-white shadow-xl backdrop-blur-xl transition-all hover:bg-white/15" aria-label="Download options">
         <Download className="h-4 w-4" />
         <span className="hidden sm:inline">Download</span>
       </button>
@@ -281,9 +264,7 @@ export default function BingrWatchWithDownloads() {
           <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-white/10 bg-[#0d0d0f] shadow-2xl">
             <div className="flex items-center justify-between border-b border-white/10 p-4">
               <h3 className="text-lg font-bold text-white">Download Options</h3>
-              <button type="button" onClick={() => setOpen(false)} className="rounded-full p-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white" aria-label="Close">
-                <X className="h-5 w-5" />
-              </button>
+              <button type="button" onClick={() => setOpen(false)} className="rounded-full p-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white" aria-label="Close"><X className="h-5 w-5" /></button>
             </div>
             <div className="max-h-[60vh] overflow-y-auto p-4">
               {loading ? (
@@ -298,25 +279,12 @@ export default function BingrWatchWithDownloads() {
                     const provider = item.server || item.source || 'Download';
                     const size = item.size?.trim() || 'Unknown Size';
                     return (
-                      <div
-                        key={`${url}-${index}`}
-                        className="group/dl flex w-full items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/5 p-3 text-left transition-all hover:border-white/20 hover:bg-white/10"
-                      >
+                      <div key={`${url}-${index}`} className="group/dl flex w-full items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/5 p-3 text-left transition-all hover:border-white/20 hover:bg-white/10">
                         <div className="flex min-w-0 flex-1 flex-col">
                           <span className="text-sm font-semibold text-white transition-colors group-hover/dl:text-[#4ade80] md:text-base">{label}</span>
                           <span className="mt-1 break-words text-xs text-white/50 transition-colors group-hover/dl:text-white/70">{provider} • {size}</span>
                         </div>
-                        <button
-                          type="button"
-                          disabled={!url}
-                          aria-label={`Download ${label} from ${provider}`}
-                          onClick={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            openDownload(url);
-                          }}
-                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-[#4ade80]/20 hover:text-[#4ade80] disabled:cursor-not-allowed disabled:opacity-40"
-                        >
+                        <button type="button" disabled={!url} aria-label={`Download ${label} from ${provider}`} onClick={(event) => { event.preventDefault(); event.stopPropagation(); openDownload(url); }} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-[#4ade80]/20 hover:text-[#4ade80] disabled:cursor-not-allowed disabled:opacity-40">
                           <Download className="h-4 w-4 pointer-events-none" />
                         </button>
                       </div>
