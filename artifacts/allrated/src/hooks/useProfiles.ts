@@ -2,17 +2,20 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 
 export const DEFAULT_AVATARS = [
-  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/25.png",
   "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v2/feature/profile/38_jv.png",
   "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/24.png",
   "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/12.png",
   "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/1.png",
   "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/23.png",
   "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/9.png",
+  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/25.png",
   "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/4.png",
+  "https://img10.hotstar.com/image/upload/f_auto,q_90,w_256/feature/profile/Additional%20Profile%20Avatars/Loki.png",
+  "https://img10.hotstar.com/image/upload/f_auto,q_90,w_256/feature/profile/Additional%20Profile%20Avatars/Wanda.png",
   "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/26.png",
   "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/11.png",
   "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/7.png",
+  "https://img10.hotstar.com/image/upload/f_auto,q_90,w_256/feature/profile/Additional%20Profile%20Avatars/Shang_chi.png",
   "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/15.png",
   "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/22.png",
   "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/8.png",
@@ -27,10 +30,6 @@ export const DEFAULT_AVATARS = [
   "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/13.png",
   "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/32.png",
   "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/29.png",
-  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/25.png",
-  "https://img10.hotstar.com/image/upload/f_auto,q_90,w_256/feature/profile/Additional%20Profile%20Avatars/Loki.png",
-  "https://img10.hotstar.com/image/upload/f_auto,q_90,w_256/feature/profile/Additional%20Profile%20Avatars/Wanda.png",
-  "https://img10.hotstar.com/image/upload/f_auto,q_90,w_256/feature/profile/Additional%20Profile%20Avatars/Shang_chi.png",
   "https://api.dicebear.com/9.x/adventurer/svg?seed=Shashi&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf",
   "https://api.dicebear.com/9.x/adventurer/svg?seed=Kiddo&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf",
   "https://api.dicebear.com/9.x/adventurer/svg?seed=Mickey&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf",
@@ -40,6 +39,9 @@ export const DEFAULT_AVATARS = [
   "https://api.dicebear.com/9.x/adventurer/svg?seed=Spider&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf",
   "https://api.dicebear.com/9.x/adventurer/svg?seed=Strange&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf",
   "https://api.dicebear.com/9.x/adventurer/svg?seed=Nova&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf",
+  "https://api.dicebear.com/9.x/adventurer/svg?seed=Aria&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf",
+  "https://api.dicebear.com/9.x/adventurer/svg?seed=Kai&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf",
+  "https://api.dicebear.com/9.x/adventurer/svg?seed=Zara&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf",
 ];
 
 export interface Profile { id: string; name: string; avatar: string; }
