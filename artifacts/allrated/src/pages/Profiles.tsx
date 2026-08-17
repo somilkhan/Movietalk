@@ -1,6 +1,6 @@
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { Link } from "wouter";
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, Pencil, Play, Plus, Settings, Trash2, X } from "lucide-react";
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Pencil, Plus, Settings } from "lucide-react";
 import { useProfiles, DEFAULT_AVATARS } from "@/hooks/useProfiles";
 import { useAuth } from "@/hooks/useAuth";
 import { useAds } from "@/hooks/useAds";
@@ -11,19 +11,29 @@ import { Seo } from "@/components/Seo";
 const SLOT = 120;
 const SWIPE_THRESHOLD = 42;
 
-function AvatarImage({ src, alt, selected = false }: { src: string; alt: string; selected?: boolean }) {
+const TAGLINES = [
+  "Look who's back. Don't you have a job or something?",
+  "Grab your chimichangas and lube, it's binge o'clock!",
+  "Netflix and chill? More like RabbitRip and absolutely no sleep.",
+  "Welcome back. Your watchlist missed you.",
+];
+
+function imageUrl(path: string | null | undefined, width = "w500") {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  return `https://image.tmdb.org/t/p/${width}${path}`;
+}
+
+function Avatar({ src, alt, selected = false, compact = false }: { src: string; alt: string; selected?: boolean; compact?: boolean }) {
   return (
-    <div className="relative h-full w-full">
-      <img
-        src={src}
-        alt={alt}
-        className={`h-full w-full rounded-full object-cover ${selected ? "ring-2 ring-white ring-offset-4 ring-offset-black" : "ring-1 ring-white/15"}`}
-        onError={(event) => { event.currentTarget.src = DEFAULT_AVATARS[0]; }}
-      />
+    <div className="relative">
+      <div className={`relative overflow-hidden rounded-full transition-all duration-300 ${compact ? "h-[72px] w-[72px] md:h-[120px] md:w-[120px]" : selected ? "h-24 w-24" : "h-20 w-20"} ${selected ? "ring-2 ring-white ring-offset-4 ring-offset-black" : "ring-0 opacity-60 hover:opacity-100"}`}>
+        <img src={src} alt={alt} draggable={false} className="h-full w-full object-cover" onError={(e) => { e.currentTarget.src = DEFAULT_AVATARS[0]; }} />
+      </div>
       {selected && (
-        <span className="absolute -bottom-1 -right-1 flex h-11 w-11 items-center justify-center rounded-full border-[3px] border-black bg-white text-black shadow-xl">
-          <Check className="h-6 w-6" strokeWidth={3} />
-        </span>
+        <div className={`absolute flex items-center justify-center rounded-full bg-white text-black shadow-lg ${compact ? "bottom-0 right-0 h-7 w-7 border-[3px] border-[#0f0f0f] md:h-9 md:w-9" : "-bottom-2 -right-1 h-7 w-7"}`}>
+          <Check className={compact ? "h-3.5 w-3.5 md:h-5 md:w-5" : "h-3.5 w-3.5"} strokeWidth={3} />
+        </div>
       )}
     </div>
   );
@@ -36,25 +46,23 @@ function AvatarCarousel({ selected, onSelect }: { selected: string; onSelect: (a
   const startX = useRef(0);
   const currentX = useRef(0);
 
-  const move = (nextIndex: number) => {
-    const next = Math.max(0, Math.min(DEFAULT_AVATARS.length - 1, nextIndex));
+  const move = (index: number) => {
+    const next = Math.max(0, Math.min(DEFAULT_AVATARS.length - 1, index));
     onSelect(DEFAULT_AVATARS[next]);
   };
 
-  const pointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    startX.current = event.clientX;
-    currentX.current = event.clientX;
+  const down = (e: ReactPointerEvent<HTMLDivElement>) => {
+    startX.current = e.clientX;
+    currentX.current = e.clientX;
     setDragging(true);
-    event.currentTarget.setPointerCapture(event.pointerId);
+    e.currentTarget.setPointerCapture(e.pointerId);
   };
-
-  const pointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+  const movePointer = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (!dragging) return;
-    currentX.current = event.clientX;
+    currentX.current = e.clientX;
     setDragOffset(Math.max(-120, Math.min(120, currentX.current - startX.current)));
   };
-
-  const pointerUp = () => {
+  const up = () => {
     if (!dragging) return;
     const delta = currentX.current - startX.current;
     if (Math.abs(delta) >= SWIPE_THRESHOLD) move(selectedIndex + (delta < 0 ? 1 : -1));
@@ -63,74 +71,85 @@ function AvatarCarousel({ selected, onSelect }: { selected: string; onSelect: (a
   };
 
   return (
-    <div
-      className="relative h-[330px] w-full overflow-hidden touch-pan-y select-none"
-      onPointerDown={pointerDown}
-      onPointerMove={pointerMove}
-      onPointerUp={pointerUp}
-      onPointerCancel={pointerUp}
-    >
-      <div
-        className="absolute left-1/2 top-1/2 flex items-center gap-5 will-change-transform"
-        style={{
-          transform: `translate3d(calc(-50px - ${selectedIndex * SLOT}px + ${dragOffset}px), -50%, 0)`,
-          transition: dragging ? "none" : "transform 400ms cubic-bezier(0.22,0.9,0.3,1)",
-        }}
-      >
-        {DEFAULT_AVATARS.map((avatar, index) => {
-          const distance = Math.abs(index - selectedIndex);
-          return (
-            <button
-              key={`${avatar}-${index}`}
-              type="button"
-              onClick={() => onSelect(avatar)}
-              className="relative h-[100px] w-[100px] shrink-0 outline-none"
-              style={{
-                opacity: Math.max(0.12, 1 - distance * 0.2),
-                transform: index === selectedIndex ? "scale(1.42)" : "scale(1)",
-                transition: dragging ? "none" : "transform 400ms cubic-bezier(0.22,0.9,0.3,1), opacity 300ms ease",
-              }}
-              aria-label={`Select avatar ${index + 1}`}
-            >
-              <AvatarImage src={avatar} alt={`Avatar ${index + 1}`} selected={index === selectedIndex} />
-            </button>
-          );
-        })}
-      </div>
-
-      <button
-        type="button"
-        onClick={() => move(selectedIndex - 1)}
-        disabled={selectedIndex === 0}
-        className="absolute left-8 top-1/2 z-10 flex h-16 w-16 -translate-y-1/2 items-center justify-center rounded-full bg-[#111115]/90 text-white/90 shadow-xl backdrop-blur disabled:pointer-events-none disabled:opacity-0 md:left-10"
-        aria-label="Previous avatar"
-      >
-        <ChevronLeft className="h-9 w-9" />
+    <div className="relative mx-auto flex w-full items-center justify-center overflow-hidden">
+      <button aria-label="Previous" onClick={() => move(selectedIndex - 1)} disabled={selectedIndex === 0} className="absolute left-4 z-10 rounded-full bg-black/40 p-3 text-white/50 backdrop-blur-sm transition hover:text-white disabled:opacity-30 md:left-8">
+        <ChevronLeft className="h-6 w-6" strokeWidth={2.5} />
       </button>
-      <button
-        type="button"
-        onClick={() => move(selectedIndex + 1)}
-        disabled={selectedIndex === DEFAULT_AVATARS.length - 1}
-        className="absolute right-8 top-1/2 z-10 flex h-16 w-16 -translate-y-1/2 items-center justify-center rounded-full bg-[#111115]/90 text-white/90 shadow-xl backdrop-blur disabled:pointer-events-none disabled:opacity-0 md:right-10"
-        aria-label="Next avatar"
-      >
-        <ChevronRight className="h-9 w-9" />
+      <div className="relative h-56 w-full cursor-grab select-none overflow-hidden touch-pan-y active:cursor-grabbing" onPointerDown={down} onPointerMove={movePointer} onPointerUp={up} onPointerCancel={up}>
+        <div className="absolute top-1/2 flex items-center" style={{ left: "50%", transform: `translate(calc(-50px - ${selectedIndex * SLOT}px + ${dragOffset}px), -50%)`, transition: dragging ? "none" : "transform 400ms cubic-bezier(0.22, 0.9, 0.3, 1)", gap: 20 }}>
+          {DEFAULT_AVATARS.map((avatar, index) => {
+            const distance = Math.abs(index - selectedIndex);
+            return (
+              <button key={`${avatar}-${index}`} type="button" onClick={() => onSelect(avatar)} style={{ width: 100, transform: index === selectedIndex ? "scale(1.4)" : "scale(1)", opacity: Math.max(0, 1 - distance * 0.1), transition: dragging ? "none" : "transform 400ms cubic-bezier(0.22, 0.9, 0.3, 1), opacity 300ms" }} className="relative flex shrink-0 items-center justify-center outline-none">
+                <Avatar src={avatar} alt="" selected={index === selectedIndex} />
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <button aria-label="Next" onClick={() => move(selectedIndex + 1)} disabled={selectedIndex === DEFAULT_AVATARS.length - 1} className="absolute right-4 z-10 rounded-full bg-black/40 p-3 text-white/50 backdrop-blur-sm transition hover:text-white disabled:opacity-30 md:right-12">
+        <ChevronRight className="h-6 w-6" strokeWidth={2.5} />
       </button>
     </div>
   );
 }
 
-function Poster({ src, title, href }: { src: string | null; title: string; href: string }) {
-  const image = src ? (src.startsWith("http") ? src : `https://image.tmdb.org/t/p/w500${src}`) : null;
+function WatchlistCard({ item }: { item: any }) {
+  const src = imageUrl(item.titleSnapshot?.posterPath);
+  const href = `/title/${item.mediaType}/${item.titleId}`;
   return (
     <Link href={href}>
-      <a className="group block w-[252px] shrink-0 overflow-hidden rounded-2xl bg-[#111116] ring-1 ring-white/10 transition hover:-translate-y-1 hover:ring-white/25">
-        <div className="aspect-[2/3] overflow-hidden bg-white/5">
-          {image ? <img src={image} alt={title} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" loading="lazy" /> : <div className="h-full w-full" />}
+      <a className="group relative w-[150px] shrink-0 text-left transition-transform duration-200 sm:w-[170px] hover:z-10 hover:scale-105">
+        <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-white/5 ring-2 ring-transparent transition-all group-hover:ring-white/30">
+          {src ? <img alt={item.titleSnapshot?.title || ""} loading="lazy" className="h-full w-full object-cover" src={src} /> : <div className="h-full w-full bg-white/5" />}
         </div>
-        <p className="truncate px-5 py-4 text-[18px] font-medium text-white/80">{title}</p>
+        <div className="mt-2 truncate text-[14px] font-semibold tracking-tight text-white/90">{item.titleSnapshot?.title || "Untitled"}</div>
+        <div className="mt-1 flex items-center text-[11px] font-medium text-white/50"><span>{item.mediaType === "tv" ? "Series" : item.mediaType === "anime" ? "Anime" : "Movie"}</span></div>
       </a>
     </Link>
+  );
+}
+
+function ContinueCard({ item }: { item: any }) {
+  const src = imageUrl(item.backdropPath || item.posterPath, "w780");
+  const href = item.mediaType === "tv" ? `/watch/tv/${item.id}/${item.season || 1}/${item.episode || 1}` : item.mediaType === "anime" ? `/watch/anime/${item.id}/${item.episode || 1}` : `/watch/movie/${item.id}`;
+  const progress = Math.max(0, Math.min(100, Number(item.progress || 0)));
+  const label = item.mediaType === "tv" ? `S${item.season || 1} E${item.episode || 1}` : item.episodeTitle || item.title;
+  return (
+    <Link href={href}>
+      <a className="group/card flex w-[220px] shrink-0 flex-col gap-2 outline-none transition-all duration-200 md:w-[260px] lg:w-[300px]">
+        <div className="relative aspect-video w-full overflow-hidden rounded-md bg-[#1a1c20] transition-all duration-300">
+          {src ? <img className="h-full w-full object-cover transition-all duration-500 ease-out group-hover/card:scale-105" alt={item.title || ""} loading="lazy" src={src} /> : <div className="h-full w-full bg-[#1a1c20]" />}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+          <div className="absolute bottom-2 left-2 z-10 text-white opacity-80 transition-opacity group-hover/card:opacity-100"><span className="text-2xl leading-none">▶</span></div>
+          <div className="absolute bottom-0 left-0 right-0 z-20 h-[3px] bg-white/20"><div className="h-full bg-[#1875e5]" style={{ width: `${progress}%` }} /></div>
+        </div>
+        <div className="flex flex-col px-0.5">
+          <h3 className="truncate text-[14px] font-semibold leading-snug text-white/90 sm:text-[15px]">{label}</h3>
+          <div className="mt-0.5 flex items-center text-[12px] font-medium text-white/50">
+            <span className="mr-2 max-w-[60%] truncate">{item.title}</span>
+            {item.timeLeft ? <span>{item.timeLeft}m left</span> : null}
+          </div>
+        </div>
+      </a>
+    </Link>
+  );
+}
+
+function AddProfile({ onClose, onCreate }: { onClose: () => void; onCreate: (name: string, avatar: string) => void }) {
+  const [name, setName] = useState("");
+  const [avatar, setAvatar] = useState(DEFAULT_AVATARS[0]);
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 px-6 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0f1014] p-6 shadow-2xl">
+        <div className="mb-6 flex items-center justify-between"><h2 className="text-lg font-semibold">Add profile</h2><button onClick={onClose} className="rounded-full p-2 text-white/60 hover:bg-white/10 hover:text-white"><span className="text-xl">×</span></button></div>
+        <div className="mb-5 grid max-h-64 grid-cols-4 gap-4 overflow-y-auto py-2">
+          {DEFAULT_AVATARS.map((item, i) => <button key={`${item}-${i}`} type="button" onClick={() => setAvatar(item)} className="flex justify-center"><div className={avatar === item ? "rounded-full ring-2 ring-white ring-offset-2 ring-offset-[#0f1014]" : "rounded-full opacity-70"}><img src={item} alt="" className="h-14 w-14 rounded-full object-cover" /></div></button>)}
+        </div>
+        <input autoFocus value={name} maxLength={20} onChange={(e) => setName(e.target.value)} placeholder="Profile Name" className="mb-4 w-full rounded-lg border border-white/20 bg-transparent px-4 py-3.5 text-base text-white placeholder-white/40 outline-none focus:border-white focus:bg-white/5" />
+        <button disabled={!name.trim()} onClick={() => onCreate(name.trim(), avatar)} className="w-full rounded-lg bg-white py-4 text-sm font-semibold text-black shadow-lg transition hover:brightness-90 disabled:cursor-not-allowed disabled:opacity-40">Create profile</button>
+      </div>
+    </div>
   );
 }
 
@@ -142,24 +161,12 @@ export default function Profiles() {
   const { items: continueWatching = [] } = useContinueWatching();
   const [editing, setEditing] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
-  const [draftName, setDraftName] = useState("");
-  const [draftAvatar, setDraftAvatar] = useState(DEFAULT_AVATARS[0]);
 
-  if (!isHydrated) {
-    return <div className="flex min-h-screen items-center justify-center bg-black"><div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-white" /></div>;
-  }
+  if (!isHydrated) return <div className="flex min-h-screen items-center justify-center bg-black"><div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-white" /></div>;
 
-  const selectProfile = (id: string) => setActiveId(id);
-  const saveAvatar = (avatar: string) => {
-    if (activeProfile) updateProfile(activeProfile.id, { avatar });
-  };
-  const createProfile = () => {
-    const name = draftName.trim();
-    if (!name) return;
-    const id = addProfile(name, draftAvatar);
+  const createProfile = (name: string, avatar: string) => {
+    const id = addProfile(name, avatar);
     setActiveId(id);
-    setDraftName("");
-    setDraftAvatar(DEFAULT_AVATARS[0]);
     setShowAdd(false);
   };
   const removeProfile = () => {
@@ -170,168 +177,79 @@ export default function Profiles() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white" data-testid="page-profiles">
-      <Seo title={editing ? "Edit Profile" : "Profiles"} />
+    <div className="min-h-screen bg-black font-sans text-white" data-testid="page-profiles">
+      <Seo title={editing ? "Edit Profile" : "My Space"} />
+      <div className="pointer-events-none absolute left-0 right-0 top-0 z-0 h-[350px]">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#1a1a1a] via-black to-black" />
+        <svg className="absolute h-full w-full opacity-40 mix-blend-screen" xmlns="http://www.w3.org/2000/svg">
+          <defs><pattern id="rabbitrip-space-stars" x="0" y="0" width="120" height="120" patternUnits="userSpaceOnUse">
+            <circle fill="#fff" cx="15" cy="15" r="1" opacity=".9" /><circle fill="#fff" cx="60" cy="35" r=".8" opacity=".5" /><circle fill="#fff" cx="100" cy="80" r="1.5" opacity=".3" /><circle fill="#fff" cx="30" cy="100" r="1" opacity=".7" /><circle fill="#fff" cx="110" cy="20" r=".8" opacity=".6" /><circle fill="#fff" cx="50" cy="75" r=".6" opacity=".8" /><circle fill="#fff" cx="8" cy="65" r="1.2" opacity=".4" /><circle fill="#fff" cx="85" cy="55" r=".8" opacity=".9" />
+          </pattern></defs><rect width="100%" height="100%" fill="url(#rabbitrip-space-stars)" /></svg>
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/80 to-black" />
+      </div>
 
-      {editing ? (
-        <main className="min-h-screen bg-black px-4 pb-12">
-          <div className="mx-auto max-w-[1180px]">
-            <div className="flex h-[82px] items-center justify-between">
-              <button type="button" onClick={() => setEditing(false)} className="flex h-12 items-center gap-1 rounded-full px-2 text-[20px] text-white/75 transition hover:text-white" aria-label="Back">
-                <ArrowLeft className="h-8 w-8" strokeWidth={1.8} />
-                <span className="hidden sm:inline">Back</span>
-              </button>
-              <h1 className="text-[22px] font-semibold">Edit Profile</h1>
-              <button type="button" onClick={() => setEditing(false)} className="rounded-full bg-white px-7 py-4 text-[18px] font-semibold text-black transition hover:bg-white/90">Done</button>
+      <main className="relative z-10 pl-0 pb-24 md:pl-[80px] lg:pl-[100px] md:pb-8">
+        <div className="px-6 pt-12 md:px-12 md:pt-20">
+          <div className="mb-10 flex w-full flex-col items-center justify-between gap-6 md:flex-row md:items-start">
+            <div className="flex w-full flex-col gap-1 md:w-[60%]">
+              <Link href="/settings/subscription"><a className="group relative flex h-[56px] w-full items-center sm:h-[32px]">
+                <h2 className="absolute flex items-center text-lg font-semibold text-white/90 transition-colors group-hover:text-white sm:text-xl"><span className="line-clamp-2 sm:line-clamp-1">{TAGLINES[Math.abs((profile?.email || "").length) % TAGLINES.length]}</span><ChevronRight className="ml-1 h-5 w-5 shrink-0 text-white/60 transition-colors group-hover:text-white/90 sm:ml-2" /></h2>
+              </a></Link>
+              <p className="mt-1 text-sm font-medium text-white/60 sm:mt-0">{profile?.email || ""}</p>
             </div>
-
-            {activeProfile ? (
-              <div className="mx-auto max-w-[900px]">
-                <div className="mt-8">
-                  <AvatarCarousel selected={activeProfile.avatar} onSelect={saveAvatar} />
-                </div>
-
-                <input
-                  value={activeProfile.name}
-                  onChange={(event) => updateProfile(activeProfile.id, { name: event.target.value })}
-                  className="mt-0 h-[90px] w-full rounded-[22px] border border-white/20 bg-[#101014] px-7 text-center text-[26px] text-white outline-none transition focus:border-white/60"
-                  aria-label="Profile name"
-                />
-
-                <button
-                  type="button"
-                  onClick={() => setEditing(false)}
-                  className="mt-16 h-[90px] w-full rounded-[22px] bg-white text-[22px] font-semibold text-black transition hover:bg-white/90"
-                >
-                  Save &amp; Continue
-                </button>
-
-                <button type="button" onClick={removeProfile} className="mt-20 flex w-full items-center justify-center gap-2 text-[20px] font-medium text-[#d95763] transition hover:text-red-400">
-                  <Trash2 className="h-5 w-5" />
-                  Delete profile
-                </button>
-              </div>
-            ) : (
-              <p className="py-32 text-center text-white/40">Create a profile first.</p>
-            )}
-          </div>
-        </main>
-      ) : (
-        <main className="min-h-screen bg-black pb-28">
-          <div className="mx-auto max-w-[1180px] px-6 md:px-10">
-            <header className="pt-10 md:pt-14">
-              <div className="max-w-[700px]">
-                <p className="text-[25px] font-semibold leading-[1.35] tracking-[-0.02em] md:text-[32px]">What are we watching tonight?</p>
-                <p className="mt-6 truncate text-[18px] text-white/60 md:text-[20px]">{profile?.email || ""}</p>
-              </div>
-
-              <div className="mt-10 flex flex-col items-start gap-5">
-                <Link href="/settings">
-                  <a className="flex h-[64px] items-center gap-4 rounded-2xl bg-[#111115] px-7 text-[20px] font-semibold text-white transition hover:bg-[#19191f]">
-                    <Settings className="h-7 w-7 text-white/70" />
-                    Help &amp; Settings
-                  </a>
-                </Link>
-                <label className="flex items-center gap-4 text-[18px] font-medium text-white/60">
-                  <span>Show Ads</span>
-                  <input type="checkbox" checked={showAds} onChange={(event) => setShowAds(event.target.checked)} className="sr-only" />
-                  <span className={`relative h-9 w-[68px] rounded-full transition ${showAds ? "bg-white" : "bg-white/15"}`}>
-                    <span className={`absolute top-1 h-7 w-7 rounded-full transition-all ${showAds ? "left-[36px] bg-black" : "left-1 bg-white/70"}`} />
-                  </span>
-                </label>
-              </div>
-            </header>
-
-            <section className="mt-20 md:mt-24">
-              <div className="flex items-center justify-between">
-                <h1 className="text-[28px] font-semibold tracking-[-0.02em] md:text-[34px]">Profiles</h1>
-                <button type="button" onClick={() => setEditing(true)} disabled={!activeProfile} className="flex h-14 items-center gap-3 rounded-2xl bg-[#111115] px-6 text-[19px] font-semibold text-white/85 transition hover:bg-[#19191f] disabled:opacity-30">
-                  <Pencil className="h-5 w-5" />
-                  Edit
-                </button>
-              </div>
-
-              <div className="mt-9 flex items-start gap-8 overflow-x-auto pb-2 scrollbar-hide">
-                {profiles.map((item) => (
-                  <button key={item.id} type="button" onClick={() => selectProfile(item.id)} className="group flex w-[124px] shrink-0 flex-col items-center outline-none">
-                    <span className="relative h-[124px] w-[124px] rounded-full">
-                      <AvatarImage src={item.avatar} alt={item.name} selected={activeId === item.id} />
-                    </span>
-                    <span className="mt-4 max-w-full truncate text-[20px] text-white/75">{item.name}</span>
-                  </button>
-                ))}
-                <button type="button" onClick={() => setShowAdd(true)} className="group flex w-[124px] shrink-0 flex-col items-center outline-none">
-                  <span className="flex h-[124px] w-[124px] items-center justify-center rounded-full border border-dashed border-white/25 bg-[#0c0c10] transition group-hover:border-white/50 group-hover:bg-[#111115]">
-                    <Plus className="h-12 w-12 text-white/45 group-hover:text-white/80" strokeWidth={1.6} />
-                  </span>
-                  <span className="mt-4 text-[20px] text-white/45 group-hover:text-white/75">Add</span>
-                </button>
-              </div>
-            </section>
-
-            <section className="mt-24 md:mt-28">
-              <div className="mb-7 flex items-center justify-between">
-                <h2 className="text-[28px] font-semibold md:text-[32px]">Watchlist</h2>
-                <span className="text-[17px] text-white/35">{watchlist.length}</span>
-              </div>
-              {watchlist.length ? (
-                <div className="flex gap-7 overflow-x-auto pb-5 scrollbar-hide">
-                  {watchlist.map((item) => (
-                    <Poster key={`${item.mediaType}-${item.titleId}`} src={item.titleSnapshot.posterPath} title={item.titleSnapshot.title} href={`/title/${item.mediaType}/${item.titleId}`} />
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-6 py-10 text-[18px] text-white/35">Your watchlist is empty.</div>
-              )}
-            </section>
-
-            <section className="mt-24 md:mt-28">
-              <div className="mb-7 flex items-center justify-between">
-                <h2 className="text-[28px] font-semibold md:text-[32px]">Continue Watching{activeProfile ? <span className="ml-3 text-[18px] font-normal text-white/35">{activeProfile.name}</span> : null}</h2>
-              </div>
-              {continueWatching.length ? (
-                <div className="flex gap-7 overflow-x-auto pb-5 scrollbar-hide">
-                  {continueWatching.map((item) => {
-                    const href = item.mediaType === "tv" && item.season && item.episode ? `/watch/tv/${item.id}/${item.season}/${item.episode}` : `/watch/${item.mediaType}/${item.id}`;
-                    const source = item.backdropPath || item.posterPath;
-                    const image = source ? (source.startsWith("http") ? source : `https://image.tmdb.org/t/p/w780${source}`) : null;
-                    return (
-                      <Link key={`${item.mediaType}-${item.id}-${item.season || 0}-${item.episode || 0}`} href={href}>
-                        <a className="group block w-[420px] shrink-0 overflow-hidden rounded-2xl bg-[#111115] ring-1 ring-white/10">
-                          <div className="relative aspect-video overflow-hidden bg-white/5">
-                            {image && <img src={image} alt={item.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" loading="lazy" />}
-                            <span className="absolute inset-0 flex items-center justify-center bg-black/10"><span className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-black shadow-xl"><Play className="ml-1 h-6 w-6 fill-current" /></span></span>
-                            <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/20"><div className="h-full bg-white" style={{ width: `${Math.min(100, Math.max(0, item.progress))}%` }} /></div>
-                          </div>
-                          <div className="px-5 py-4"><p className="truncate text-[18px] font-medium">{item.title}</p><p className="mt-1 text-[15px] text-white/35">{item.mediaType === "tv" && item.season && item.episode ? `S${item.season} E${item.episode}` : "Movie"}{item.timeLeft ? ` · ${item.timeLeft} min left` : ""}</p></div>
-                        </a>
-                      </Link>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-6 py-10 text-[18px] text-white/35">Nothing here yet.</div>
-              )}
-            </section>
-          </div>
-        </main>
-      )}
-
-      {showAdd && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 px-5 backdrop-blur-sm">
-          <div className="w-full max-w-[430px] rounded-[28px] border border-white/10 bg-[#111115] p-7 shadow-2xl">
-            <div className="mb-7 flex items-center justify-between"><h2 className="text-[22px] font-semibold">Add profile</h2><button type="button" onClick={() => setShowAdd(false)} aria-label="Close"><X className="h-6 w-6 text-white/55" /></button></div>
-            <div className="mb-7 flex justify-center"><img src={draftAvatar} alt="Selected avatar" className="h-28 w-28 rounded-full object-cover ring-2 ring-white/20" /></div>
-            <div className="mb-7 grid max-h-52 grid-cols-6 gap-3 overflow-y-auto scrollbar-hide">
-              {DEFAULT_AVATARS.map((avatar, index) => (
-                <button key={`${avatar}-${index}`} type="button" onClick={() => setDraftAvatar(avatar)} className={`h-12 w-12 overflow-hidden rounded-full ${draftAvatar === avatar ? "ring-2 ring-white" : "ring-1 ring-white/10"}`}><img src={avatar} alt="" className="h-full w-full object-cover" /></button>
-              ))}
+            <div className="flex w-full flex-col items-end gap-4 self-start md:w-auto md:self-auto">
+              <Link href="/settings"><a className="flex items-center gap-2 rounded-lg border border-transparent bg-white/5 px-4 py-2.5 text-sm font-semibold text-white/90 transition-all hover:border-white/10 hover:bg-white/10"><Settings className="h-5 w-5 text-white/70" />Help &amp; Settings</a></Link>
+              <div className="flex items-center gap-3"><span className="text-sm font-medium text-white/60">Show Ads</span><button type="button" aria-pressed={showAds} onClick={() => setShowAds(!showAds)} className={`relative h-5 w-10 shrink-0 rounded-full outline-none transition-colors ${showAds ? "bg-white" : "bg-white/20"}`}><div className={`absolute top-[2px] h-4 w-4 rounded-full transition-transform ${showAds ? "translate-x-[22px] bg-black" : "translate-x-[2px] bg-white/70"}`} /></button></div>
             </div>
-            <input autoFocus value={draftName} onChange={(event) => setDraftName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") createProfile(); }} placeholder="Profile name" className="mb-4 h-14 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-5 text-[17px] outline-none focus:border-white/40" />
-            <button type="button" disabled={!draftName.trim()} onClick={createProfile} className="h-14 w-full rounded-2xl bg-white text-[17px] font-semibold text-black disabled:opacity-35">Create profile</button>
+          </div>
+
+          <div className="mb-12 w-full">
+            <div className="mb-6 flex items-center justify-between"><h2 className="text-2xl font-semibold tracking-tight text-white/90">Profiles</h2><button onClick={() => activeProfile && setEditing(true)} disabled={!activeProfile} className="flex items-center gap-2 rounded-lg border border-transparent bg-white/5 px-4 py-2 text-sm font-semibold transition-colors hover:border-white/10 hover:bg-white/10 disabled:opacity-30"><Pencil className="h-4 w-4 text-white/70" />Edit</button></div>
+            <div className="flex flex-wrap items-start gap-5 md:gap-8">
+              {profiles.map((item) => <button key={item.id} type="button" onClick={() => setActiveId(item.id)} className="group flex flex-col items-center gap-3 outline-none"><Avatar src={item.avatar} alt={item.name} selected={activeId === item.id} compact /><span className="text-sm font-semibold text-white/80 transition-colors group-hover:text-white">{item.name}</span></button>)}
+              <button type="button" onClick={() => setShowAdd(true)} className="group flex flex-col items-center gap-3 outline-none"><div className="flex h-[72px] w-[72px] items-center justify-center rounded-full border border-dashed border-white/20 bg-white/5 transition-all duration-300 group-hover:border-white/40 group-hover:bg-white/10 md:h-[120px] md:w-[120px]"><Plus className="h-6 w-6 text-white/60 transition-colors group-hover:text-white md:h-8 md:w-8" /></div><span className="text-sm font-semibold text-white/60 transition-colors group-hover:text-white/90">Add</span></button>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <section className="group/row relative mb-8">
+            <h2 className="mb-3 px-6 text-lg font-semibold text-white/90 md:px-12">Watchlist</h2>
+            <div className="relative"><div className="no-scrollbar flex gap-3 overflow-x-auto scroll-smooth px-6 py-4 md:px-12">
+              {watchlist.map((item) => <WatchlistCard key={`${item.mediaType}-${item.titleId}`} item={item} />)}
+              {!watchlist.length && <div className="rounded-lg border border-white/10 bg-white/[0.02] px-5 py-8 text-sm text-white/40">Your watchlist is empty.</div>}
+            </div></div>
+          </section>
+        </div>
+
+        <section className="group relative mb-8">
+          <div className="mb-4 flex w-full items-center justify-between gap-3 px-6 text-lg font-semibold text-white/90 md:gap-4 md:px-12"><div className="flex items-center gap-4"><h2>Continue Watching for {activeProfile?.name || "you"}</h2><button onClick={() => activeProfile && setEditing(true)} className="flex h-7 w-7 items-center justify-center rounded-full bg-white/5 text-white/50 transition-all hover:bg-white/15 hover:text-white"><Pencil className="h-4 w-4" /></button></div></div>
+          <div className="no-scrollbar flex gap-4 overflow-x-auto scroll-smooth px-6 py-4 md:px-12">
+            {continueWatching.map((item) => <ContinueCard key={`${item.mediaType}-${item.id}-${item.season || 0}-${item.episode || 0}`} item={item} />)}
+            {!continueWatching.length && <div className="rounded-md border border-white/10 bg-white/[0.02] px-5 py-8 text-sm text-white/40">Nothing to continue watching yet.</div>}
+          </div>
+          {continueWatching.length > 0 && <button className="absolute bottom-0 right-0 top-[44px] z-30 hidden w-12 items-center justify-center bg-gradient-to-l from-black to-transparent md:flex"><ChevronRight className="h-6 w-6" /></button>}
+        </section>
+      </main>
+
+      {editing && activeProfile && (
+        <div className="fixed inset-0 z-[90] flex flex-col bg-black font-sans text-white" style={{ animation: "rabbitripFadeIn .2s ease" }}>
+          <div className="relative flex items-center justify-between px-6 py-5 md:px-12">
+            <button onClick={() => setEditing(false)} className="rounded-full p-2 text-white/80 transition hover:bg-white/10 hover:text-white" aria-label="Back"><ArrowLeft className="h-6 w-6" strokeWidth={2.5} /></button>
+            <h2 className="absolute left-1/2 -translate-x-1/2 text-lg font-bold tracking-tight text-white/90 md:text-xl">Edit Profile</h2>
+            <div className="w-10" />
+          </div>
+          <div className="flex flex-1 flex-col items-center justify-center gap-12 px-4 pb-20">
+            <AvatarCarousel selected={activeProfile.avatar} onSelect={(avatar) => updateProfile(activeProfile.id, { avatar })} />
+            <div className="mt-4 w-full max-w-sm"><input placeholder="Profile Name" maxLength={20} value={activeProfile.name} onChange={(e) => updateProfile(activeProfile.id, { name: e.target.value })} className="w-full rounded-lg border border-white/20 bg-transparent px-4 py-3.5 text-base text-white placeholder-white/40 outline-none transition focus:border-white focus:bg-white/5" /></div>
+            <button onClick={() => setEditing(false)} className="w-full max-w-sm rounded-lg bg-white py-4 text-sm font-semibold text-black shadow-lg transition hover:brightness-90">Save &amp; Continue</button>
+            <button onClick={removeProfile} className="text-sm font-medium text-red-400/80 transition hover:text-red-400">Delete profile</button>
           </div>
         </div>
       )}
+
+      {showAdd && <AddProfile onClose={() => setShowAdd(false)} onCreate={createProfile} />}
+      <style>{`@keyframes rabbitripFadeIn { from { opacity: 0 } to { opacity: 1 } }`}</style>
     </div>
   );
 }
