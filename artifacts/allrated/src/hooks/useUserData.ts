@@ -1,85 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  fetchTitleRating,
-  fetchWatchlistStatus,
-  rateTitle,
-  unrateTitle,
-  addToWatchlist,
-  removeFromWatchlist,
-  fetchMyRatings,
-  fetchMyWatchlist,
-  type TitleSnapshot,
-} from '@/lib/userApi';
+import { useProfiles } from '@/hooks/useProfiles';
+import { fetchTitleRating, fetchWatchlistStatus, rateTitle, unrateTitle, addToWatchlist, removeFromWatchlist, fetchMyRatings, fetchMyWatchlist, type TitleSnapshot } from '@/lib/userApi';
 
-// Per-title rating
-export function useTitleRating(mediaType: string, titleId: number) {
-  return useQuery({
-    queryKey: ['rating', mediaType, titleId],
-    queryFn: () => fetchTitleRating(mediaType, titleId),
-    staleTime: 60_000,
-  });
-}
+const effective = (explicit:string|null|undefined, activeId:string|null|undefined) => explicit ?? activeId ?? 'default';
 
-export function useRateMutation(mediaType: 'movie' | 'tv', titleId: number) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ rating, snapshot }: { rating: number; snapshot: TitleSnapshot }) =>
-      rateTitle(titleId, mediaType, rating, snapshot),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['rating', mediaType, titleId] });
-      qc.invalidateQueries({ queryKey: ['myRatings'] });
-    },
-  });
-}
-
-export function useUnrateMutation(mediaType: string, titleId: number) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: () => unrateTitle(mediaType, titleId),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['rating', mediaType, titleId] });
-      qc.invalidateQueries({ queryKey: ['myRatings'] });
-    },
-  });
-}
-
-// Per-title watchlist status
-export function useWatchlistStatus(mediaType: string, titleId: number) {
-  return useQuery({
-    queryKey: ['watchlist', mediaType, titleId],
-    queryFn: () => fetchWatchlistStatus(mediaType, titleId),
-    staleTime: 60_000,
-  });
-}
-
-export function useWatchlistMutation(mediaType: 'movie' | 'tv', titleId: number) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ snapshot }: { snapshot: TitleSnapshot }) =>
-      addToWatchlist(titleId, mediaType, snapshot),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['watchlist', mediaType, titleId] });
-      qc.invalidateQueries({ queryKey: ['myWatchlist'] });
-    },
-  });
-}
-
-export function useUnwatchlistMutation(mediaType: string, titleId: number) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: () => removeFromWatchlist(mediaType, titleId),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['watchlist', mediaType, titleId] });
-      qc.invalidateQueries({ queryKey: ['myWatchlist'] });
-    },
-  });
-}
-
-// Full lists for Space page
-export function useMyRatings() {
-  return useQuery({ queryKey: ['myRatings'], queryFn: fetchMyRatings });
-}
-
-export function useMyWatchlist() {
-  return useQuery({ queryKey: ['myWatchlist'], queryFn: fetchMyWatchlist });
-}
+export function useTitleRating(mediaType:string,titleId:number,profileId?:string|null){const{activeId}=useProfiles();const pid=effective(profileId,activeId);return useQuery({queryKey:['rating',mediaType,titleId,pid],queryFn:()=>fetchTitleRating(mediaType,titleId,pid),staleTime:60_000});}
+export function useRateMutation(mediaType:'movie'|'tv',titleId:number,profileId?:string|null){const{activeId}=useProfiles();const pid=effective(profileId,activeId);const qc=useQueryClient();return useMutation({mutationFn:({rating,snapshot}:{rating:number;snapshot:TitleSnapshot})=>rateTitle(titleId,mediaType,rating,snapshot,pid),onSuccess:()=>{qc.invalidateQueries({queryKey:['rating',mediaType,titleId,pid]});qc.invalidateQueries({queryKey:['myRatings',pid]});}});}
+export function useUnrateMutation(mediaType:string,titleId:number,profileId?:string|null){const{activeId}=useProfiles();const pid=effective(profileId,activeId);const qc=useQueryClient();return useMutation({mutationFn:()=>unrateTitle(mediaType,titleId,pid),onSuccess:()=>{qc.invalidateQueries({queryKey:['rating',mediaType,titleId,pid]});qc.invalidateQueries({queryKey:['myRatings',pid]});}});}
+export function useWatchlistStatus(mediaType:string,titleId:number,profileId?:string|null){const{activeId}=useProfiles();const pid=effective(profileId,activeId);return useQuery({queryKey:['watchlist',mediaType,titleId,pid],queryFn:()=>fetchWatchlistStatus(mediaType,titleId,pid),staleTime:60_000,enabled:!!pid});}
+export function useWatchlistMutation(mediaType:'movie'|'tv',titleId:number,profileId?:string|null){const{activeId}=useProfiles();const pid=effective(profileId,activeId);const qc=useQueryClient();return useMutation({mutationFn:({snapshot}:{snapshot:TitleSnapshot})=>addToWatchlist(titleId,mediaType,snapshot,pid),onSuccess:()=>{qc.invalidateQueries({queryKey:['watchlist',mediaType,titleId,pid]});qc.invalidateQueries({queryKey:['myWatchlist',pid]});}});}
+export function useUnwatchlistMutation(mediaType:string,titleId:number,profileId?:string|null){const{activeId}=useProfiles();const pid=effective(profileId,activeId);const qc=useQueryClient();return useMutation({mutationFn:()=>removeFromWatchlist(mediaType,titleId,pid),onSuccess:()=>{qc.invalidateQueries({queryKey:['watchlist',mediaType,titleId,pid]});qc.invalidateQueries({queryKey:['myWatchlist',pid]});}});}
+export function useMyRatings(profileId?:string|null){const{activeId}=useProfiles();const pid=effective(profileId,activeId);return useQuery({queryKey:['myRatings',pid],queryFn:()=>fetchMyRatings(pid),enabled:!!pid});}
+export function useMyWatchlist(profileId?:string|null){const{activeId}=useProfiles();const pid=effective(profileId,activeId);return useQuery({queryKey:['myWatchlist',pid],queryFn:()=>fetchMyWatchlist(pid),enabled:!!pid});}

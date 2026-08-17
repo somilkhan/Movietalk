@@ -1,369 +1,57 @@
-import { useState } from "react";
-import { Link, useLocation } from "wouter";
-import {
-  Settings, ChevronRight, Plus, Pencil, Check,
-  Play, Trash2, X,
-} from "lucide-react";
-import { useProfiles, DEFAULT_AVATARS } from "@/hooks/useProfiles";
-import { useContinueWatching } from "@/hooks/useContinueWatching";
-import { useWatchlist } from "@/hooks/useWatchlist";
-import { useAuth } from "@/hooks/useAuth";
-import { useAds } from "@/hooks/useAds";
-import { Seo } from "@/components/Seo";
-import { cn } from "@/lib/utils";
+import { useState } from 'react';
+import { ChevronLeft, ChevronRight, Pencil, Plus, Settings, Trash2 } from 'lucide-react';
+import { Link, useLocation } from 'wouter';
+import { useProfiles, DEFAULT_AVATARS } from '@/hooks/useProfiles';
+import { useContinueWatching } from '@/hooks/useContinueWatching';
+import { useWatchlist } from '@/hooks/useWatchlist';
+import { useAuth } from '@/hooks/useAuth';
+import { Seo } from '@/components/Seo';
 
-const TAGLINES = [
-  "Netflix and Chill? More like Bingr and finger... wait.",
-  "Welcome to Bingr. Where your social life comes to die.",
-  "Bingr: Cheaper than therapy, twice as addictive.",
-];
+const TAGLINES = ['Bingr: Cheaper than therapy, twice as addictive.','Welcome back. Your queue missed you.','Netflix and Chill? More like Bingr and finger... wait.'];
 
-function ProgressBar({ progress }: { progress: number }) {
-  return (
-    <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/20 z-20">
-      <div
-        className="h-full bg-[#1875e5] transition-all duration-300"
-        style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
-      />
-    </div>
-  );
-}
+type EditState = { id: string | null; isNew: boolean } | null;
+const imageOf = (value?: string | null) => value || '/placeholder-poster.jpg';
+const ProgressBar = ({ value }: { value: number }) => <div className="absolute inset-x-0 bottom-0 h-1 bg-white/20"><div className="h-full bg-white" style={{ width: `${Math.max(0, Math.min(100, value))}%` }} /></div>;
 
 export default function Space() {
-  const { profile, isLoggedIn } = useAuth();
-  const { profiles, activeProfile, activeId, setActiveId, addProfile, updateProfile, deleteProfile, isEditing, setIsEditing } = useProfiles();
-  const { items: continueItems } = useContinueWatching();
-  const { watchlist, isLoading: watchlistLoading } = useWatchlist(isLoggedIn);
-  const { showAds, setShowAds } = useAds();
   const [, navigate] = useLocation();
+  const { isLoggedIn } = useAuth();
+  const { profiles, activeProfile, activeId, setActiveId, addProfile, updateProfile, deleteProfile, isHydrated } = useProfiles();
+  const { items: continueItems, isLoading: continueLoading } = useContinueWatching();
+  const { watchlist, isLoading: watchlistLoading } = useWatchlist(isLoggedIn);
+  const [edit, setEdit] = useState<EditState>(null);
+  const [draftName, setDraftName] = useState('');
+  const [draftAvatar, setDraftAvatar] = useState(DEFAULT_AVATARS[0]);
+  const [saving, setSaving] = useState(false);
 
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newProfileName, setNewProfileName] = useState("");
-  const [selectedAvatar, setSelectedAvatar] = useState(DEFAULT_AVATARS[0]);
-  const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
+  if (!isHydrated) return <div className="min-h-screen bg-[#07070b]" />;
+  const tagline = TAGLINES[Math.abs((activeProfile?.name || 'RabbitRip').charCodeAt(0)) % TAGLINES.length];
+  const avatars = draftAvatar && !DEFAULT_AVATARS.includes(draftAvatar) ? [draftAvatar, ...DEFAULT_AVATARS] : DEFAULT_AVATARS;
+  const selectedIndex = Math.max(0, avatars.indexOf(draftAvatar));
+  const prevIndex = (selectedIndex - 1 + avatars.length) % avatars.length;
+  const nextIndex = (selectedIndex + 1) % avatars.length;
 
-  const tagline = TAGLINES[Math.abs((activeProfile?.name || "").charCodeAt(0) || 0) % TAGLINES.length];
+  const openEdit = (id: string) => { const p = profiles.find(x => x.id === id); if (!p) return; setEdit({ id, isNew: false }); setDraftName(p.name); setDraftAvatar(p.avatar); };
+  const openAdd = () => { setEdit({ id: null, isNew: true }); setDraftName(''); setDraftAvatar(DEFAULT_AVATARS[0]); };
+  const closeEdit = () => { if (saving) return; setEdit(null); setDraftName(''); setDraftAvatar(DEFAULT_AVATARS[0]); };
+  const saveProfile = () => { const name = draftName.trim(); if (!name || saving) return; setSaving(true); try { if (edit?.isNew) addProfile(name, draftAvatar); else if (edit?.id) updateProfile(edit.id, { name, avatar: draftAvatar }); closeEdit(); } finally { setSaving(false); } };
+  const removeProfile = () => { if (!edit?.id) return; const p = profiles.find(x => x.id === edit.id); if (!p || !window.confirm(`Delete ${p.name}?`)) return; deleteProfile(p.id); closeEdit(); };
 
-  function handleAddProfile() {
-    if (!newProfileName.trim()) return;
-    addProfile(newProfileName.trim(), selectedAvatar);
-    setNewProfileName("");
-    setSelectedAvatar(DEFAULT_AVATARS[Math.floor(Math.random() * DEFAULT_AVATARS.length)]);
-    setShowAddModal(false);
-  }
+  return <div className="min-h-screen bg-[#07070b] text-white pb-28" data-testid="page-space">
+    <Seo title="My Space" />
+    <main className="mx-auto w-full max-w-[1180px] px-5 pt-10 md:px-10 md:pt-16">
+      <header className="mb-10 flex items-start justify-between gap-4"><div><h1 className="text-[34px] font-extrabold tracking-tight md:text-5xl">Hey, {activeProfile?.name || 'there'}</h1><p className="mt-1 text-sm font-medium text-white/45 md:text-base">{tagline}</p></div><div className="flex items-center gap-2"><button type="button" onClick={() => navigate('/settings')} className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.035] text-white/80 transition hover:bg-white/[0.07]" aria-label="Settings"><Settings className="h-5 w-5" /></button><button type="button" onClick={() => navigate('/home')} className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.035] text-white/80 transition hover:bg-white/[0.07]" aria-label="Home"><ChevronRight className="h-6 w-6" /></button></div></header>
 
-  function startEdit(p: typeof profiles[0]) {
-    setEditingProfileId(p.id);
-    setEditName(p.name);
-  }
+      <section className="mb-12"><div className="mb-6 flex items-center justify-between"><h2 className="text-[26px] font-bold tracking-tight">Profiles</h2><button type="button" onClick={() => activeId && openEdit(activeId)} disabled={!activeId} className="inline-flex items-center gap-2 rounded-xl bg-white/[0.055] px-5 py-3 text-sm font-semibold text-white disabled:opacity-30"><Pencil className="h-4 w-4" /> Edit</button></div><div className="flex items-start gap-7 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {profiles.map(profile => { const selected = profile.id === activeId; return <button key={profile.id} type="button" onClick={() => setActiveId(profile.id)} className="group flex w-[105px] shrink-0 flex-col items-center gap-3 text-center outline-none md:w-[130px]"><div className={`relative h-[92px] w-[92px] overflow-hidden rounded-full border-2 transition md:h-[120px] md:w-[120px] ${selected ? 'border-white/60' : 'border-white/10 group-hover:border-white/30'}`}><img src={profile.avatar} alt={profile.name} className="h-full w-full object-cover" onError={e => { e.currentTarget.src = '/brand/logo.png'; }} />{selected && <span className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#07070b] bg-white text-black"><span className="text-sm font-black">✓</span></span>}</div><span className={`max-w-full truncate text-sm font-semibold ${selected ? 'text-white' : 'text-white/55 group-hover:text-white/80'}`}>{profile.name}</span></button>; })}
+        <button type="button" onClick={openAdd} className="group flex w-[105px] shrink-0 flex-col items-center gap-3 md:w-[130px]"><span className="flex h-[92px] w-[92px] items-center justify-center rounded-full border-2 border-dashed border-white/15 bg-white/[0.02] transition group-hover:border-white/35 group-hover:bg-white/[0.05] md:h-[120px] md:w-[120px]"><Plus className="h-9 w-9 text-white/45 group-hover:text-white" /></span><span className="text-sm font-semibold text-white/45 group-hover:text-white/80">Add</span></button>
+      </div></section>
 
-  function saveEdit(id: string) {
-    if (editName.trim()) {
-      updateProfile(id, { name: editName.trim() });
-    }
-    setEditingProfileId(null);
-  }
+      <section className="mb-12"><div className="mb-5"><h2 className="text-[25px] font-bold tracking-tight">Continue Watching</h2></div>{continueLoading && !continueItems.length ? <div className="h-40 rounded-2xl bg-white/[0.03] animate-pulse" /> : continueItems.length ? <div className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">{continueItems.slice(0,20).map(item => <Link key={`${item.mediaType}-${item.id}-${item.season||0}-${item.episode||0}`} href={item.mediaType === 'movie' ? `/watch/movie/${item.id}` : `/watch/tv/${item.id}/${item.season||1}/${item.episode||1}`} className="group w-[230px] shrink-0 md:w-[280px]"><div className="relative aspect-video overflow-hidden rounded-xl bg-white/5"><img src={imageOf(item.backdropPath || item.posterPath)} alt={item.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" /><div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent" /><div className="absolute bottom-3 left-3 flex h-9 w-9 items-center justify-center rounded-full bg-white text-black">▶</div><ProgressBar value={item.progress} /></div><h3 className="mt-2 truncate text-sm font-semibold">{item.mediaType === 'tv' && item.episode ? `S${item.season||1} E${item.episode} • ${item.title}` : item.title}</h3><p className="mt-1 text-xs text-white/40">{item.timeLeft ? `${item.timeLeft}m left` : `${Math.round(item.progress)}% watched`}</p></Link>)}</div> : <p className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-5 py-8 text-sm text-white/35">Nothing here yet. Start watching something and it will appear here.</p>}</section>
 
-  return (
-    <div className="min-h-screen bg-[#07070b] text-white pb-28 md:pb-8" data-testid="page-space">
-      <Seo title="My Space" />
+      <section><div className="mb-5"><h2 className="text-[25px] font-bold tracking-tight">Watchlist</h2></div>{watchlistLoading ? <div className="h-40 rounded-2xl bg-white/[0.03] animate-pulse" /> : watchlist.length ? <div className="flex gap-5 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">{watchlist.map(item => <Link key={`${item.mediaType}-${item.titleId}`} href={`/title/${item.mediaType}/${item.titleId}`} className="group w-[150px] shrink-0 md:w-[190px]"><div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-white/5"><img src={imageOf(item.titleSnapshot?.posterPath)} alt={item.titleSnapshot?.title || 'Watchlist item'} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" /></div><h3 className="mt-2 truncate text-sm font-semibold">{item.titleSnapshot?.title || 'Untitled'}</h3><p className="mt-1 text-xs text-white/40">{item.mediaType === 'tv' ? 'TV' : 'Movie'}</p></Link>)}</div> : <p className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-5 py-8 text-sm text-white/35">Your watchlist is empty.</p>}</section>
+    </main>
 
-      {/* Header */}
-      <div className="relative z-10 pl-0 md:pl-[80px] lg:pl-[100px] pt-12 md:pt-20">
-        <div className="px-6 md:px-12 mb-10 w-full">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6 md:items-start w-full">
-            <div className="flex flex-col gap-1 w-full md:w-[60%]">
-              <h2 className="text-lg sm:text-xl font-semibold text-white/90 leading-snug">
-                <span className="line-clamp-2 sm:line-clamp-1">{tagline}</span>
-              </h2>
-              <p className="text-sm font-medium text-white/60 mt-1">
-                {profile?.email || "smartysomilbz@gmail.com"}
-              </p>
-            </div>
-            <div className="flex flex-col items-end gap-4 self-start md:self-auto w-full md:w-auto justify-end">
-              <Link href="/settings">
-                <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white/5 hover:bg-white/10 border border-transparent hover:border-white/10 transition-all font-semibold text-white/90 text-sm">
-                  <Settings className="w-5 h-5 text-white/70" />
-                  Help &amp; Settings
-                </button>
-              </Link>
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-white/60">Show Ads</span>
-                <button
-                  type="button"
-                  aria-pressed={showAds}
-                  onClick={() => setShowAds(!showAds)}
-                  className={cn(
-                    "relative w-10 h-5 rounded-full outline-none shrink-0 transition-colors",
-                    showAds ? "bg-white" : "bg-white/20"
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "absolute top-[2px] w-4 h-4 rounded-full transition-transform bg-black",
-                      showAds ? "translate-x-[22px]" : "translate-x-[2px]"
-                    )}
-                  />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Profiles */}
-        <div className="px-6 md:px-12 mb-12 w-full">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-semibold text-white/90 tracking-tight">Profiles</h2>
-            <button
-              onClick={() => setIsEditing(!isEditing)}
-              className="flex items-center gap-2 text-sm font-semibold bg-white/5 hover:bg-white/10 px-4 py-2 rounded-lg transition-colors border border-transparent hover:border-white/10"
-            >
-              <Pencil className="w-4 h-4 text-white/70" />
-              {isEditing ? "Done" : "Edit"}
-            </button>
-          </div>
-          <div className="flex flex-wrap items-start gap-5 md:gap-8">
-            {profiles.map((p) => (
-              <div key={p.id} className="group flex flex-col items-center gap-3 outline-none relative">
-                <button
-                  onClick={() => {
-                    if (isEditing) {
-                      startEdit(p);
-                    } else {
-                      setActiveId(p.id);
-                    }
-                  }}
-                  className="relative"
-                >
-                  <div
-                    className={cn(
-                      "relative h-[72px] w-[72px] md:h-[120px] md:w-[120px] overflow-hidden rounded-full transition-all duration-300",
-                      activeId === p.id && !isEditing
-                        ? "ring-2 ring-white/40"
-                        : "ring-2 ring-transparent group-hover:ring-white/20"
-                    )}
-                  >
-                    <img
-                      alt={p.name}
-                      className="h-full w-full object-cover"
-                      src={p.avatar}
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = DEFAULT_AVATARS[1];
-                      }}
-                    />
-                  </div>
-                  {activeId === p.id && !isEditing && (
-                    <div className="absolute bottom-0 right-0 z-20 flex items-center justify-center w-7 h-7 md:w-9 md:h-9 bg-[#E2E8F0] rounded-full border-[3px] border-[#0f0f0f] shadow-lg">
-                      <Check className="w-3.5 h-3.5 md:w-5 md:h-5 text-black" strokeWidth={2.5} />
-                    </div>
-                  )}
-                  {isEditing && (
-                    <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Pencil className="w-5 h-5 text-white" />
-                    </div>
-                  )}
-                </button>
-                {editingProfileId === p.id ? (
-                  <div className="flex flex-col items-center gap-1">
-                    <input
-                      autoFocus
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      onBlur={() => saveEdit(p.id)}
-                      onKeyDown={(e) => e.key === "Enter" && saveEdit(p.id)}
-                      className="bg-white/10 border border-white/20 rounded px-2 py-1 text-sm text-white text-center w-24 focus:outline-none focus:border-white/40"
-                    />
-                    <button
-                      onClick={() => deleteProfile(p.id)}
-                      className="text-red-400 text-xs flex items-center gap-1 hover:text-red-300"
-                    >
-                      <Trash2 className="w-3 h-3" /> Delete
-                    </button>
-                  </div>
-                ) : (
-                  <span className="text-sm font-semibold text-white/80 group-hover:text-white transition-colors">
-                    {p.name}
-                  </span>
-                )}
-              </div>
-            ))}
-
-            {/* Add Profile */}
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="group flex flex-col items-center gap-3 outline-none"
-            >
-              <div className="flex h-[72px] w-[72px] md:h-[120px] md:w-[120px] items-center justify-center rounded-full bg-white/5 border border-dashed border-white/20 transition-all duration-300 group-hover:border-white/40 group-hover:bg-white/10">
-                <Plus className="w-6 h-6 md:w-8 md:h-8 text-white/60 group-hover:text-white transition-colors" />
-              </div>
-              <span className="text-sm font-semibold text-white/60 group-hover:text-white/90 transition-colors">Add</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Watchlist */}
-        {(watchlist.length > 0 || watchlistLoading) && (
-          <div className="mb-4">
-            <section className="group/row relative mb-8">
-              <h2 className="mb-3 px-6 text-lg font-semibold text-white/90 md:px-12">Watchlist</h2>
-              <div className="relative">
-                <div className="no-scrollbar flex gap-3 overflow-x-auto scroll-smooth px-6 md:px-12 py-4">
-                  {watchlistLoading && (
-                    <div className="flex gap-3">
-                      {[1, 2, 3].map((i) => (
-                        <div key={i} className="w-[150px] sm:w-[170px] shrink-0">
-                          <div className="aspect-[2/3] rounded-lg bg-white/5 animate-pulse" />
-                          <div className="mt-2 h-4 w-24 bg-white/5 rounded animate-pulse" />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {watchlist.map((item: any) => (
-                    <Link key={`${item.mediaType}-${item.titleId}`} href={`/title/${item.mediaType}/${item.titleId}`}>
-                      <button className="focusable group relative w-[150px] shrink-0 text-left transition-transform duration-200 sm:w-[170px] hover:z-10 hover:scale-105">
-                        <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-white/5 ring-2 transition-all ring-transparent group-hover:ring-white/30">
-                          <img
-                            alt={item.titleSnapshot?.title || "Title"}
-                            loading="lazy"
-                            className="h-full w-full object-cover"
-                            src={item.titleSnapshot?.posterPath || "https://via.placeholder.com/300x450?text=No+Image"}
-                          />
-                        </div>
-                        <div className="mt-2 truncate text-[14px] font-semibold text-white/90 tracking-tight">
-                          {item.titleSnapshot?.title || "Untitled"}
-                        </div>
-                        <div className="flex items-center mt-1 text-[11px] font-medium text-white/50">
-                          <span>{item.mediaType === "movie" ? "Movie" : "Series"}</span>
-                        </div>
-                      </button>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </section>
-          </div>
-        )}
-
-        {/* Continue Watching */}
-        {continueItems.length > 0 && (
-          <section className="mb-8 relative group">
-            <div className="flex items-center justify-between gap-3 md:gap-4 mb-4 px-6 text-lg font-semibold text-white/90 md:px-12 w-full">
-              <div className="flex items-center gap-4">
-                <h2>Continue Watching for {activeProfile?.name || "You"}</h2>
-              </div>
-            </div>
-            <div className="no-scrollbar flex gap-4 overflow-x-auto py-4 scroll-smooth px-6 md:px-12">
-              {continueItems.map((item) => (
-                <Link
-                  key={`${item.mediaType}-${item.id}-${item.season}-${item.episode}`}
-                  href={
-                    item.mediaType === "movie"
-                      ? `/watch/movie/${item.id}`
-                      : `/watch/tv/${item.id}/${item.season || 1}/${item.episode || 1}`
-                  }
-                >
-                  <button className="group/card flex flex-col gap-2 w-[220px] md:w-[260px] lg:w-[300px] shrink-0 transition-all duration-200 outline-none text-left">
-                    <div className="relative w-full aspect-video rounded-md overflow-hidden bg-[#1a1c20] transition-all duration-300">
-                      {item.backdropPath ? (
-                        <img
-                          className="object-cover w-full h-full transition-all duration-500 ease-out group-hover/card:scale-105"
-                          alt={item.title}
-                          loading="lazy"
-                          src={item.backdropPath}
-                        />
-                      ) : item.posterPath ? (
-                        <img
-                          className="object-cover w-full h-full transition-all duration-500 ease-out group-hover/card:scale-105"
-                          alt={item.title}
-                          loading="lazy"
-                          src={item.posterPath}
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-center p-4 text-white/40 font-bold text-sm bg-white/5">
-                          {item.title}
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-100 pointer-events-none" />
-                      <div className="absolute bottom-2 left-2 flex items-center justify-center z-10 opacity-80 group-hover/card:opacity-100 transition-opacity">
-                        <svg className="w-6 h-6 text-white drop-shadow-md" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M6.90588 4.53682C6.50592 4.2998 6 4.58808 6 5.05299V18.947C6 19.4119 6.50592 19.7002 6.90588 19.4632L18.629 12.5162C19.0211 12.2838 19.0211 11.7162 18.629 11.4838L6.90588 4.53682Z" fill="currentColor" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </div>
-                      <ProgressBar progress={item.progress} />
-                    </div>
-                    <div className="flex flex-col px-0.5">
-                      <h3 className="text-[14px] sm:text-[15px] font-semibold text-white/90 leading-snug truncate transition-colors duration-200 group-hover/card:text-white">
-                        {item.mediaType === "tv" && item.episode
-                          ? `S${item.season || 1} E${item.episode}`
-                          : item.title}
-                      </h3>
-                      <div className="flex items-center mt-0.5 text-[12px] text-white/50 font-medium">
-                        {item.mediaType === "tv" && item.episode ? (
-                          <>
-                            <span className="truncate max-w-[60%] mr-2">{item.title}</span>
-                            <span>{item.timeLeft ? `${item.timeLeft}m left` : ""}</span>
-                          </>
-                        ) : (
-                          <span>{item.timeLeft ? `${item.timeLeft}m left` : item.title}</span>
-                        )}
-                      </div>
-                    </div>
-                  </button>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-      </div>
-
-      {/* Add Profile Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
-          <div className="bg-[#1a1c22] rounded-2xl border border-white/10 p-6 w-full max-w-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-white">Add Profile</h3>
-              <button onClick={() => setShowAddModal(false)} className="text-white/50 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="flex justify-center mb-6">
-              <div className="w-24 h-24 rounded-full overflow-hidden ring-2 ring-white/20">
-                <img src={selectedAvatar} alt="Avatar" className="w-full h-full object-cover" />
-              </div>
-            </div>
-            <div className="grid grid-cols-4 gap-2 mb-6">
-              {DEFAULT_AVATARS.slice(0, 8).map((avatar) => (
-                <button
-                  key={avatar}
-                  onClick={() => setSelectedAvatar(avatar)}
-                  className={cn(
-                    "w-12 h-12 rounded-full overflow-hidden transition-all",
-                    selectedAvatar === avatar ? "ring-2 ring-white scale-110" : "opacity-60 hover:opacity-100"
-                  )}
-                >
-                  <img src={avatar} alt="" className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
-            <input
-              autoFocus
-              placeholder="Profile name"
-              value={newProfileName}
-              onChange={(e) => setNewProfileName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleAddProfile()}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white text-sm mb-4 focus:outline-none focus:border-white/30 placeholder:text-white/30"
-            />
-            <button
-              onClick={handleAddProfile}
-              disabled={!newProfileName.trim()}
-              className="w-full py-3 rounded-lg bg-white text-black font-semibold text-sm hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Create Profile
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+    {edit && <div className="fixed inset-0 z-[100] bg-[#07070b] text-white" role="dialog" aria-modal="true"><div className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-5 py-5 md:px-10"><header className="relative flex items-center justify-center"><button type="button" onClick={closeEdit} className="absolute left-0 rounded-full p-2 text-white/75 hover:bg-white/10" aria-label="Close"><ChevronLeft className="h-7 w-7" /></button><h2 className="text-xl font-bold md:text-2xl">{edit.isNew ? 'Add Profile' : 'Edit Profile'}</h2></header><div className="flex flex-1 flex-col items-center justify-center pb-16"><div className="relative mb-12 flex w-full max-w-[620px] items-center justify-center"><button type="button" onClick={() => setDraftAvatar(avatars[prevIndex])} className="absolute left-0 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-black/60 text-white/70 shadow-xl backdrop-blur-md md:left-6" aria-label="Previous avatar"><ChevronLeft className="h-7 w-7" /></button><div className="flex items-center justify-center gap-5 overflow-hidden px-20">{[prevIndex, selectedIndex, nextIndex].map((index,slot) => { const avatar=avatars[index]; const selected=slot===1; return <button key={`${avatar}-${slot}`} type="button" onClick={() => setDraftAvatar(avatar)} className={`shrink-0 overflow-hidden rounded-full transition duration-300 ${selected ? 'h-40 w-40 ring-2 ring-white ring-offset-4 ring-offset-[#07070b] md:h-52 md:w-52' : 'h-24 w-24 opacity-50 md:h-32 md:w-32'}`}><img src={avatar} alt="Avatar" className="h-full w-full object-cover" onError={e => { e.currentTarget.src='/brand/logo.png'; }} /></button>; })}</div><button type="button" onClick={() => setDraftAvatar(avatars[nextIndex])} className="absolute right-0 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-black/60 text-white/70 shadow-xl backdrop-blur-md md:right-6" aria-label="Next avatar"><ChevronRight className="h-7 w-7" /></button></div><div className="w-full max-w-[640px]"><input autoFocus value={draftName} onChange={e => setDraftName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') saveProfile(); }} placeholder="Profile name" className="h-14 w-full rounded-xl border border-white/15 bg-white/[0.025] px-5 text-base text-white outline-none focus:border-white/35" /><button type="button" disabled={!draftName.trim() || saving} onClick={saveProfile} className="mt-6 h-14 w-full rounded-xl bg-white text-base font-bold text-black disabled:opacity-40">{edit.isNew ? 'Save & Continue' : 'Save'}</button>{!edit.isNew && <button type="button" onClick={removeProfile} className="mx-auto mt-10 flex items-center gap-2 text-sm font-semibold text-red-400/80 hover:text-red-400"><Trash2 className="h-4 w-4" /> Delete profile</button>}</div></div></div></div>}
+  </div>;
 }
