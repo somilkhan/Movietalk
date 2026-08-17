@@ -3,8 +3,45 @@ import { useAuth } from "@/hooks/useAuth";
 
 export const DEFAULT_AVATARS = [
   "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/25.png",
-  ...Array.from({ length: 12 }, (_, i) => `https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/${i + 1}.png`),
+  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v2/feature/profile/38_jv.png",
+  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/24.png",
+  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/12.png",
+  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/1.png",
+  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/23.png",
+  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/9.png",
+  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/4.png",
+  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/26.png",
+  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/11.png",
+  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/7.png",
+  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/15.png",
+  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/22.png",
+  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/8.png",
+  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/27.png",
+  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/10.png",
+  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/14.png",
+  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/5.png",
+  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/2.png",
+  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/37.png",
+  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/3.png",
+  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/35.png",
+  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/13.png",
+  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/32.png",
+  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/29.png",
+  "https://img1.hotstarext.com/image/upload/w_200,h_200,c_fill/v1/feature/profile/25.png",
+  "https://img10.hotstar.com/image/upload/f_auto,q_90,w_256/feature/profile/Additional%20Profile%20Avatars/Loki.png",
+  "https://img10.hotstar.com/image/upload/f_auto,q_90,w_256/feature/profile/Additional%20Profile%20Avatars/Wanda.png",
+  "https://img10.hotstar.com/image/upload/f_auto,q_90,w_256/feature/profile/Additional%20Profile%20Avatars/Shang_chi.png",
+  "https://api.dicebear.com/9.x/adventurer/svg?seed=Shashi&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf",
+  "https://api.dicebear.com/9.x/adventurer/svg?seed=Kiddo&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf",
+  "https://api.dicebear.com/9.x/adventurer/svg?seed=Mickey&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf",
+  "https://api.dicebear.com/9.x/adventurer/svg?seed=Loki&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf",
+  "https://api.dicebear.com/9.x/adventurer/svg?seed=Thor&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf",
+  "https://api.dicebear.com/9.x/adventurer/svg?seed=Hulk&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf",
+  "https://api.dicebear.com/9.x/adventurer/svg?seed=Spider&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf",
+  "https://api.dicebear.com/9.x/adventurer/svg?seed=Strange&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf",
+  "https://api.dicebear.com/9.x/adventurer/svg?seed=Nova&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf",
 ];
+
 export interface Profile { id: string; name: string; avatar: string; }
 function generateId() { return Math.random().toString(36).slice(2, 9); }
 
@@ -13,7 +50,9 @@ export function useProfiles() {
   const profileId = profile?.id || null;
   const profilesKey = `rabbitrip.profiles:${profileId || "guest"}`;
   const activeKey = `rabbitrip.activeProfile:${profileId || "guest"}`;
-  const readProfiles = useCallback((): Profile[] => { try { const parsed = JSON.parse(localStorage.getItem(profilesKey) || "[]"); return Array.isArray(parsed) ? parsed : []; } catch { return []; } }, [profilesKey]);
+  const readProfiles = useCallback((): Profile[] => {
+    try { const parsed = JSON.parse(localStorage.getItem(profilesKey) || "[]"); return Array.isArray(parsed) ? parsed : []; } catch { return []; }
+  }, [profilesKey]);
   const readActiveId = useCallback(() => { try { return localStorage.getItem(activeKey); } catch { return null; } }, [activeKey]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [activeId, setActiveIdState] = useState<string | null>(null);
@@ -21,9 +60,7 @@ export function useProfiles() {
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
-    setHydratedKey("");
-    setProfiles([]);
-    setActiveIdState(null);
+    setHydratedKey(""); setProfiles([]); setActiveIdState(null);
     if (!profileId) { setHydratedKey(profilesKey); return; }
     const nextProfiles = readProfiles();
     const storedActive = readActiveId();
@@ -41,7 +78,6 @@ export function useProfiles() {
     if (hydratedKey !== profilesKey || !profileId) return;
     try { if (activeId) localStorage.setItem(activeKey, activeId); else localStorage.removeItem(activeKey); } catch {}
   }, [activeId, activeKey, profilesKey, hydratedKey, profileId]);
-
   useEffect(() => {
     const sync = () => {
       if (hydratedKey !== profilesKey) return;
