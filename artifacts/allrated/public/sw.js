@@ -1,5 +1,5 @@
-// RabbitRip Service Worker v3
-const CACHE_NAME = 'rabbitrip-v3';
+// RabbitRip Service Worker v4
+const CACHE_NAME = 'rabbitrip-v4';
 const STATIC_ASSETS = [
   '/',
   '/home',
@@ -10,69 +10,82 @@ const STATIC_ASSETS = [
   '/icons/icon-512x512.png',
 ];
 
-// Install — cache static shell
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
-    }).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.addAll(STATIC_ASSETS))
+      .then(() => self.skipWaiting())
   );
 });
 
-// Activate — clean old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))
-      )
-    ).then(() => self.clients.claim())
+    caches.keys()
+      .then((keys) => Promise.all(
+        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+      ))
+      .then(() => self.clients.claim())
   );
 });
 
-// Fetch — stale-while-revalidate for API, cache-first for static
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-  const url = new URL(request.url);
+  if (request.method !== 'GET') return;
 
-  // API calls — network first, cache fallback
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+
+  // API: network first, cached response only as an offline fallback.
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(request)
-        .then((res) => {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          return res;
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          return response;
         })
         .catch(() => caches.match(request))
     );
     return;
   }
 
-  // Images — cache first
-  if (request.destination === 'image') {
+  // HTML + JS + CSS must always prefer the network. This prevents an old
+  // index.html from referencing a hashed chunk that no longer exists after
+  // a new Vercel deployment.
+  const isAppShell =
+    request.mode === 'navigate' ||
+    request.destination === 'script' ||
+    request.destination === 'style' ||
+    request.destination === 'document';
+
+  if (isAppShell) {
     event.respondWith(
-      caches.match(request).then((cached) => {
-        if (cached) return cached;
-        return fetch(request).then((res) => {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          return res;
-        });
-      })
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request))
     );
     return;
   }
 
-  // Everything else — stale-while-revalidate
+  // Images and other static resources can remain cache-first.
   event.respondWith(
     caches.match(request).then((cached) => {
-      const fetchPromise = fetch(request).then((res) => {
-        const clone = res.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-        return res;
+      if (cached) return cached;
+      return fetch(request).then((response) => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+        }
+        return response;
       });
-      return cached || fetchPromise;
     })
   );
 });
