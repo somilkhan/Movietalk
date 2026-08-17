@@ -2,9 +2,9 @@
 
 ## Purpose
 
-RabbitRip is a Vercel-deployed web application. This repository is the source of truth for the application code, configuration, API contracts, and engineering documentation.
+RabbitRip is a Vercel-deployed web application. This repository is the source of truth for application code, configuration, API contracts, and engineering documentation.
 
-Supported development workflow:
+Supported workflow:
 
 - GitHub repository
 - ChatGPT / Kimi / other coding agents
@@ -12,23 +12,35 @@ Supported development workflow:
 
 **Replit is not a supported development, deployment, or runtime environment. Do not add Replit-specific tooling or configuration.**
 
+## Production service boundaries
+
+- **Vercel** — hosting, deployment, serverless functions, and production environment variables.
+- **Supabase Auth** — authentication and OAuth.
+- **Neon** — PostgreSQL persistence.
+- **TMDB** — movie/TV metadata and poster/catalog data.
+- **External streaming APIs/providers** — playback/streaming data.
+
+Keep these responsibilities separate. TMDB is not a streaming provider. Supabase is not the application database. Streaming providers are not the catalog source.
+
 ## Before editing
 
 1. Read this file.
 2. Read `ARCHITECTURE.md` for system boundaries.
 3. Identify the owning package or API surface before changing code.
 4. Search for existing implementations before creating a new one.
-5. Preserve existing public routes and API contracts unless the task explicitly changes them.
-6. Prefer the smallest coherent change over broad rewrites.
+5. Trace callers and deployment ownership for routes that exist in multiple API surfaces.
+6. Preserve existing public routes and API contracts unless the task explicitly changes them.
+7. Prefer the smallest coherent change over broad rewrites.
 
 ## Repository boundaries
 
 - `artifacts/allrated/` — primary RabbitRip web application and its Vercel functions.
-- `artifacts/api-server/` — separate Express server package used by the workspace/development architecture.
+- `artifacts/api-server/` — separate Express server package; verify whether a change affects production before modifying/removing it.
 - `artifacts/cinepro-core/` — separate CinePro service/core. Do not silently merge it into the RabbitRip/Bingr request path.
-- `lib/` — shared workspace packages.
+- `lib/` — shared workspace packages, including database and API packages.
 - `api/` — root-level serverless code whose production ownership must be verified before extending or duplicating it.
 - `clone-data/` — reference/research material, not runtime application logic.
+- `scripts/` — repository tooling.
 
 ## Rules
 
@@ -36,10 +48,12 @@ Supported development workflow:
 2. Never expose environment secrets in documentation or client-side code.
 3. Do not introduce Replit dependencies, plugins, workflows, or configuration.
 4. Do not create duplicate API implementations when an existing route already owns the behavior.
-5. Keep Bingr and CinePro as separate systems unless an explicit architectural change is requested.
-6. Do not move large directories merely to make names look cleaner; prove ownership and dependency relationships first.
-7. Do not delete runtime code solely because it looks old. Confirm references and deployment ownership first.
-8. Update documentation when architecture, API ownership, environment requirements, or developer workflow changes.
+5. Keep authentication, database, catalog metadata, and streaming provider responsibilities separate.
+6. Keep Bingr and CinePro as separate systems unless an explicit architectural change is requested.
+7. Do not move large directories merely to make names look cleaner; prove ownership and dependency relationships first.
+8. Do not delete runtime code solely because it looks old. Confirm references and deployment ownership first.
+9. Treat Vercel environment variables as the production configuration source of truth.
+10. Update documentation when architecture, API ownership, environment requirements, or developer workflow changes.
 
 ## Change workflow
 
@@ -68,10 +82,23 @@ When adding or removing a dependency:
 4. Run the relevant build/typecheck.
 5. Confirm no stale references remain.
 
+## Environment variables
+
+Secrets and provider configuration belong in Vercel environment variables, not Git.
+
+Known production integration categories include:
+
+- Supabase URL and publishable key for frontend authentication.
+- Neon `DATABASE_URL` for PostgreSQL access.
+- TMDB credentials for server-side catalog access where required.
+- Streaming-provider configuration/credentials where required.
+
+Never copy real production values into `.env.example` or documentation.
+
 ## Documentation ownership
 
 - `README.md` — what RabbitRip is and how to orient yourself.
-- `ARCHITECTURE.md` — system structure and runtime boundaries.
+- `ARCHITECTURE.md` — system structure, external services, and runtime boundaries.
 - `DEVELOPMENT.md` — local development and validation.
 - `docs/API.md` — API ownership and contracts.
 - `docs/decisions/` — durable architectural decisions.
