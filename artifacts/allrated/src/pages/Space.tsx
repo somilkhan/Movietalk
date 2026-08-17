@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Pencil, Plus, Settings, Trash2, Check, Play } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Pencil, Play, Plus, Settings, Trash2 } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { useProfiles, DEFAULT_AVATARS } from '@/hooks/useProfiles';
 import { useContinueWatching } from '@/hooks/useContinueWatching';
@@ -10,153 +10,118 @@ import { Seo } from '@/components/Seo';
 
 const TAGLINES = [
   "Look who's back. Don't you have a job or something?",
+  'Grab your snacks. It\'s binge o\'clock.',
   'Welcome back. Your queue missed you.',
   'Netflix and Chill? More like Bingr and finger... wait.',
-  'Bingr: Cheaper than therapy, twice as addictive.',
 ];
 
-type EditState = { id: string | null; isNew: boolean } | null;
-
-const imageOf = (value?: string | null) => {
+const imageOf = (value?: string | null, width = 'w500') => {
   if (!value) return '/placeholder-poster.jpg';
   if (value.startsWith('http')) return value;
-  return `https://image.tmdb.org/t/p/w500${value}`;
+  return `https://image.tmdb.org/t/p/${width}${value}`;
 };
 
-function ProgressBar({ value }: { value: number }) {
+function Stars() {
   return (
-    <div className="absolute inset-x-0 bottom-0 h-1 bg-white/20">
-      <div className="h-full bg-white" style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
+    <div className="pointer-events-none absolute left-0 right-0 top-0 z-0 h-[350px] overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-[#1a1a1a] via-black to-black" />
+      <svg className="absolute h-full w-full opacity-40 mix-blend-screen" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="rabbit-space-stars" x="0" y="0" width="120" height="120" patternUnits="userSpaceOnUse">
+            <circle fill="white" cx="15" cy="15" r="1" opacity=".9" />
+            <circle fill="white" cx="60" cy="35" r=".8" opacity=".5" />
+            <circle fill="white" cx="100" cy="80" r="1.5" opacity=".3" />
+            <circle fill="white" cx="30" cy="100" r="1" opacity=".7" />
+            <circle fill="white" cx="110" cy="20" r=".8" opacity=".6" />
+            <circle fill="white" cx="50" cy="75" r=".6" opacity=".8" />
+            <circle fill="white" cx="8" cy="65" r="1.2" opacity=".4" />
+            <circle fill="white" cx="85" cy="55" r=".8" opacity=".9" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#rabbit-space-stars)" />
+      </svg>
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/80 to-black" />
     </div>
   );
 }
 
-function Avatar({
-  src,
-  name,
-  selected,
-  size = 'normal',
-  onClick,
-}: {
-  src: string;
-  name: string;
-  selected?: boolean;
-  size?: 'normal' | 'selected';
-  onClick?: () => void;
-}) {
-  const button = (
-    <div
-      className={`relative shrink-0 overflow-hidden rounded-full transition-all duration-300 ${
-        size === 'selected'
-          ? 'h-24 w-24 scale-[1.4] ring-2 ring-white ring-offset-4 ring-offset-[#07070b]'
-          : 'h-20 w-20'
-      }`}
-      style={{ opacity: selected || size === 'selected' ? 1 : 0.48 }}
-    >
-      <img
-        src={src}
-        alt={name}
-        className="h-full w-full object-cover"
-        draggable={false}
-        onError={(event) => {
-          event.currentTarget.src = '/brand/logo.png';
-        }}
-      />
+function Avatar({ src, alt, selected, onClick }: { src: string; alt: string; selected?: boolean; onClick?: () => void }) {
+  const body = (
+    <div className="relative">
+      <div className={`relative h-[72px] w-[72px] overflow-hidden rounded-full transition-all duration-300 md:h-[120px] md:w-[120px] ${selected ? 'ring-2 ring-white/40' : 'ring-1 ring-white/10'}`}>
+        <img src={src} alt={alt} className="h-full w-full object-cover" onError={(e) => { e.currentTarget.src = DEFAULT_AVATARS[0]; }} />
+      </div>
       {selected && (
-        <span className="absolute bottom-0 right-0 flex h-9 w-9 translate-x-1 translate-y-1 items-center justify-center rounded-full border-2 border-[#07070b] bg-white text-black shadow-xl">
-          <Check className="h-5 w-5 stroke-[3]" />
-        </span>
+        <div className="absolute bottom-0 right-0 z-20 flex h-7 w-7 items-center justify-center rounded-full border-[3px] border-[#0f0f0f] bg-[#E2E8F0] shadow-lg md:h-9 md:w-9">
+          <Check className="h-3.5 w-3.5 text-black md:h-5 md:w-5" strokeWidth={2.5} />
+        </div>
       )}
     </div>
   );
-  return onClick ? <button type="button" onClick={onClick} className="shrink-0">{button}</button> : button;
+  return onClick ? <button type="button" onClick={onClick} className="group flex shrink-0 flex-col items-center gap-3 outline-none">{body}<span className="text-sm font-semibold text-white/80 transition-colors group-hover:text-white">{alt}</span></button> : body;
 }
 
-function AvatarCarousel({
-  avatars,
-  selected,
-  onSelect,
-}: {
-  avatars: string[];
-  selected: string;
-  onSelect: (avatar: string) => void;
-}) {
-  const selectedIndex = Math.max(0, avatars.indexOf(selected));
-  const [dragOffset, setDragOffset] = useState(0);
-  const startX = useRef<number | null>(null);
+function ProfileCarousel({ selected, onSelect }: { selected: string; onSelect: (avatar: string) => void }) {
+  const selectedIndex = Math.max(0, DEFAULT_AVATARS.indexOf(selected));
+  const [drag, setDrag] = useState(0);
+  const start = useRef(0);
   const dragging = useRef(false);
-  const SLOT = 120;
-  const visible = avatars.map((avatar, index) => {
-    const distance = Math.abs(index - selectedIndex);
-    return { avatar, index, distance };
-  }).filter(({ distance }) => distance <= 2);
-
-  const move = (direction: -1 | 1) => {
-    const next = (selectedIndex + direction + avatars.length) % avatars.length;
-    onSelect(avatars[next]);
-  };
-
-  const finishDrag = () => {
+  const move = (delta: number) => onSelect(DEFAULT_AVATARS[Math.max(0, Math.min(DEFAULT_AVATARS.length - 1, selectedIndex + delta))]);
+  const finish = () => {
     if (!dragging.current) return;
+    const d = drag;
     dragging.current = false;
-    const offset = dragOffset;
-    setDragOffset(0);
-    if (Math.abs(offset) >= 42) move(offset < 0 ? 1 : -1);
+    setDrag(0);
+    if (Math.abs(d) > 50) move(d < 0 ? 1 : -1);
   };
-
   return (
-    <div className="relative h-56 w-full select-none overflow-hidden touch-pan-y">
-      <button
-        type="button"
-        onClick={() => move(-1)}
-        aria-label="Previous avatar"
-        className="absolute left-0 top-1/2 z-30 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-[#111116] text-white/80 shadow-xl md:left-6"
-      >
-        <ChevronLeft className="h-7 w-7" />
-      </button>
-
+    <div className="relative mx-auto flex w-full items-center justify-center overflow-hidden">
+      <button type="button" aria-label="Previous" onClick={() => move(-1)} className="absolute left-4 z-10 rounded-full bg-black/40 p-3 text-white/50 backdrop-blur-sm transition hover:text-white disabled:opacity-30 md:left-8" disabled={selectedIndex === 0}><ChevronLeft className="h-6 w-6" /></button>
       <div
-        className="absolute left-1/2 top-1/2 flex items-center gap-5 cursor-grab active:cursor-grabbing"
-        style={{
-          transform: `translate(calc(-50px - ${selectedIndex * SLOT}px + ${dragOffset}px), -50%)`,
-          transition: dragging.current ? 'none' : 'transform 400ms cubic-bezier(0.22,0.9,0.3,1)',
-        }}
-        onPointerDown={(event) => {
-          startX.current = event.clientX;
-          dragging.current = true;
-          event.currentTarget.setPointerCapture(event.pointerId);
-        }}
-        onPointerMove={(event) => {
-          if (startX.current !== null && dragging.current) setDragOffset(event.clientX - startX.current);
-        }}
-        onPointerUp={finishDrag}
-        onPointerCancel={finishDrag}
+        className="relative flex h-[180px] w-full items-center justify-center overflow-hidden touch-pan-y select-none md:h-[230px]"
+        onPointerDown={(e: PointerEvent<HTMLDivElement>) => { start.current = e.clientX; dragging.current = true; e.currentTarget.setPointerCapture(e.pointerId); }}
+        onPointerMove={(e: PointerEvent<HTMLDivElement>) => { if (dragging.current) setDrag(Math.max(-120, Math.min(120, e.clientX - start.current))); }}
+        onPointerUp={finish}
+        onPointerCancel={finish}
       >
-        {visible.map(({ avatar, index, distance }) => (
-          <div key={`${avatar}-${index}`} className="flex h-[100px] w-[100px] shrink-0 items-center justify-center">
-            <Avatar
-              src={avatar}
-              name="Profile avatar"
-              selected={avatar === selected}
-              size={avatar === selected ? 'selected' : 'normal'}
-              onClick={() => onSelect(avatar)}
-            />
-            {distance > 0 && (
-              <style>{`[data-avatar-index="${index}"]{opacity:${Math.max(0.14, 1 - distance * 0.19)}}`}</style>
-            )}
-          </div>
-        ))}
+        <div className="absolute left-1/2 top-1/2 flex items-center gap-5" style={{ transform: `translate(calc(-50px - ${selectedIndex * 120}px + ${drag}px), -50%)`, transition: dragging.current ? 'none' : 'transform 400ms cubic-bezier(0.22,0.9,0.3,1)' }}>
+          {DEFAULT_AVATARS.map((avatar, index) => {
+            const distance = Math.abs(index - selectedIndex);
+            return (
+              <button key={`${avatar}-${index}`} type="button" onClick={() => onSelect(avatar)} className="relative flex h-[100px] w-[100px] shrink-0 items-center justify-center outline-none" style={{ transform: `scale(${index === selectedIndex ? 1.4 : 1})`, opacity: index === selectedIndex ? 1 : Math.max(.14, 1 - distance * .19), transition: 'transform 400ms cubic-bezier(0.22,0.9,0.3,1), opacity 300ms' }}>
+                <div className={`relative h-20 w-20 overflow-hidden rounded-full transition-all duration-300 ${index === selectedIndex ? 'ring-2 ring-white ring-offset-4 ring-offset-black' : 'opacity-60 hover:opacity-100'}`}>
+                  <img src={avatar} alt="" draggable={false} className="h-full w-full object-cover" onError={(e) => { e.currentTarget.src = DEFAULT_AVATARS[0]; }} />
+                  {index === selectedIndex && <span className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white text-black shadow-xl"><Check className="h-5 w-5" strokeWidth={3} /></span>}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
-
-      <button
-        type="button"
-        onClick={() => move(1)}
-        aria-label="Next avatar"
-        className="absolute right-0 top-1/2 z-30 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-[#111116] text-white/80 shadow-xl md:right-6"
-      >
-        <ChevronRight className="h-7 w-7" />
-      </button>
+      <button type="button" aria-label="Next" onClick={() => move(1)} className="absolute right-4 z-10 rounded-full bg-black/40 p-3 text-white/50 backdrop-blur-sm transition hover:text-white disabled:opacity-30 md:right-8" disabled={selectedIndex === DEFAULT_AVATARS.length - 1}><ChevronRight className="h-6 w-6" /></button>
     </div>
+  );
+}
+
+function ContinueCard({ item }: { item: any }) {
+  const href = item.mediaType === 'tv' ? `/watch/tv/${item.id}/${item.season || 1}/${item.episode || 1}` : `/watch/movie/${item.id}`;
+  const title = item.title || item.episodeTitle || 'Untitled';
+  const sub = item.mediaType === 'tv' ? `S${item.season || 1} E${item.episode || 1}` : 'Movie';
+  const left = item.timeLeft || '';
+  const progress = Math.max(0, Math.min(100, Number(item.progress) || 0));
+  return (
+    <Link href={href} className="group/card flex w-[220px] shrink-0 flex-col gap-2 outline-none md:w-[260px] lg:w-[300px]">
+      <div className="relative aspect-video w-full overflow-hidden rounded-md bg-[#1a1c20] transition-all duration-300">
+        <img src={imageOf(item.backdropPath || item.posterPath, 'w780')} alt={title} loading="lazy" className="h-full w-full object-cover transition-all duration-500 ease-out group-hover/card:scale-105" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+        <div className="absolute bottom-2 left-2 z-10 flex items-center justify-center opacity-80 transition-opacity group-hover/card:opacity-100"><Play className="h-6 w-6 fill-current text-white drop-shadow-md" /></div>
+        <div className="absolute bottom-0 left-0 right-0 z-20 h-[3px] bg-white/20"><div className="h-full bg-[#1875e5]" style={{ width: `${progress}%` }} /></div>
+      </div>
+      <div className="flex flex-col px-0.5">
+        <h3 className="truncate text-[14px] font-semibold leading-snug text-white/90 transition-colors group-hover/card:text-white sm:text-[15px]">{item.episodeTitle || sub}</h3>
+        <div className="mt-0.5 flex items-center text-[12px] font-medium text-white/50"><span className="mr-2 max-w-[60%] truncate">{item.title}</span><span>{left}</span></div>
+      </div>
+    </Link>
   );
 }
 
@@ -167,218 +132,77 @@ export default function Space() {
   const { profiles, activeProfile, activeId, setActiveId, addProfile, updateProfile, deleteProfile, isHydrated } = useProfiles();
   const { items: continueItems, isLoading: continueLoading } = useContinueWatching();
   const { watchlist, isLoading: watchlistLoading } = useWatchlist(isLoggedIn);
-  const [edit, setEdit] = useState<EditState>(null);
+  const [editing, setEditing] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
   const [draftName, setDraftName] = useState('');
   const [draftAvatar, setDraftAvatar] = useState(DEFAULT_AVATARS[0]);
-  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (activeProfile?.avatar) setDraftAvatar(activeProfile.avatar);
-  }, [activeProfile?.avatar]);
-
+  useEffect(() => { if (activeProfile) { setDraftName(activeProfile.name); setDraftAvatar(activeProfile.avatar); } }, [activeProfile]);
   const tagline = TAGLINES[Math.abs((activeProfile?.name || 'RabbitRip').charCodeAt(0)) % TAGLINES.length];
-  const avatars = useMemo(() => {
-    if (draftAvatar && !DEFAULT_AVATARS.includes(draftAvatar)) return [draftAvatar, ...DEFAULT_AVATARS];
-    return DEFAULT_AVATARS;
-  }, [draftAvatar]);
+  const save = () => { const name = draftName.trim(); if (!name) return; if (activeId) updateProfile(activeId, { name, avatar: draftAvatar }); setEditing(false); };
+  const remove = () => { if (!activeId) return; if (window.confirm(`Delete ${activeProfile?.name || 'profile'}?`)) { deleteProfile(activeId); setEditing(false); } };
+  const add = () => { const name = draftName.trim(); if (!name) return; addProfile(name, draftAvatar); setShowAdd(false); };
 
-  if (!isHydrated) return <div className="min-h-screen bg-[#07070b]" />;
-
-  const openEdit = (id: string) => {
-    const target = profiles.find((item) => item.id === id);
-    if (!target) return;
-    setEdit({ id, isNew: false });
-    setDraftName(target.name);
-    setDraftAvatar(target.avatar);
-  };
-
-  const openAdd = () => {
-    setEdit({ id: null, isNew: true });
-    setDraftName('');
-    setDraftAvatar(DEFAULT_AVATARS[0]);
-  };
-
-  const closeEdit = () => {
-    if (saving) return;
-    setEdit(null);
-    setDraftName('');
-    setDraftAvatar(activeProfile?.avatar || DEFAULT_AVATARS[0]);
-  };
-
-  const saveProfile = () => {
-    const name = draftName.trim();
-    if (!name || saving) return;
-    setSaving(true);
-    try {
-      if (edit?.isNew) {
-        addProfile(name, draftAvatar);
-      } else if (edit?.id) {
-        updateProfile(edit.id, { name, avatar: draftAvatar });
-      }
-      setEdit(null);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const removeProfile = () => {
-    if (!edit?.id) return;
-    const target = profiles.find((item) => item.id === edit.id);
-    if (!target || !window.confirm(`Delete ${target.name}?`)) return;
-    deleteProfile(target.id);
-    setEdit(null);
-  };
+  if (!isHydrated) return <div className="min-h-screen bg-black" />;
 
   return (
-    <div className="min-h-screen bg-black text-white pb-28" data-testid="page-space">
+    <div className="relative min-h-screen overflow-x-hidden bg-black font-sans text-white" data-testid="page-space">
       <Seo title="My Space" />
-
-      <main className="mx-auto w-full max-w-[1180px] px-6 pt-10 md:px-12 md:pt-14">
-        <header className="relative mb-14">
-          <div className="absolute inset-x-[-48px] top-[-56px] -z-10 h-[300px] overflow-hidden bg-[radial-gradient(circle_at_15%_30%,rgba(255,255,255,.07),transparent_20%),radial-gradient(circle_at_80%_15%,rgba(255,255,255,.035),transparent_18%)] opacity-80" />
-          <div className="flex items-start justify-between gap-6">
-            <div className="max-w-[680px]">
-              <p className="text-[18px] font-semibold leading-7 text-white/95 md:text-[25px] md:leading-9">{tagline}</p>
-              <p className="mt-3 text-[15px] text-white/55 md:text-base">{profile?.email || ''}</p>
+      <Stars />
+      <div className="relative z-10 pl-0 pt-12 pb-24 md:pl-[80px] md:pt-20 lg:pl-[100px]">
+        <div className="mb-10 w-full px-6 md:px-12">
+          <div className="flex w-full flex-col items-center justify-between gap-6 md:flex-row md:items-start">
+            <div className="flex w-full flex-col gap-1 md:w-[60%]">
+              <Link href="/settings/subscription" className="group relative flex h-[56px] w-full items-center sm:h-[32px]">
+                <h2 className="absolute flex items-center text-lg font-semibold text-white/90 transition-colors group-hover:text-white sm:text-xl"><span className="line-clamp-2 sm:line-clamp-1">{tagline}</span><ChevronRight className="ml-1 h-5 w-5 shrink-0 text-white/60 transition group-hover:text-white/90 sm:ml-2" /></h2>
+              </Link>
+              <p className="mt-1 text-sm font-medium text-white/60 sm:mt-0">{profile?.email || ''}</p>
             </div>
-            <button
-              type="button"
-              onClick={() => navigate('/settings')}
-              className="mt-1 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/[0.055] text-white/70 transition hover:bg-white/[0.09] hover:text-white"
-              aria-label="Help & Settings"
-            >
-              <Settings className="h-6 w-6" />
-            </button>
-          </div>
-
-          <div className="mt-8 flex items-center justify-end gap-3 pr-1">
-            <span className="text-sm font-medium text-white/55">Show Ads</span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={showAds}
-              onClick={() => setShowAds(!showAds)}
-              className={`relative h-7 w-12 rounded-full transition-colors ${showAds ? 'bg-white' : 'bg-white/15'}`}
-            >
-              <span className={`absolute top-1 h-5 w-5 rounded-full bg-black shadow-md transition-transform ${showAds ? 'translate-x-6' : 'translate-x-1'}`} />
-            </button>
-          </div>
-        </header>
-
-        <section className="mb-14">
-          <div className="mb-7 flex items-center justify-between">
-            <h2 className="text-[28px] font-bold tracking-tight md:text-[32px]">Profiles</h2>
-            <button
-              type="button"
-              onClick={() => activeId && openEdit(activeId)}
-              disabled={!activeId}
-              className="inline-flex items-center gap-2 rounded-xl bg-white/[0.055] px-4 py-2.5 text-sm font-semibold text-white/75 transition hover:bg-white/[0.09] hover:text-white disabled:opacity-30"
-            >
-              <Pencil className="h-4 w-4" />
-              Edit
-            </button>
-          </div>
-
-          <div className="flex items-start gap-8 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {profiles.map((item) => {
-              const selected = item.id === activeId;
-              return (
-                <button key={item.id} type="button" onClick={() => setActiveId(item.id)} className="group flex w-[88px] shrink-0 flex-col items-center gap-3 text-center md:w-[96px]">
-                  <div className={`relative h-[76px] w-[76px] overflow-hidden rounded-full border transition-all md:h-[88px] md:w-[88px] ${selected ? 'border-white/70' : 'border-white/10 group-hover:border-white/35'}`}>
-                    <img src={item.avatar} alt={item.name} className="h-full w-full object-cover" onError={(event) => { event.currentTarget.src = '/brand/logo.png'; }} />
-                    {selected && <span className="absolute bottom-[-1px] right-[-1px] flex h-8 w-8 items-center justify-center rounded-full border-2 border-black bg-white text-black shadow-lg"><Check className="h-4 w-4 stroke-[3]" /></span>}
-                  </div>
-                  <span className={`max-w-full truncate text-sm font-semibold ${selected ? 'text-white' : 'text-white/55'}`}>{item.name}</span>
-                </button>
-              );
-            })}
-            <button type="button" onClick={openAdd} className="group flex w-[88px] shrink-0 flex-col items-center gap-3 md:w-[96px]">
-              <span className="flex h-[76px] w-[76px] items-center justify-center rounded-full border border-dashed border-white/20 bg-white/[0.015] transition group-hover:border-white/40 group-hover:bg-white/[0.04] md:h-[88px] md:w-[88px]"><Plus className="h-8 w-8 text-white/45 group-hover:text-white" /></span>
-              <span className="text-sm font-semibold text-white/45 group-hover:text-white/80">Add</span>
-            </button>
-          </div>
-        </section>
-
-        <section className="mb-14">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-[25px] font-bold tracking-tight md:text-[28px]">Watchlist</h2>
-            <span className="text-sm text-white/30">{watchlistLoading ? '' : watchlist.length || ''}</span>
-          </div>
-          {watchlistLoading ? (
-            <div className="flex gap-5 overflow-hidden">
-              {Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-[330px] w-[170px] shrink-0 animate-pulse rounded-xl bg-white/[0.04] md:h-[380px] md:w-[200px]" />)}
-            </div>
-          ) : watchlist.length ? (
-            <div className="flex gap-5 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {watchlist.map((item) => (
-                <Link key={`${item.mediaType}-${item.titleId}`} href={`/title/${item.mediaType}/${item.titleId}`} className="group w-[170px] shrink-0 md:w-[200px]">
-                  <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/5">
-                    <img src={imageOf(item.titleSnapshot?.posterPath)} alt={item.titleSnapshot?.title || 'Watchlist item'} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
-                  </div>
-                  <h3 className="mt-2.5 truncate text-[15px] font-semibold text-white/90">{item.titleSnapshot?.title || 'Untitled'}</h3>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <p className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-5 py-8 text-sm text-white/35">Your watchlist is empty.</p>
-          )}
-        </section>
-
-        <section>
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-[25px] font-bold tracking-tight md:text-[28px]">Continue Watching</h2>
-            <span className="text-sm text-white/30">{activeProfile?.name || ''}</span>
-          </div>
-          {continueLoading && !continueItems.length ? (
-            <div className="flex gap-4 overflow-hidden"><div className="h-[130px] w-[230px] shrink-0 animate-pulse rounded-xl bg-white/[0.04] md:h-[160px] md:w-[280px]" /></div>
-          ) : continueItems.length ? (
-            <div className="flex gap-4 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {continueItems.slice(0, 20).map((item) => (
-                <Link key={`${item.mediaType}-${item.id}-${item.season || 0}-${item.episode || 0}`} href={item.mediaType === 'movie' ? `/watch/movie/${item.id}` : `/watch/tv/${item.id}/${item.season || 1}/${item.episode || 1}`} className="group w-[230px] shrink-0 md:w-[280px]">
-                  <div className="relative aspect-video overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/10">
-                    <img src={imageOf(item.backdropPath || item.posterPath)} alt={item.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent" />
-                    <div className="absolute bottom-3 left-3 flex h-9 w-9 items-center justify-center rounded-full bg-white text-black shadow-lg"><Play className="ml-0.5 h-4 w-4 fill-current" /></div>
-                    <ProgressBar value={item.progress} />
-                  </div>
-                  <h3 className="mt-2 truncate text-sm font-semibold text-white/90">{item.mediaType === 'tv' && item.episode ? `S${item.season || 1} E${item.episode} • ${item.title}` : item.title}</h3>
-                  <p className="mt-0.5 text-xs text-white/40">{item.timeLeft ? `${item.timeLeft}m left` : `${Math.round(item.progress)}% watched`}</p>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <p className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-5 py-8 text-sm text-white/35">Nothing here yet. Start watching something and it will appear here.</p>
-          )}
-        </section>
-      </main>
-
-      {edit && (
-        <div className="fixed inset-0 z-[100] min-h-screen overflow-y-auto bg-[#07070b] text-white" role="dialog" aria-modal="true">
-          <div className="mx-auto flex min-h-screen w-full max-w-[760px] flex-col px-6 py-7 md:px-10">
-            <header className="relative flex h-12 shrink-0 items-center justify-center">
-              <button type="button" onClick={closeEdit} className="absolute left-0 flex items-center gap-1 rounded-full px-2 py-2 text-white/70 transition hover:bg-white/10 hover:text-white" aria-label="Back"><ChevronLeft className="h-7 w-7" /><span className="text-base">Back</span></button>
-              <h2 className="text-xl font-bold md:text-2xl">Edit Profile</h2>
-              <button type="button" onClick={closeEdit} className="absolute right-0 rounded-full bg-white px-6 py-3 text-sm font-bold text-black">Done</button>
-            </header>
-
-            <div className="flex flex-1 flex-col items-center justify-center pb-12 pt-8">
-              <div className="w-full max-w-[620px]">
-                <AvatarCarousel avatars={avatars} selected={draftAvatar} onSelect={setDraftAvatar} />
-              </div>
-
-              <div className="mt-7 w-full max-w-[540px]">
-                <input autoFocus value={draftName} onChange={(event) => setDraftName(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') saveProfile(); }} placeholder="Profile name" className="h-[58px] w-full rounded-2xl border border-white/10 bg-[#111116] px-5 text-base text-white outline-none transition focus:border-white/25" />
-                <div className="mt-8 flex items-center justify-center gap-5">
-                  <button type="button" onClick={() => { const index = Math.max(0, avatars.indexOf(draftAvatar)); setDraftAvatar(avatars[(index - 1 + avatars.length) % avatars.length]); }} className="flex h-16 w-16 items-center justify-center rounded-full bg-[#111116] text-white/85"><ChevronLeft className="h-8 w-8" /></button>
-                  <button type="button" onClick={() => { const index = Math.max(0, avatars.indexOf(draftAvatar)); setDraftAvatar(avatars[(index + 1) % avatars.length]); }} className="flex h-16 w-16 items-center justify-center rounded-full bg-[#111116] text-white/85"><ChevronRight className="h-8 w-8" /></button>
-                </div>
-                <button type="button" disabled={!draftName.trim() || saving} onClick={saveProfile} className="mt-8 h-14 w-full rounded-2xl bg-white text-base font-bold text-black disabled:opacity-40">{edit.isNew ? 'Save & Continue' : 'Save & Continue'}</button>
-                {!edit.isNew && <button type="button" onClick={removeProfile} className="mx-auto mt-9 flex items-center gap-2 text-sm font-semibold text-red-400/80 transition hover:text-red-400"><Trash2 className="h-4 w-4" /> Delete profile</button>}
-              </div>
+            <div className="flex w-full flex-col items-end gap-4 self-start md:w-auto md:self-auto">
+              <Link href="/settings"><button type="button" className="flex items-center gap-2 rounded-lg border border-transparent bg-white/5 px-4 py-2.5 text-sm font-semibold text-white/90 transition-all hover:border-white/10 hover:bg-white/10"><Settings className="h-5 w-5 text-white/70" />Help &amp; Settings</button></Link>
+              <div className="flex items-center gap-3"><span className="text-sm font-medium text-white/60">Show Ads</span><button type="button" aria-pressed={showAds} onClick={() => setShowAds(!showAds)} className={`relative h-5 w-10 shrink-0 rounded-full outline-none transition-colors ${showAds ? 'bg-white' : 'bg-white/15'}`}><div className={`absolute top-[2px] h-4 w-4 rounded-full bg-black transition-transform ${showAds ? 'translate-x-[22px]' : 'translate-x-0.5'}`} /></button></div>
             </div>
           </div>
         </div>
-      )}
+
+        <section className="mb-12 w-full px-6 md:px-12">
+          <div className="mb-6 flex items-center justify-between"><h2 className="text-2xl font-semibold tracking-tight text-white/90">Profiles</h2><button type="button" onClick={() => { if (activeProfile) { setDraftName(activeProfile.name); setDraftAvatar(activeProfile.avatar); } setEditing(true); }} className="flex items-center gap-2 rounded-lg border border-transparent bg-white/5 px-4 py-2 text-sm font-semibold transition-colors hover:border-white/10 hover:bg-white/10"><Pencil className="h-4 w-4 text-white/70" />Edit</button></div>
+          <div className="flex flex-wrap items-start gap-5 md:gap-8">
+            {profiles.map((item) => <Avatar key={item.id} src={item.avatar} alt={item.name} selected={item.id === activeId} onClick={() => setActiveId(item.id)} />)}
+            <button type="button" onClick={() => { setDraftName(''); setDraftAvatar(DEFAULT_AVATARS[0]); setShowAdd(true); }} className="group flex flex-col items-center gap-3 outline-none"><div className="flex h-[72px] w-[72px] items-center justify-center rounded-full border border-dashed border-white/20 bg-white/5 transition-all duration-300 group-hover:border-white/40 group-hover:bg-white/10 md:h-[120px] md:w-[120px]"><Plus className="h-6 w-6 text-white/60 transition-colors group-hover:text-white md:h-8 md:w-8" /></div><span className="text-sm font-semibold text-white/60 transition-colors group-hover:text-white/90">Add</span></button>
+          </div>
+        </section>
+
+        <section className="group/row relative mb-8">
+          <h2 className="mb-3 px-6 text-lg font-semibold text-white/90 md:px-12">Watchlist</h2>
+          <div className="no-scrollbar flex gap-3 overflow-x-auto scroll-smooth px-6 py-4 md:px-12">
+            {watchlistLoading ? Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-[255px] w-[150px] shrink-0 animate-pulse rounded-lg bg-white/5 sm:h-[290px] sm:w-[170px]" />) : watchlist.map((item) => (
+              <Link key={`${item.mediaType}-${item.titleId}`} href={`/title/${item.mediaType}/${item.titleId}`} className="focusable group relative w-[150px] shrink-0 text-left transition-transform duration-200 sm:w-[170px] hover:z-10 hover:scale-105">
+                <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-white/5 ring-2 ring-transparent transition-all group-hover:ring-white/30"><img alt={item.titleSnapshot?.title || ''} loading="lazy" className="h-full w-full object-cover" src={imageOf(item.titleSnapshot?.posterPath)} /></div>
+                <div className="mt-2 truncate text-[14px] font-semibold tracking-tight text-white/90">{item.titleSnapshot?.title || 'Untitled'}</div>
+                <div className="mt-1 flex items-center text-[11px] font-medium text-white/50"><span>{item.mediaType === 'tv' ? 'Series' : 'Movie'}</span></div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {continueItems.length > 0 && <section className="group relative mb-8">
+          <div className="mb-4 flex w-full items-center justify-between gap-3 px-6 text-lg font-semibold text-white/90 md:gap-4 md:px-12"><div className="flex items-center gap-4"><h2>Continue Watching for {activeProfile?.name || 'you'}</h2><button type="button" onClick={() => navigate('/profiles')} className="flex h-7 w-7 items-center justify-center rounded-full bg-white/5 text-white/50 transition-all hover:bg-white/15 hover:text-white"><Pencil className="h-4 w-4" /></button></div></div>
+          <div className="no-scrollbar flex gap-4 overflow-x-auto scroll-smooth px-6 py-4 md:px-12">{continueLoading ? null : continueItems.map((item) => <ContinueCard key={`${item.mediaType}-${item.id}-${item.season || ''}-${item.episode || ''}`} item={item} />)}</div>
+        </section>}
+      </div>
+
+      {showAdd && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 px-5 backdrop-blur-sm"><div className="w-full max-w-[430px] rounded-[28px] border border-white/10 bg-[#111115] p-7 shadow-2xl"><div className="mb-7 flex items-center justify-between"><h2 className="text-[22px] font-semibold">Add profile</h2><button type="button" onClick={() => setShowAdd(false)} className="text-white/50">×</button></div><div className="mb-7 flex justify-center"><img src={draftAvatar} alt="Selected avatar" className="h-28 w-28 rounded-full object-cover ring-2 ring-white/20" /></div><div className="mb-7 grid max-h-52 grid-cols-6 gap-3 overflow-y-auto">{DEFAULT_AVATARS.map((avatar, i) => <button key={`${avatar}-${i}`} type="button" onClick={() => setDraftAvatar(avatar)} className={`h-12 w-12 overflow-hidden rounded-full ${draftAvatar === avatar ? 'ring-2 ring-white' : 'ring-1 ring-white/10'}`}><img src={avatar} alt="" className="h-full w-full object-cover" /></button>)}</div><input value={draftName} onChange={(e) => setDraftName(e.target.value)} maxLength={20} placeholder="Profile Name" className="mb-4 w-full rounded-lg border border-white/20 bg-transparent px-4 py-3.5 text-base text-white placeholder-white/40 outline-none focus:border-white" /><button type="button" onClick={add} disabled={!draftName.trim()} className="w-full rounded-lg bg-white py-4 text-sm font-semibold text-black disabled:opacity-40">Save &amp; Continue</button></div></div>}
+
+      {editing && activeProfile && <div className="fixed inset-0 z-[90] flex flex-col bg-black font-sans text-white animate-[fadeIn_.2s_ease]">
+        <div className="relative flex items-center justify-between px-6 py-5 md:px-12"><button type="button" onClick={() => setEditing(false)} className="rounded-full p-2 text-white/80 transition hover:bg-white/10 hover:text-white"><ArrowLeft className="h-6 w-6" /></button><h2 className="absolute left-1/2 -translate-x-1/2 text-lg font-bold tracking-tight text-white/90 md:text-xl">Edit Profile</h2><div className="w-10" /></div>
+        <div className="flex flex-1 flex-col items-center justify-center gap-12 px-4 pb-20">
+          <ProfileCarousel selected={draftAvatar} onSelect={setDraftAvatar} />
+          <div className="w-full max-w-sm"><input value={draftName} onChange={(e) => setDraftName(e.target.value)} maxLength={20} placeholder="Profile Name" className="w-full rounded-lg border border-white/20 bg-transparent px-4 py-3.5 text-base text-white placeholder-white/40 outline-none transition focus:border-white focus:bg-white/5" /></div>
+          <button type="button" onClick={save} disabled={!draftName.trim()} className="w-full max-w-sm rounded-lg bg-white py-4 text-sm font-semibold text-black shadow-lg transition hover:brightness-90 disabled:cursor-not-allowed disabled:opacity-40">Save &amp; Continue</button>
+          <button type="button" onClick={remove} className="text-sm font-medium text-red-400/80 transition hover:text-red-400">Delete profile</button>
+        </div>
+      </div>}
     </div>
   );
 }
