@@ -116,10 +116,7 @@ export async function getTrending(
     .map((r) => mapTitle(r, mediaType === "all" ? undefined : mediaType));
 }
 
-const LIST_ENDPOINTS: Record<
-  MediaType,
-  Partial<Record<string, string>>
-> = {
+const LIST_ENDPOINTS: Record<MediaType, Partial<Record<string, string>>> = {
   movie: {
     popular: "/movie/popular",
     top_rated: "/movie/top_rated",
@@ -133,6 +130,7 @@ const LIST_ENDPOINTS: Record<
 };
 
 const ANIMATION_GENRE_ID = 16;
+const JAPAN_ORIGIN = "JP";
 
 export async function getCatalogList(
   mediaType: MediaType,
@@ -180,6 +178,18 @@ export async function getCatalogList(
   const data = await tmdbFetch<{ results: RawResult[] }>(endpoint, { page, region });
   if (!data) return [];
   return data.results.map((r) => mapTitle(r, mediaType));
+}
+
+/** Japanese-origin animation for the dedicated anime catalog. */
+export async function getAnime(page = 1): Promise<Title[]> {
+  const data = await tmdbFetch<{ results: RawResult[] }>("/discover/tv", {
+    with_genres: ANIMATION_GENRE_ID,
+    with_origin_country: JAPAN_ORIGIN,
+    sort_by: "popularity.desc",
+    page,
+  });
+  if (!data) return [];
+  return data.results.map((r) => mapTitle(r, "tv"));
 }
 
 export async function getGenres(mediaType: MediaType): Promise<Genre[]> {
@@ -289,9 +299,7 @@ export async function getTitleLogo(
     if (!data) return { logoPath: null };
     const logos = data.logos ?? [];
     const logo =
-      logos.find((l) => l.iso_639_1 === "en") ??
-      logos[0] ??
-      null;
+      logos.find((l) => l.iso_639_1 === "en") ?? logos[0] ?? null;
 
     return { logoPath: logo ? `${IMAGE_BASE}/w500${logo.file_path}` : null };
   } catch {
@@ -332,9 +340,10 @@ export async function getTitleDetail(
   mediaType: MediaType,
   id: number,
 ): Promise<TitleDetail | null> {
-  const append = mediaType === "movie"
-    ? "credits,videos,similar,release_dates"
-    : "credits,videos,similar,content_ratings";
+  const append =
+    mediaType === "movie"
+      ? "credits,videos,similar,release_dates"
+      : "credits,videos,similar,content_ratings";
 
   const raw = await tmdbFetch<
     RawResult & {
