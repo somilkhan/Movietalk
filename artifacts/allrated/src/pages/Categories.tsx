@@ -73,12 +73,12 @@ function PopularGenresRow() {
         <div ref={scrollRef} className="flex overflow-x-auto gap-3 py-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-smooth snap-x">
           {GENRES.map((genre) => (
             <div key={genre.name} className="snap-start">
-              <Link href="/categories"><a className="block"><div className="flex-none cursor-pointer group/genre relative rounded-md overflow-hidden transition-all duration-300 transform hover:scale-105 hover:z-10 w-[160px] md:w-[220px] lg:w-[280px] aspect-[16/9]"><img alt={genre.name} className="w-full h-full object-cover transition-transform duration-300 group-hover/genre:scale-105" loading="lazy" src={genre.image} /><div className="absolute inset-0 bg-black/0 group-hover/genre:bg-white/5 transition-colors duration-300" /></div></a></Link>
+              <Link href={`/genre/${encodeURIComponent(genre.name)}`}><a className="block"><div className="flex-none cursor-pointer group/genre relative rounded-md overflow-hidden transition-all duration-300 transform hover:scale-105 hover:z-10 w-[160px] md:w-[220px] lg:w-[280px] aspect-[16/9]"><img alt={genre.name} className="w-full h-full object-cover transition-transform duration-300 group-hover/genre:scale-105" loading="lazy" src={genre.image} /><div className="absolute inset-0 bg-black/0 group-hover/genre:bg-white/5 transition-colors duration-300" /></div></a></Link>
             </div>
           ))}
         </div>
         <button onClick={scrollRight} className="absolute right-0 top-0 bottom-0 z-30 w-12 md:w-16 bg-gradient-to-l from-black to-transparent flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300" aria-label="Next">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
         </button>
       </div>
     </div>
@@ -91,10 +91,10 @@ export default function Categories() {
       <Seo title="Categories" />
       <div className="relative z-10 pl-0 md:pl-[80px] lg:pl-[120px] pt-12 md:pt-20">
         <div className="max-w-[1600px]">
-          <ImageRow title="Browse" items={[...CATEGORY_GROUPS]} />
-          <ImageRow title="Studios" items={[...STUDIOS]} />
-          <ImageRow title="Popular Languages" items={LANGUAGES.map(l => ({ name: l.name, image: l.image }))} />
-          <ImageRow title="Popular Sports" items={[...POPULAR_SPORTS]} viewAllHref="/sports" />
+          <ImageRow title="Browse" items={CATEGORY_GROUPS.map((item) => ({ ...item, href: item.href === '/spark' ? '/sparks' : item.href }))} />
+          <ImageRow title="Studios" items={STUDIOS.map((studio) => ({ ...studio, href: `/catalog/movie/${encodeURIComponent(studio.name + ' Studios')}` }))} />
+          <ImageRow title="Popular Languages" items={LANGUAGES.map((language) => ({ name: language.name, image: language.image, href: `/language/${encodeURIComponent(language.sublabel || language.name)}` }))} />
+          <ImageRow title="Popular Sports" items={POPULAR_SPORTS.map((sport) => ({ ...sport, href: '/sports' }))} viewAllHref="/sports" />
           <PopularGenresRow />
         </div>
       </div>
