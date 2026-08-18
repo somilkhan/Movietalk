@@ -10,6 +10,7 @@ import { DesktopSidebar } from "@/components/DesktopSidebar";
 import { MobileNav } from "@/components/MobileNav";
 import { ProfileGuard } from "@/components/ProfileGuard";
 import { GlobalUiFixes } from "@/components/GlobalUiFixes";
+import { BingrTopBar } from "@/components/BingrTopBar";
 import { cn } from "@/lib/utils";
 import { Footer } from "@/components/Footer";
 import Home from "@/pages/Home";
@@ -79,7 +80,6 @@ function Router() {
         <Route path="/login"><LoginRoute /></Route>
         <Route path="/register"><Register /></Route>
 
-        {/* Bingr-compatible detail and discovery entry points. */}
         <Route path="/anime/trending"><Redirect to="/anime" /></Route>
         <Route path="/anime/discover"><Redirect to="/anime" /></Route>
         <Route path="/anime/search"><Redirect to="/anime" /></Route>
@@ -87,7 +87,6 @@ function Router() {
         <Route path="/movie/:id"><LegacyTitleRedirect mediaType="movie" /></Route>
         <Route path="/tv/:id"><LegacyTitleRedirect mediaType="tv" /></Route>
 
-        {/* Public collection/creator/studio entry points map into RabbitRip's existing catalog flow. */}
         <Route path="/collection/:id"><Redirect to="/explore" /></Route>
         <Route path="/creator"><Redirect to="/explore" /></Route>
         <Route path="/creator/:id"><Redirect to="/explore" /></Route>
@@ -95,7 +94,6 @@ function Router() {
         <Route path="/studio/:name"><LegacyCatalogRedirect kind="studio" /></Route>
         <Route path="/live-tv"><Redirect to="/sports" /></Route>
 
-        {/* Category directory aliases. */}
         <Route path="/categories/all/:type"><Redirect to="/categories" /></Route>
         <Route path="/category"><Redirect to="/categories" /></Route>
         <Route path="/genre"><Redirect to="/categories" /></Route>
@@ -104,7 +102,6 @@ function Router() {
         <Route path="/genre/:name"><LegacyCatalogRedirect kind="genre" /></Route>
         <Route path="/language/:name"><LegacyCatalogRedirect kind="language" /></Route>
 
-        {/* Account, social and utility aliases. */}
         <Route path="/me/profiles"><Redirect to="/profiles" /></Route>
         <Route path="/settings/subscription"><Redirect to="/settings" /></Route>
         <Route path="/search"><Redirect to="/explore" /></Route>
@@ -128,6 +125,7 @@ function Router() {
         <Route>
           <div className="min-h-screen bg-black text-white flex flex-col">
             <DesktopSidebar />
+            <BingrTopBar />
             <main className={cn("flex-1 mobile-content md:pb-0 animate-slide-up", "md:ml-[80px]")}>
               <Switch>
                 <Route path="/"><Redirect to="/home" /></Route>
