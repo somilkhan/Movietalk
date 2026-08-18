@@ -1,0 +1,56 @@
+/* Reference-driven visual system. Layout only; content remains data/API driven. */
+:root{--bingr-black:#000;--bingr-ink:#08080b;--bingr-muted:rgba(255,255,255,.62);--bingr-line:rgba(255,255,255,.08)}
+html,body{background:#000!important;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+
+/* Reference profile selector */
+[data-testid="page-profiles"]{min-height:100dvh;background:#000!important}
+[data-testid="page-profiles"] main{min-height:calc(100dvh - 100px);padding-top:2rem}
+[data-testid="page-profiles"] h1{font-size:26px;line-height:1.2;font-weight:700;letter-spacing:-.03em}
+[data-testid="page-profiles"] img{image-rendering:auto}
+
+/* Reference My Space */
+[data-testid="page-space"]{background:#000!important;min-height:100dvh}
+[data-testid="page-space"]>main{min-height:100dvh}
+[data-testid="page-space"] section:first-of-type{padding-top:5.25rem}
+[data-testid="page-space"] section:first-of-type h1{max-width:720px;font-size:clamp(25px,3vw,34px);line-height:1.42;letter-spacing:-.035em}
+[data-testid="page-space"] section:nth-of-type(2){margin-top:5rem}
+[data-testid="page-space"] section:nth-of-type(2) h2{font-size:28px;letter-spacing:-.035em}
+[data-testid="page-space"] section:nth-of-type(2) img{box-shadow:0 10px 26px rgba(0,0,0,.25)}
+[data-testid="page-space"] .group\/row h2{font-size:18px;letter-spacing:-.02em}
+[data-testid="page-space"] .group\/row img{border-radius:10px}
+
+/* Reference edit-profile fullscreen */
+[data-testid="page-profiles"] .animate-\[rrFadeIn_\.2s_ease\]{background:#000}
+
+/* Floating desktop shell */
+.rr-topbar{background:linear-gradient(180deg,rgba(0,0,0,.42),transparent);padding-top:16px!important}
+.rr-search-shell{height:44px!important;border-radius:22px!important;background:rgba(18,18,21,.78)!important;border-color:rgba(255,255,255,.08)!important;box-shadow:0 10px 30px rgba(0,0,0,.22)}
+.rr-topbar a,.rr-topbar button{border-radius:18px!important}
+
+/* Hero: cinematic, edge-to-edge */
+[data-testid="hero-section"]{background:#000!important;min-height:min(82vh,900px)!important;box-shadow:none!important}
+[data-testid="hero-section"]>img,[data-testid="hero-section"] video{filter:saturate(.96) contrast(1.03)}
+[data-testid="hero-section"] .pointer-events-auto a:first-child{width:54px!important;height:54px!important}
+[data-testid="hero-section"] .pointer-events-auto a:last-child{height:54px!important;border-radius:18px!important;padding-inline:22px!important}
+
+/* Rails match reference spacing and density */
+[data-testid="page-home"] .group\/row,[data-testid="page-movies"] .group\/row,[data-testid="page-tv"] .group\/row,[data-testid="page-anime"] .group\/row{margin-bottom:32px}
+[data-testid="page-home"] [data-testid="title-card"],[data-testid="page-movies"] [data-testid="title-card"],[data-testid="page-tv"] [data-testid="title-card"],[data-testid="page-anime"] [data-testid="title-card"]{width:150px!important}
+[data-testid="title-card"]>div>div:first-child{border-radius:10px!important}
+
+/* Mobile reference navigation */
+@media(max-width:767px){
+  .mobile-content{padding-bottom:100px!important}
+  .fixed.bottom-4.z-\[60\]{bottom:max(12px,env(safe-area-inset-bottom))!important;width:calc(100vw - 40px)!important;max-width:430px!important;height:64px!important;padding:10px 12px!important;border-radius:22px!important;background:rgba(16,16,18,.9)!important;border:1px solid rgba(255,255,255,.09)!important;box-shadow:0 16px 50px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.04)!important;backdrop-filter:blur(22px)!important;-webkit-backdrop-filter:blur(22px)!important}
+  .fixed.bottom-4.z-\[60\]>.flex{gap:8px!important}
+  .fixed.bottom-4.z-\[60\] a{flex:1;display:flex;justify-content:center}
+  .fixed.bottom-4.z-\[60\] .aspect-square{width:38px!important;height:38px!important}
+  [data-testid="page-space"] section:first-of-type{padding-top:5.2rem}
+  [data-testid="page-space"] section:first-of-type h1{font-size:24px;line-height:1.42}
+  [data-testid="page-space"] section:nth-of-type(2){margin-top:4.4rem}
+  [data-testid="page-space"] section:nth-of-type(2) h2{font-size:26px}
+  [data-testid="page-profiles"] main{padding-top:1rem}
+  [data-testid="hero-section"]{min-height:70dvh!important;max-height:760px!important}
+}
+
+@keyframes rrFadeIn{from{opacity:0}to{opacity:1}}
