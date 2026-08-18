@@ -1,56 +1,268 @@
-/* Reference-driven visual system. Layout only; content remains data/API driven. */
-:root{--bingr-black:#000;--bingr-ink:#08080b;--bingr-muted:rgba(255,255,255,.62);--bingr-line:rgba(255,255,255,.08)}
-html,body{background:#000!important;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-
-/* Reference profile selector */
-[data-testid="page-profiles"]{min-height:100dvh;background:#000!important}
-[data-testid="page-profiles"] main{min-height:calc(100dvh - 100px);padding-top:2rem}
-[data-testid="page-profiles"] h1{font-size:26px;line-height:1.2;font-weight:700;letter-spacing:-.03em}
-[data-testid="page-profiles"] img{image-rendering:auto}
-
-/* Reference My Space */
-[data-testid="page-space"]{background:#000!important;min-height:100dvh}
-[data-testid="page-space"]>main{min-height:100dvh}
-[data-testid="page-space"] section:first-of-type{padding-top:5.25rem}
-[data-testid="page-space"] section:first-of-type h1{max-width:720px;font-size:clamp(25px,3vw,34px);line-height:1.42;letter-spacing:-.035em}
-[data-testid="page-space"] section:nth-of-type(2){margin-top:5rem}
-[data-testid="page-space"] section:nth-of-type(2) h2{font-size:28px;letter-spacing:-.035em}
-[data-testid="page-space"] section:nth-of-type(2) img{box-shadow:0 10px 26px rgba(0,0,0,.25)}
-[data-testid="page-space"] .group\/row h2{font-size:18px;letter-spacing:-.02em}
-[data-testid="page-space"] .group\/row img{border-radius:10px}
-
-/* Reference edit-profile fullscreen */
-[data-testid="page-profiles"] .animate-\[rrFadeIn_\.2s_ease\]{background:#000}
-
-/* Floating desktop shell */
-.rr-topbar{background:linear-gradient(180deg,rgba(0,0,0,.42),transparent);padding-top:16px!important}
-.rr-search-shell{height:44px!important;border-radius:22px!important;background:rgba(18,18,21,.78)!important;border-color:rgba(255,255,255,.08)!important;box-shadow:0 10px 30px rgba(0,0,0,.22)}
-.rr-topbar a,.rr-topbar button{border-radius:18px!important}
-
-/* Hero: cinematic, edge-to-edge */
-[data-testid="hero-section"]{background:#000!important;min-height:min(82vh,900px)!important;box-shadow:none!important}
-[data-testid="hero-section"]>img,[data-testid="hero-section"] video{filter:saturate(.96) contrast(1.03)}
-[data-testid="hero-section"] .pointer-events-auto a:first-child{width:54px!important;height:54px!important}
-[data-testid="hero-section"] .pointer-events-auto a:last-child{height:54px!important;border-radius:18px!important;padding-inline:22px!important}
-
-/* Rails match reference spacing and density */
-[data-testid="page-home"] .group\/row,[data-testid="page-movies"] .group\/row,[data-testid="page-tv"] .group\/row,[data-testid="page-anime"] .group\/row{margin-bottom:32px}
-[data-testid="page-home"] [data-testid="title-card"],[data-testid="page-movies"] [data-testid="title-card"],[data-testid="page-tv"] [data-testid="title-card"],[data-testid="page-anime"] [data-testid="title-card"]{width:150px!important}
-[data-testid="title-card"]>div>div:first-child{border-radius:10px!important}
-
-/* Mobile reference navigation */
-@media(max-width:767px){
-  .mobile-content{padding-bottom:100px!important}
-  .fixed.bottom-4.z-\[60\]{bottom:max(12px,env(safe-area-inset-bottom))!important;width:calc(100vw - 40px)!important;max-width:430px!important;height:64px!important;padding:10px 12px!important;border-radius:22px!important;background:rgba(16,16,18,.9)!important;border:1px solid rgba(255,255,255,.09)!important;box-shadow:0 16px 50px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.04)!important;backdrop-filter:blur(22px)!important;-webkit-backdrop-filter:blur(22px)!important}
-  .fixed.bottom-4.z-\[60\]>.flex{gap:8px!important}
-  .fixed.bottom-4.z-\[60\] a{flex:1;display:flex;justify-content:center}
-  .fixed.bottom-4.z-\[60\] .aspect-square{width:38px!important;height:38px!important}
-  [data-testid="page-space"] section:first-of-type{padding-top:5.2rem}
-  [data-testid="page-space"] section:first-of-type h1{font-size:24px;line-height:1.42}
-  [data-testid="page-space"] section:nth-of-type(2){margin-top:4.4rem}
-  [data-testid="page-space"] section:nth-of-type(2) h2{font-size:26px}
-  [data-testid="page-profiles"] main{padding-top:1rem}
-  [data-testid="hero-section"]{min-height:70dvh!important;max-height:760px!important}
+/* Reference-driven presentation layer. Content remains RabbitRip data-driven. */
+:root {
+  --bingr-black: #000;
+  --bingr-surface: #1a1c20;
+  --bingr-text: rgba(255,255,255,.9);
+  --bingr-muted: rgba(255,255,255,.5);
+  --bingr-line: rgba(255,255,255,.08);
 }
 
-@keyframes rrFadeIn{from{opacity:0}to{opacity:1}}
+html, body { background: #000 !important; }
+body {
+  color: #fff;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Bingr's shell is content-first: the rail is outside the page canvas. */
+@media (min-width: 768px) {
+  main.mobile-content { padding-left: 0 !important; }
+  footer { padding-left: 0 !important; }
+}
+
+/* Home */
+[data-testid="page-home"] {
+  min-height: 100vh;
+  background: #000 !important;
+  color: #fff;
+  overflow-x: hidden;
+}
+[data-testid="hero-section"] {
+  position: relative;
+  width: 100%;
+  min-height: 75vh !important;
+  max-height: 85vh;
+  background: #000 !important;
+  overflow: hidden;
+  box-shadow: none !important;
+}
+[data-testid="hero-section"] > img,
+[data-testid="hero-section"] video {
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(.96) contrast(1.03);
+}
+[data-testid="hero-section"] > .absolute.inset-0.bg-gradient-to-t {
+  background: linear-gradient(to top, #000 0%, rgba(0,0,0,.72) 45%, transparent 100%) !important;
+}
+[data-testid="hero-section"] > .absolute.inset-0.bg-gradient-to-r {
+  background: linear-gradient(to right, rgba(0,0,0,.84), rgba(0,0,0,.5), transparent) !important;
+}
+[data-testid="hero-section"] h1 {
+  font-weight: 700;
+  letter-spacing: -.035em;
+}
+[data-testid="hero-section"] .pointer-events-auto a:first-child {
+  width: 54px !important;
+  height: 54px !important;
+  flex: 0 0 54px;
+}
+[data-testid="hero-section"] .pointer-events-auto a:last-child {
+  height: 54px !important;
+  padding-inline: 22px !important;
+  border-radius: 18px !important;
+  background: rgba(255,255,255,.1) !important;
+  border: 1px solid rgba(255,255,255,.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Content rails */
+[data-testid="page-home"] > .relative.z-10 {
+  margin-top: -1rem;
+}
+[data-testid="page-home"] section { scroll-margin-top: 80px; }
+[data-testid="page-home"] section > div.flex.items-center.justify-between,
+[data-testid="page-home"] section > div.flex.items-center.gap-4 {
+  margin-bottom: 1rem;
+}
+[data-testid="page-home"] h2,
+[data-testid="page-movies"] h2,
+[data-testid="page-tv"] h2,
+[data-testid="page-anime"] h2 {
+  font-size: 17px !important;
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: rgba(255,255,255,.9) !important;
+}
+@media (min-width: 1024px) {
+  [data-testid="page-home"] h2,
+  [data-testid="page-movies"] h2,
+  [data-testid="page-tv"] h2,
+  [data-testid="page-anime"] h2 { font-size: 19px !important; }
+}
+
+/* Reference poster sizing: 130 / 160 / 185px. */
+[data-testid="title-card"] { width: 130px !important; }
+[data-testid="title-card"] > div > div:first-child {
+  aspect-ratio: 2 / 3;
+  border-radius: 8px !important;
+  background: #1a1c24 !important;
+  box-shadow: none;
+  border: 1px solid rgba(255,255,255,.05);
+}
+[data-testid="title-card"] > div > div:first-child img { object-fit: cover; }
+[data-testid="title-card"] > div > div:nth-child(2) {
+  margin-top: .5rem !important;
+  font-size: 14px !important;
+  line-height: 1.25;
+  font-weight: 600 !important;
+  letter-spacing: -.01em;
+}
+[data-testid="title-card"] > div > div:nth-child(3) {
+  margin-top: .25rem !important;
+  font-size: 11px !important;
+  line-height: 1.25;
+  font-weight: 500 !important;
+  color: rgba(255,255,255,.5) !important;
+}
+[data-testid="title-card"]:hover > div > div:first-child {
+  transform: translateY(-8px);
+  box-shadow: none;
+  border-color: rgba(255,255,255,.2);
+}
+[data-testid="title-card"]:hover > div > div:first-child img { transform: scale(1.02); }
+
+[data-testid="numbered-title-card"] > div:first-child {
+  font-family: "Alfa Slab One", "Arial Black", Impact, sans-serif !important;
+  font-size: 100px !important;
+  line-height: 1 !important;
+  letter-spacing: -.05em !important;
+}
+[data-testid="numbered-title-card"] > div:nth-child(2) { width: 110px !important; }
+
+/* Continue Watching */
+[data-testid="continue-watching-row"] { padding-top: 2rem; padding-bottom: 1rem; }
+[data-testid="continue-watching-row"] h2 { font-size: 17px !important; font-weight: 600; }
+[data-testid="continue-watching-row"] a { width: 220px; }
+[data-testid="continue-watching-row"] a > div:first-child {
+  aspect-ratio: 16 / 9;
+  border-radius: 6px;
+  background: #1a1c20;
+}
+[data-testid="continue-watching-row"] a h3 { font-size: 14px; }
+
+/* Genre/studio trays */
+.group\/cat {
+  width: 160px !important;
+  aspect-ratio: 16 / 9;
+  border-radius: 6px !important;
+  overflow: hidden;
+  background: #16181f;
+}
+@media (min-width: 768px) {
+  [data-testid="title-card"] { width: 160px !important; }
+  [data-testid="numbered-title-card"] > div:first-child { font-size: 120px !important; }
+  [data-testid="numbered-title-card"] > div:nth-child(2) { width: 130px !important; }
+  [data-testid="continue-watching-row"] a { width: 260px; }
+  .group\/cat { width: 220px !important; }
+}
+@media (min-width: 1024px) {
+  [data-testid="title-card"] { width: 185px !important; }
+  [data-testid="numbered-title-card"] > div:first-child { font-size: 140px !important; }
+  [data-testid="numbered-title-card"] > div:nth-child(2) { width: 160px !important; }
+  [data-testid="continue-watching-row"] a { width: 300px; }
+  .group\/cat { width: 280px !important; }
+}
+
+/* Movie / TV / Anime details use the reference 70vh / 85vh hero. */
+[data-testid="page-title-detail"] > div:first-of-type {
+  height: 70vh !important;
+  min-height: 500px !important;
+  max-height: 85vh;
+}
+[data-testid="page-title-detail"] > div:first-of-type > img,
+[data-testid="page-title-detail"] > div:first-of-type iframe {
+  transform: none !important;
+  object-fit: cover;
+  object-position: center;
+}
+[data-testid="page-title-detail"] > div:first-of-type > div.absolute.inset-x-0 {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+  padding-bottom: 3rem !important;
+}
+[data-testid="page-title-detail"] main {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+  padding-top: 2rem !important;
+}
+[data-testid="page-title-detail"] h1 {
+  font-weight: 700;
+  letter-spacing: -.035em;
+}
+@media (min-width: 768px) {
+  [data-testid="page-title-detail"] > div:first-of-type > div.absolute.inset-x-0 {
+    padding-left: 100px !important;
+    padding-right: 3rem !important;
+    padding-bottom: 6rem !important;
+  }
+  [data-testid="page-title-detail"] main {
+    padding-left: 100px !important;
+    padding-right: 3rem !important;
+    padding-top: 2rem !important;
+  }
+}
+@media (min-width: 1024px) {
+  [data-testid="page-title-detail"] > div:first-of-type > div.absolute.inset-x-0 { padding-left: 140px !important; }
+  [data-testid="page-title-detail"] main { padding-left: 140px !important; }
+}
+
+/* Catalog / explore */
+[data-testid="page-catalog"],
+[data-testid="page-categories"],
+[data-testid="page-anime"],
+[data-testid="page-explore"] {
+  min-height: 100vh;
+  background: #000 !important;
+}
+[data-testid="page-explore"] input,
+[data-testid="page-explore"] select,
+[data-testid="page-explore"] button {
+  border-color: rgba(255,255,255,.08) !important;
+}
+
+/* My Space / settings */
+[data-testid="page-space"],
+[data-testid="page-settings"] { background: #000 !important; }
+[data-testid="page-space"] main { padding-left: 0 !important; }
+[data-testid="page-space"] section:first-of-type { padding-top: 5rem; }
+[data-testid="page-space"] section:nth-of-type(2) { margin-top: 4rem; }
+
+/* Profiles */
+[data-testid="page-profiles"] { min-height: 100dvh; background: #000 !important; }
+[data-testid="page-profiles"] main { min-height: calc(100dvh - 100px); }
+[data-testid="page-profiles"] h1 { font-size: 24px; line-height: 1.2; font-weight: 700; letter-spacing: -.025em; }
+
+/* Mobile */
+@media (max-width: 767px) {
+  .mobile-content { padding-bottom: 100px !important; }
+  [data-testid="hero-section"] { min-height: 70dvh !important; max-height: 760px !important; }
+  [data-testid="hero-section"] > div.absolute.inset-0.flex.flex-col { padding-left: 20px !important; padding-right: 20px !important; padding-bottom: 36px !important; }
+  [data-testid="hero-section"] h1 { font-size: clamp(31px, 8vw, 42px) !important; }
+  [data-testid="title-card"] { width: 130px !important; }
+  [data-testid="continue-watching-row"] a { width: 220px !important; }
+  .group\/cat { width: 160px !important; }
+  [data-testid="page-title-detail"] > div:first-of-type { height: 70vh !important; min-height: 500px !important; }
+  [data-testid="page-title-detail"] > div:first-of-type > div.absolute.inset-x-0 { padding-left: 1rem !important; padding-right: 1rem !important; padding-bottom: 3rem !important; }
+  [data-testid="page-title-detail"] main { padding-left: 1rem !important; padding-right: 1rem !important; }
+  .fixed.bottom-4.z-\[60\] {
+    bottom: max(12px, env(safe-area-inset-bottom)) !important;
+    width: calc(100vw - 40px) !important;
+    max-width: 430px !important;
+    height: 64px !important;
+    padding: 10px 12px !important;
+    border-radius: 22px !important;
+    background: rgba(16,16,18,.9) !important;
+    border: 1px solid rgba(255,255,255,.09) !important;
+    box-shadow: 0 16px 50px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.04) !important;
+    backdrop-filter: blur(22px) !important;
+    -webkit-backdrop-filter: blur(22px) !important;
+  }
+  .fixed.bottom-4.z-\[60\] > a { flex: 1; display: flex; justify-content: center; }
+  .fixed.bottom-4.z-\[60\] .aspect-square { width: 36px !important; height: 36px !important; }
+}
+
+@keyframes rrFadeIn { from { opacity: 0; } to { opacity: 1; } }
