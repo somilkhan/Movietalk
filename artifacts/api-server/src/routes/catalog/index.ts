@@ -202,7 +202,12 @@ router.get(
         res.status(404).json({ error: "Title not found" });
         return;
       }
-      res.json({ ...GetTitleDetailResponse.parse(detail), similar: detail.similar, cast: detail.cast, certification: detail.certification });
+      res.json({
+        ...GetTitleDetailResponse.parse(detail),
+        similar: detail.similar,
+        cast: detail.cast,
+        certification: detail.certification,
+      });
     } catch (err) {
       req.log.error({ err }, "Failed to load title detail");
       res.status(404).json({ error: "Title not found" });
