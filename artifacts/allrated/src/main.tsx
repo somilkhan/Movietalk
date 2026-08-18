@@ -4,6 +4,7 @@ import App from './App';
 import './index.css';
 import './bingr-parity.css';
 import './bingr-parity-final.css';
+import './bingr-reference-polish.css';
 import './player-watermark.css';
 import './subtitle-polyfill';
 import { initAnalytics } from '@/hooks/useAnalytics';
