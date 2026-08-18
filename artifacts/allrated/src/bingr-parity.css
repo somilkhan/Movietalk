@@ -2,88 +2,186 @@
  * Derived from public, observable Bingr UI characteristics; no third-party source is copied.
  */
 :root {
-  --rr-bg: #070709;
+  --rr-bg: #07070b;
   --rr-surface: #101014;
   --rr-surface-2: #17171c;
-  --rr-line: rgba(255,255,255,.08);
-  --rr-text: #f5f5f6;
-  --rr-muted: rgba(255,255,255,.56);
+  --rr-line: rgba(255, 255, 255, 0.08);
+  --rr-text: #e9e9ee;
+  --rr-muted: rgba(255, 255, 255, 0.56);
   --rr-accent: #5865d9;
+  color-scheme: dark;
 }
 
-html { background: var(--rr-bg); }
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+html {
+  background: var(--rr-bg);
+}
+
 body {
   background: var(--rr-bg);
   color: var(--rr-text);
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
-button, a, input, select { -webkit-tap-highlight-color: transparent; }
-button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
-  outline: 2px solid rgba(88,101,217,.9);
+button,
+a,
+input,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid rgba(88, 101, 217, 0.9);
   outline-offset: 2px;
 }
 
-/* Keep the content density close to the reference while preserving RabbitRip's data flow. */
-.mobile-content { min-width: 0; }
-
-/* Desktop rail: quiet by default, readable on hover. */
-@media (min-width: 768px) {
-  .mobile-content { padding-left: 0; }
-  aside[aria-label="Main navigation"] { width: 76px; }
-  aside[aria-label="Main navigation"] nav a { min-height: 52px; }
-  aside[aria-label="Main navigation"] nav a > span:last-child { letter-spacing: -.01em; }
+.mobile-content {
+  min-width: 0;
 }
 
-/* Poster surfaces and trays. */
+/* The reference uses a compact desktop navigation rail. */
+@media (min-width: 768px) {
+  .mobile-content {
+    padding-left: 0;
+  }
+
+  aside[aria-label="Main navigation"] {
+    width: 76px;
+  }
+
+  aside[aria-label="Main navigation"] nav a {
+    min-height: 52px;
+  }
+
+  aside[aria-label="Main navigation"] nav a > span:last-child {
+    letter-spacing: -0.01em;
+  }
+}
+
+/* Poster surfaces and horizontal trays. */
 [data-testid="page-home"] img,
 [data-testid="page-movies"] img,
 [data-testid="page-tv"] img,
 [data-testid="page-anime"] img,
-[data-testid="page-explore"] img { backface-visibility: hidden; }
+[data-testid="page-explore"] img {
+  backface-visibility: hidden;
+}
 
-/* Hero readability without flattening artwork. */
-.hero-gradient, [data-testid="page-home"] .hero-gradient { pointer-events: none; }
+/* Preserve artwork while keeping hero text readable. */
+.hero-gradient,
+[data-testid="page-home"] .hero-gradient {
+  pointer-events: none;
+}
 
 /* Search controls. */
 [data-testid="page-explore"] input[type="search"] {
   color-scheme: dark;
   caret-color: var(--rr-accent);
 }
+
 [data-testid="page-explore"] select {
   color-scheme: dark;
   background-image: none;
 }
 
-/* Shared interactive polish. */
-.rr-interactive { transition: transform .18s ease, opacity .18s ease, background-color .18s ease; }
-.rr-interactive:hover { transform: translateY(-1px); }
-
-/* Mobile: prioritize edge-to-edge media and comfortable touch targets. */
-@media (max-width: 767px) {
-  body { overflow-x: hidden; }
-  .mobile-content { padding-bottom: env(safe-area-inset-bottom); }
-  [data-testid="page-explore"] { padding-top: 0 !important; }
-  [data-testid="page-explore"] .sticky { top: 0; padding-top: max(8px, env(safe-area-inset-top)); }
-  [data-testid="page-explore"] input[type="search"] { min-height: 48px; font-size: 16px; }
-  [data-testid="page-explore"] button { min-height: 40px; }
+/* Shared interaction polish. */
+.rr-interactive {
+  transition: transform 0.18s ease, opacity 0.18s ease, background-color 0.18s ease;
 }
 
-/* Respect reduced-motion preferences across the application. */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: .001ms !important;
-    animation-iteration-count: 1 !important;
-    scroll-behavior: auto !important;
-    transition-duration: .001ms !important;
+.rr-interactive:hover {
+  transform: translateY(-1px);
+}
+
+/* Mobile: edge-to-edge media and comfortable touch targets. */
+@media (max-width: 767px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  .mobile-content {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  [data-testid="page-explore"] {
+    padding-top: 0 !important;
+  }
+
+  [data-testid="page-explore"] .sticky {
+    top: 0;
+    padding-top: max(8px, env(safe-area-inset-top));
+  }
+
+  [data-testid="page-explore"] input[type="search"] {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  [data-testid="page-explore"] button {
+    min-height: 40px;
   }
 }
 
-/* Scrollbars stay subtle and consistent with the dark reference UI. */
-* { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.16) transparent; }
-*::-webkit-scrollbar { width: 8px; height: 8px; }
-*::-webkit-scrollbar-track { background: transparent; }
-*::-webkit-scrollbar-thumb { background: rgba(255,255,255,.14); border-radius: 999px; }
-*::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.22); }
+/* Match the reference's subtle slide-up page entrance. */
+@keyframes rr-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: rr-slide-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Subtle dark scrollbars. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Respect reduced-motion preferences. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+}
