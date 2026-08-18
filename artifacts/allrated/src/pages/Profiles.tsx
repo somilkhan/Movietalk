@@ -60,20 +60,20 @@ export default function Profiles() {
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState(DEFAULT_AVATARS[0]);
   if (!isHydrated) return <div className="min-h-screen bg-black" />;
-  const choose = (id: string) => { setActiveId(id); navigate("/space"); };
-  const create = () => { const n = name.trim(); if (!n) return; const id = addProfile(n, avatar); setActiveId(id); setAdding(false); navigate("/space"); };
+  const choose = (id: string) => { setActiveId(id); navigate("/home"); };
+  const create = () => { const n = name.trim(); if (!n) return; const id = addProfile(n, avatar); setActiveId(id); setAdding(false); navigate("/home"); };
   return (
-    <div className="min-h-screen bg-black font-sans text-white">
+    <div className="min-h-screen bg-black font-sans text-white" data-testid="page-profiles">
       <Seo title="Who's watching?" />
-      <header className="flex h-[100px] items-center justify-between px-6">
-        <img src="/brand/logo.png" alt="RabbitRip" className="h-[60px] w-[60px] object-contain" />
-        <button onClick={() => navigate("/space")} className="h-[38px] rounded-lg border border-white/15 bg-white/5 px-4 text-[14px] font-medium">My Space</button>
+      <header className="flex h-[100px] items-center justify-between px-6 md:px-10">
+        <img src="/brand/logo.png" alt="RabbitRip" className="h-[54px] w-[54px] object-contain" />
+        <button onClick={() => navigate("/home")} className="h-[38px] rounded-lg border border-white/15 bg-white/5 px-4 text-[14px] font-medium">Continue</button>
       </header>
-      <main className="flex min-h-[calc(100vh-100px)] flex-col items-center px-6 pb-24 pt-[228.87px]">
-        <h1 className="mb-12 text-[24px] font-bold leading-8">Who's watching?</h1>
-        <div className="flex items-start gap-8">
-          {profiles.map((p) => <button key={p.id} onClick={() => choose(p.id)} className="group flex w-24 flex-col items-center gap-3"><Avatar src={p.avatar} name={p.name} selected={p.id === activeId} /><span className="max-w-24 truncate text-[14px] font-medium text-white/80">{p.name}</span></button>)}
-          <button onClick={() => setAdding(true)} className="group flex w-24 flex-col items-center gap-3"><span className="flex h-24 w-24 items-center justify-center rounded-full border border-dashed border-white/25"><Plus className="h-9 w-9 text-white/55" /></span><span className="text-[14px] font-medium text-white/60">Add</span></button>
+      <main className="flex min-h-[calc(100vh-100px)] flex-col items-center justify-center px-6 pb-24 pt-10">
+        <h1 className="mb-12 text-[26px] font-bold leading-8 tracking-tight md:text-[32px]">Who's watching?</h1>
+        <div className="flex max-w-4xl flex-wrap items-start justify-center gap-8 md:gap-10">
+          {profiles.map((p) => <button key={p.id} onClick={() => choose(p.id)} className="group flex w-24 flex-col items-center gap-3"><Avatar src={p.avatar} name={p.name} selected={p.id === activeId} /><span className="max-w-24 truncate text-[14px] font-medium text-white/80 transition group-hover:text-white">{p.name}</span></button>)}
+          <button onClick={() => setAdding(true)} className="group flex w-24 flex-col items-center gap-3"><span className="flex h-24 w-24 items-center justify-center rounded-full border border-dashed border-white/25 transition group-hover:border-white/50"><Plus className="h-9 w-9 text-white/55" /></span><span className="text-[14px] font-medium text-white/60">Add</span></button>
         </div>
         {activeId && <button onClick={() => setEditing(activeId)} className="mt-12 inline-flex h-10 items-center gap-2 rounded-lg bg-white/5 px-4 text-[14px] font-medium"><Pencil className="h-4 w-4" />Edit Profile</button>}
       </main>
