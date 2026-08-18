@@ -23,7 +23,6 @@ app.use(requestId);
 app.use(
   pinoHttp({
     logger,
-    genReqKey: (req) => req.id as string,
     serializers: {
       req(req) {
         return {
