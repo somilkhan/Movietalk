@@ -66,25 +66,33 @@ export function useProfiles() {
     if (!profileId) { setHydratedKey(profilesKey); return; }
     const nextProfiles = readProfiles();
     const storedActive = readActiveId();
+    const nextActive = storedActive && nextProfiles.some((p) => p.id === storedActive)
+      ? storedActive
+      : nextProfiles[0]?.id || null;
     setProfiles(nextProfiles);
-    setActiveIdState(storedActive && nextProfiles.some((p) => p.id === storedActive) ? storedActive : null);
+    setActiveIdState(nextActive);
+    if (nextActive) {
+      try { localStorage.setItem(activeKey, nextActive); } catch {}
+    }
     setIsEditing(false);
     setHydratedKey(profilesKey);
-  }, [profileId, profilesKey, readProfiles, readActiveId]);
+  }, [profileId, profilesKey, activeKey, readProfiles, readActiveId]);
 
   useEffect(() => {
     if (hydratedKey !== profilesKey || !profileId) return;
     try { localStorage.setItem(profilesKey, JSON.stringify(profiles)); } catch {}
   }, [profiles, profilesKey, hydratedKey, profileId]);
+
   useEffect(() => {
     if (hydratedKey !== profilesKey || !profileId) return;
     try { if (activeId) localStorage.setItem(activeKey, activeId); else localStorage.removeItem(activeKey); } catch {}
   }, [activeId, activeKey, profilesKey, hydratedKey, profileId]);
+
   useEffect(() => {
     const sync = () => {
       if (hydratedKey !== profilesKey) return;
       const id = readActiveId();
-      setActiveIdState(id && profiles.some((p) => p.id === id) ? id : null);
+      setActiveIdState(id && profiles.some((p) => p.id === id) ? id : profiles[0]?.id || null);
     };
     window.addEventListener("rabbitrip:active-profile-updated", sync);
     return () => window.removeEventListener("rabbitrip:active-profile-updated", sync);
@@ -92,11 +100,11 @@ export function useProfiles() {
 
   const activeProfile = profiles.find((p) => p.id === activeId) || null;
   const setActiveId = useCallback((id: string) => {
-    if (hydratedKey !== profilesKey) return;
+    if (hydratedKey !== profilesKey || !profileId) return;
     setActiveIdState(id);
     try { localStorage.setItem(activeKey, id); } catch {}
     window.dispatchEvent(new Event("rabbitrip:active-profile-updated"));
-  }, [activeKey, hydratedKey, profilesKey]);
+  }, [activeKey, hydratedKey, profileId, profilesKey]);
   const addProfile = useCallback((name: string, avatar?: string) => {
     const newProfile = { id: generateId(), name: name.trim() || "New Profile", avatar: avatar || DEFAULT_AVATARS[Math.floor(Math.random() * DEFAULT_AVATARS.length)] };
     setProfiles((prev) => [...prev, newProfile]);
