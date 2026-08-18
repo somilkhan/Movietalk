@@ -30,8 +30,11 @@ function buildFetcher(name: string): (page: number) => Promise<CatalogPage> {
     'English': 'en', 'Japanese': 'ja', 'Korean': 'ko', 'Hindi': 'hi', 'Spanish': 'es', 'French': 'fr', 'German': 'de', 'Chinese': 'zh',
   };
   const studioMap: Record<string, number> = {
-    'Disney Plus Studios': 2, 'HBO Max Studios': 3268, 'Peacock Studios': 3353, 'Paramount Studios': 4,
-    'Netflix Studios': 213, 'Hulu Studios': 453, 'Prime Video Studios': 1024, 'Apple TV+ Studios': 350,
+    'Disney Plus Studios': 2, 'Disney+ Studios': 2,
+    'HBO Max Studios': 3268, 'HBO Max Studios': 3268,
+    'Peacock Studios': 3353, 'Paramount Studios': 4, 'Paramount+ Studios': 4,
+    'Netflix Studios': 213, 'Hulu Studios': 453, 'Prime Video Studios': 1024,
+    'Apple TV+ Studios': 350,
   };
 
   const catalogParams = catalogMap[name];
