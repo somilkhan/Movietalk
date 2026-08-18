@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Route, Switch, Router as WouterRouter, Redirect, useLocation } from "wouter";
+import { Route, Switch, Router as WouterRouter, Redirect, useLocation, useParams } from "wouter";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { NetworkStatus } from "@/components/NetworkStatus";
 import { DesktopSidebar } from "@/components/DesktopSidebar";
@@ -52,6 +52,16 @@ function PageLoader() {
   );
 }
 
+function LegacyTitleRedirect({ mediaType }: { mediaType: 'movie' | 'tv' }) {
+  const { id } = useParams<{ id: string }>();
+  return <Redirect to={`/title/${mediaType}/${id}`} />;
+}
+
+function LegacyCatalogRedirect() {
+  const { name } = useParams<{ name: string }>();
+  return <Redirect to={`/catalog/movie/${name}`} />;
+}
+
 function Router() {
   const [location] = useLocation();
   const isWatchPage = location.startsWith('/watch');
@@ -65,15 +75,14 @@ function Router() {
         <Route path="/login"><LoginRoute /></Route>
         <Route path="/register"><Register /></Route>
 
-        {/* Public Bingr-compatible aliases, mapped onto RabbitRip's own routes. */}
-        <Route path="/movie/:id"><Redirect to="/title/movie/:id" /></Route>
-        <Route path="/tv/:id"><Redirect to="/title/tv/:id" /></Route>
-        <Route path="/anime/:id"><Redirect to="/title/tv/:id" /></Route>
+        <Route path="/movie/:id"><LegacyTitleRedirect mediaType="movie" /></Route>
+        <Route path="/tv/:id"><LegacyTitleRedirect mediaType="tv" /></Route>
+        <Route path="/anime/:id"><LegacyTitleRedirect mediaType="tv" /></Route>
         <Route path="/me/profiles"><Redirect to="/profiles" /></Route>
         <Route path="/settings/subscription"><Redirect to="/settings" /></Route>
-        <Route path="/category/:name"><Redirect to="/catalog/movie/:name" /></Route>
-        <Route path="/genre/:name"><Redirect to="/catalog/movie/:name" /></Route>
-        <Route path="/language/:name"><Redirect to="/catalog/movie/:name" /></Route>
+        <Route path="/category/:name"><LegacyCatalogRedirect /></Route>
+        <Route path="/genre/:name"><LegacyCatalogRedirect /></Route>
+        <Route path="/language/:name"><LegacyCatalogRedirect /></Route>
 
         <Route path="/watch/:mediaType/:id/:season/:episode">
           <Suspense fallback={<PageLoader />}><Watch /></Suspense>
