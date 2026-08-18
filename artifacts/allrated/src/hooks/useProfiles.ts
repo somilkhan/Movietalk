@@ -45,83 +45,143 @@ export const DEFAULT_AVATARS = [
 ];
 
 export interface Profile { id: string; name: string; avatar: string; }
-function generateId() { return Math.random().toString(36).slice(2, 9); }
+function generateId() { return crypto.randomUUID?.() ?? Math.random().toString(36).slice(2, 11); }
+
+function safeRead<T>(key: string, fallback: T): T {
+  try {
+    const value = localStorage.getItem(key);
+    return value ? (JSON.parse(value) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 export function useProfiles() {
   const { profile } = useAuth();
   const profileId = profile?.id || null;
   const profilesKey = `rabbitrip.profiles:${profileId || "guest"}`;
   const activeKey = `rabbitrip.activeProfile:${profileId || "guest"}`;
-  const readProfiles = useCallback((): Profile[] => {
-    try { const parsed = JSON.parse(localStorage.getItem(profilesKey) || "[]"); return Array.isArray(parsed) ? parsed : []; } catch { return []; }
+
+  const readStoredProfiles = useCallback(() => {
+    const stored = safeRead<Profile[]>(profilesKey, []);
+    return Array.isArray(stored) ? stored : [];
   }, [profilesKey]);
-  const readActiveId = useCallback(() => { try { return localStorage.getItem(activeKey); } catch { return null; } }, [activeKey]);
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [activeId, setActiveIdState] = useState<string | null>(null);
-  const [hydratedKey, setHydratedKey] = useState("");
+
+  const readStoredActive = useCallback(() => {
+    try { return localStorage.getItem(activeKey); } catch { return null; }
+  }, [activeKey]);
+
+  const initialProfiles = profileId ? readStoredProfiles() : [];
+  const initialActive = (() => {
+    const stored = profileId ? readStoredActive() : null;
+    if (stored && initialProfiles.some((item) => item.id === stored)) return stored;
+    return initialProfiles[0]?.id ?? null;
+  })();
+
+  const [profiles, setProfiles] = useState<Profile[]>(initialProfiles);
+  const [activeId, setActiveIdState] = useState<string | null>(initialActive);
+  const [hydratedKey, setHydratedKey] = useState(profileId ? profilesKey : "guest");
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
-    setHydratedKey(""); setProfiles([]); setActiveIdState(null);
-    if (!profileId) { setHydratedKey(profilesKey); return; }
-    const nextProfiles = readProfiles();
-    const storedActive = readActiveId();
-    const nextActive = storedActive && nextProfiles.some((p) => p.id === storedActive)
+    if (!profileId) {
+      setProfiles([]);
+      setActiveIdState(null);
+      setHydratedKey("guest");
+      return;
+    }
+    const stored = readStoredProfiles();
+    const storedActive = readStoredActive();
+    const nextActive = storedActive && stored.some((item) => item.id === storedActive)
       ? storedActive
-      : nextProfiles[0]?.id || null;
-    setProfiles(nextProfiles);
+      : stored[0]?.id ?? null;
+    setProfiles(stored);
     setActiveIdState(nextActive);
+    setHydratedKey(profilesKey);
     if (nextActive) {
       try { localStorage.setItem(activeKey, nextActive); } catch {}
     }
-    setIsEditing(false);
-    setHydratedKey(profilesKey);
-  }, [profileId, profilesKey, activeKey, readProfiles, readActiveId]);
+  }, [profileId, profilesKey, activeKey, readStoredProfiles, readStoredActive]);
 
-  useEffect(() => {
-    if (hydratedKey !== profilesKey || !profileId) return;
-    try { localStorage.setItem(profilesKey, JSON.stringify(profiles)); } catch {}
-  }, [profiles, profilesKey, hydratedKey, profileId]);
+  const persistProfiles = useCallback((next: Profile[]) => {
+    try { localStorage.setItem(profilesKey, JSON.stringify(next)); } catch {}
+  }, [profilesKey]);
 
-  useEffect(() => {
-    if (hydratedKey !== profilesKey || !profileId) return;
-    try { if (activeId) localStorage.setItem(activeKey, activeId); else localStorage.removeItem(activeKey); } catch {}
-  }, [activeId, activeKey, profilesKey, hydratedKey, profileId]);
+  const persistActive = useCallback((id: string | null) => {
+    try {
+      if (id) localStorage.setItem(activeKey, id);
+      else localStorage.removeItem(activeKey);
+    } catch {}
+    window.dispatchEvent(new CustomEvent("rabbitrip:active-profile-updated", { detail: { id } }));
+  }, [activeKey]);
 
-  useEffect(() => {
-    const sync = () => {
-      if (hydratedKey !== profilesKey) return;
-      const id = readActiveId();
-      setActiveIdState(id && profiles.some((p) => p.id === id) ? id : profiles[0]?.id || null);
-    };
-    window.addEventListener("rabbitrip:active-profile-updated", sync);
-    return () => window.removeEventListener("rabbitrip:active-profile-updated", sync);
-  }, [hydratedKey, profilesKey, profiles, readActiveId]);
-
-  const activeProfile = profiles.find((p) => p.id === activeId) || null;
   const setActiveId = useCallback((id: string) => {
-    if (hydratedKey !== profilesKey || !profileId) return;
+    if (!profileId) return;
     setActiveIdState(id);
-    try { localStorage.setItem(activeKey, id); } catch {}
-    window.dispatchEvent(new Event("rabbitrip:active-profile-updated"));
-  }, [activeKey, hydratedKey, profileId, profilesKey]);
+    persistActive(id);
+  }, [profileId, persistActive]);
+
   const addProfile = useCallback((name: string, avatar?: string) => {
-    const newProfile = { id: generateId(), name: name.trim() || "New Profile", avatar: avatar || DEFAULT_AVATARS[Math.floor(Math.random() * DEFAULT_AVATARS.length)] };
-    setProfiles((prev) => [...prev, newProfile]);
+    const newProfile: Profile = {
+      id: generateId(),
+      name: name.trim() || "New Profile",
+      avatar: avatar || DEFAULT_AVATARS[Math.floor(Math.random() * DEFAULT_AVATARS.length)],
+    };
+    setProfiles((prev) => {
+      const next = [...prev, newProfile];
+      persistProfiles(next);
+      return next;
+    });
     return newProfile.id;
-  }, []);
-  const updateProfile = useCallback((id: string, updates: Partial<Profile>) => setProfiles((prev) => prev.map((p) => p.id === id ? { ...p, ...updates } : p)), []);
+  }, [persistProfiles]);
+
+  const updateProfile = useCallback((id: string, updates: Partial<Profile>) => {
+    setProfiles((prev) => {
+      const next = prev.map((item) => item.id === id ? { ...item, ...updates } : item);
+      persistProfiles(next);
+      return next;
+    });
+  }, [persistProfiles]);
+
   const deleteProfile = useCallback((id: string) => {
     setProfiles((prev) => {
-      const next = prev.filter((p) => p.id !== id);
+      const next = prev.filter((item) => item.id !== id);
+      persistProfiles(next);
       if (activeId === id) {
-        const nextActiveId = next[0]?.id || null;
-        setActiveIdState(nextActiveId);
-        try { if (nextActiveId) localStorage.setItem(activeKey, nextActiveId); else localStorage.removeItem(activeKey); } catch {}
-        window.dispatchEvent(new Event("rabbitrip:active-profile-updated"));
+        const nextActive = next[0]?.id ?? null;
+        setActiveIdState(nextActive);
+        persistActive(nextActive);
       }
       return next;
     });
-  }, [activeId, activeKey]);
-  return { profiles, activeProfile, activeId, setActiveId, addProfile, updateProfile, deleteProfile, isEditing, setIsEditing, isHydrated: hydratedKey === profilesKey };
+  }, [activeId, persistActive, persistProfiles]);
+
+  useEffect(() => {
+    const sync = (event: Event) => {
+      const customEvent = event as CustomEvent<{ id?: string | null }>;
+      const incoming = customEvent.detail?.id ?? readStoredActive();
+      setActiveIdState(incoming && profiles.some((item) => item.id === incoming) ? incoming : profiles[0]?.id ?? null);
+    };
+    window.addEventListener("rabbitrip:active-profile-updated", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("rabbitrip:active-profile-updated", sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, [profiles, readStoredActive]);
+
+  const activeProfile = profiles.find((item) => item.id === activeId) || null;
+
+  return {
+    profiles,
+    activeProfile,
+    activeId,
+    setActiveId,
+    addProfile,
+    updateProfile,
+    deleteProfile,
+    isEditing,
+    setIsEditing,
+    isHydrated: hydratedKey === profilesKey || (!profileId && hydratedKey === "guest"),
+  };
 }
