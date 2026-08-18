@@ -40,7 +40,9 @@ const queryClient = new QueryClient({
 
 function ScrollToTop() {
   const [location] = useLocation();
-  useEffect(() => { window.scrollTo(0, 0); }, [location]);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location]);
   return null;
 }
 
@@ -52,22 +54,22 @@ function PageLoader() {
   );
 }
 
-function LegacyTitleRedirect({ mediaType }: { mediaType: 'movie' | 'tv' }) {
+function LegacyTitleRedirect({ mediaType }: { mediaType: "movie" | "tv" }) {
   const { id } = useParams<{ id: string }>();
   return <Redirect to={`/title/${mediaType}/${id}`} />;
 }
 
-function LegacyCatalogRedirect({ kind }: { kind: 'category' | 'genre' | 'language' }) {
+function LegacyCatalogRedirect({ kind }: { kind: "category" | "genre" | "language" | "studio" }) {
   const { name } = useParams<{ name: string }>();
-  const decoded = decodeURIComponent(name ?? '');
-  const targetName = kind === 'genre' && decoded ? `${decoded} Movies` : decoded;
+  const decoded = decodeURIComponent(name ?? "");
+  const targetName = kind === "genre" && decoded ? `${decoded} Movies` : decoded;
   return <Redirect to={`/catalog/movie/${encodeURIComponent(targetName)}`} />;
 }
 
 function Router() {
   const [location] = useLocation();
-  const isWatchPage = location.startsWith('/watch');
-  const isTitlePage = location.startsWith('/title') || /^\/(movie|tv|anime)\//.test(location);
+  const isWatchPage = location.startsWith("/watch");
+  const isTitlePage = location.startsWith("/title") || /^\/(movie|tv|anime)\//.test(location);
 
   return (
     <>
@@ -77,18 +79,43 @@ function Router() {
         <Route path="/login"><LoginRoute /></Route>
         <Route path="/register"><Register /></Route>
 
+        {/* Bingr-compatible detail and discovery entry points. */}
+        <Route path="/anime/trending"><Redirect to="/anime" /></Route>
+        <Route path="/anime/discover"><Redirect to="/anime" /></Route>
+        <Route path="/anime/search"><Redirect to="/anime" /></Route>
+        <Route path="/anime/:id"><LegacyTitleRedirect mediaType="tv" /></Route>
         <Route path="/movie/:id"><LegacyTitleRedirect mediaType="movie" /></Route>
         <Route path="/tv/:id"><LegacyTitleRedirect mediaType="tv" /></Route>
-        <Route path="/anime/:id"><LegacyTitleRedirect mediaType="tv" /></Route>
+
+        {/* Public collection/creator/studio entry points map into RabbitRip's existing catalog flow. */}
+        <Route path="/collection/:id"><Redirect to="/explore" /></Route>
+        <Route path="/creator"><Redirect to="/explore" /></Route>
+        <Route path="/creator/:id"><Redirect to="/explore" /></Route>
+        <Route path="/creators"><Redirect to="/explore" /></Route>
+        <Route path="/studio/:name"><LegacyCatalogRedirect kind="studio" /></Route>
+        <Route path="/live-tv"><Redirect to="/sports" /></Route>
+
+        {/* Category directory aliases. */}
+        <Route path="/categories/all/:type"><Redirect to="/categories" /></Route>
+        <Route path="/category"><Redirect to="/categories" /></Route>
+        <Route path="/genre"><Redirect to="/categories" /></Route>
+        <Route path="/language"><Redirect to="/categories" /></Route>
+        <Route path="/category/:name"><LegacyCatalogRedirect kind="category" /></Route>
+        <Route path="/genre/:name"><LegacyCatalogRedirect kind="genre" /></Route>
+        <Route path="/language/:name"><LegacyCatalogRedirect kind="language" /></Route>
+
+        {/* Account, social and utility aliases. */}
         <Route path="/me/profiles"><Redirect to="/profiles" /></Route>
         <Route path="/settings/subscription"><Redirect to="/settings" /></Route>
         <Route path="/search"><Redirect to="/explore" /></Route>
         <Route path="/browse"><Redirect to="/explore" /></Route>
         <Route path="/discover"><Redirect to="/explore" /></Route>
         <Route path="/spark"><Redirect to="/sparks" /></Route>
-        <Route path="/category/:name"><LegacyCatalogRedirect kind="category" /></Route>
-        <Route path="/genre/:name"><LegacyCatalogRedirect kind="genre" /></Route>
-        <Route path="/language/:name"><LegacyCatalogRedirect kind="language" /></Route>
+        <Route path="/watch-party"><Redirect to="/space" /></Route>
+        <Route path="/watch-party/:code"><Redirect to="/space" /></Route>
+        <Route path="/help"><Redirect to="/settings/help" /></Route>
+        <Route path="/legal"><Redirect to="/settings/help" /></Route>
+        <Route path="/legal/:page"><Redirect to="/settings/help" /></Route>
 
         <Route path="/watch/:mediaType/:id/:season/:episode">
           <Suspense fallback={<PageLoader />}><Watch /></Suspense>
@@ -97,7 +124,6 @@ function Router() {
           <Suspense fallback={<PageLoader />}><Watch /></Suspense>
         </Route>
         <Route path="/profiles"><Suspense fallback={<PageLoader />}><Profiles /></Suspense></Route>
-        <Route path="/help"><Redirect to="/settings/help" /></Route>
 
         <Route>
           <div className="min-h-screen bg-black text-white flex flex-col">
@@ -143,7 +169,7 @@ export default function App() {
               <Router />
             </ProfileGuard>
             <Toaster />
-            <SonnerToaster position="bottom-center" toastOptions={{ style: { background: '#111116', color: '#fff', border: '1px solid rgba(255,255,255,0.08)' } }} />
+            <SonnerToaster position="bottom-center" toastOptions={{ style: { background: "#111116", color: "#fff", border: "1px solid rgba(255,255,255,0.08)" } }} />
           </TooltipProvider>
         </WouterRouter>
       </QueryClientProvider>
