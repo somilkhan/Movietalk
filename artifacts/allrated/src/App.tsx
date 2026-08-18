@@ -3,14 +3,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Route, Switch, Router as WouterRouter, Redirect, useLocation, useParams } from "wouter";
+import { Redirect, Route, Router as WouterRouter, Switch, useLocation, useParams } from "wouter";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { NetworkStatus } from "@/components/NetworkStatus";
 import { DesktopSidebar } from "@/components/DesktopSidebar";
 import { MobileNav } from "@/components/MobileNav";
 import { ProfileGuard } from "@/components/ProfileGuard";
 import { GlobalUiFixes } from "@/components/GlobalUiFixes";
-import { BingrTopBar } from "@/components/BingrTopBar";
 import { cn } from "@/lib/utils";
 import { Footer } from "@/components/Footer";
 import Home from "@/pages/Home";
@@ -42,35 +41,28 @@ const queryClient = new QueryClient({
 function ScrollToTop() {
   const [location] = useLocation();
   useEffect(() => {
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, behavior: "auto" });
   }, [location]);
   return null;
 }
 
 function PageLoader() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black" role="status" aria-label="Loading">
-      <div className="w-9 h-9 border-2 border-white/10 border-t-[#5865d9] rounded-full animate-spin" />
+    <div className="min-h-screen bg-black flex items-center justify-center" role="status" aria-label="Loading">
+      <div className="h-10 w-10 rounded-full border-[3px] border-white/10 border-t-white animate-spin" />
     </div>
   );
 }
 
-function LegacyTitleRedirect({ mediaType }: { mediaType: "movie" | "tv" }) {
-  const { id } = useParams<{ id: string }>();
-  return <Redirect to={`/title/${mediaType}/${id}`} />;
-}
-
-function LegacyCatalogRedirect({ kind }: { kind: "category" | "genre" | "language" | "studio" }) {
+function LegacyCatalogRedirect() {
   const { name } = useParams<{ name: string }>();
-  const decoded = decodeURIComponent(name ?? "");
-  const targetName = kind === "genre" && decoded ? `${decoded} Movies` : decoded;
-  return <Redirect to={`/catalog/movie/${encodeURIComponent(targetName)}`} />;
+  return <Redirect to={`/catalog/movie/${encodeURIComponent(decodeURIComponent(name ?? ""))}`} />;
 }
 
-function Router() {
+function AppRouter() {
   const [location] = useLocation();
   const isWatchPage = location.startsWith("/watch");
-  const isTitlePage = location.startsWith("/title") || /^\/(movie|tv|anime)\//.test(location);
+  const isTitlePage = location.startsWith("/title/") || /^\/(movie|tv|anime)\//.test(location);
 
   return (
     <>
@@ -79,54 +71,44 @@ function Router() {
       <Switch>
         <Route path="/login"><LoginRoute /></Route>
         <Route path="/register"><Register /></Route>
+        <Route path="/profiles"><Suspense fallback={<PageLoader />}><Profiles /></Suspense></Route>
 
-        <Route path="/anime/trending"><Redirect to="/anime" /></Route>
-        <Route path="/anime/discover"><Redirect to="/anime" /></Route>
-        <Route path="/anime/search"><Redirect to="/anime" /></Route>
-        <Route path="/anime/:id"><LegacyTitleRedirect mediaType="tv" /></Route>
-        <Route path="/movie/:id"><LegacyTitleRedirect mediaType="movie" /></Route>
-        <Route path="/tv/:id"><LegacyTitleRedirect mediaType="tv" /></Route>
+        <Route path="/watch/:mediaType/:id/:season/:episode"><Suspense fallback={<PageLoader />}><Watch /></Suspense></Route>
+        <Route path="/watch/:mediaType/:id"><Suspense fallback={<PageLoader />}><Watch /></Suspense></Route>
 
-        <Route path="/collection/:id"><Redirect to="/explore" /></Route>
-        <Route path="/creator"><Redirect to="/explore" /></Route>
-        <Route path="/creator/:id"><Redirect to="/explore" /></Route>
-        <Route path="/creators"><Redirect to="/explore" /></Route>
-        <Route path="/studio/:name"><LegacyCatalogRedirect kind="studio" /></Route>
-        <Route path="/live-tv"><Redirect to="/sports" /></Route>
+        <Route path="/movie/:id"><Suspense fallback={<PageLoader />}><TitleDetail /></Suspense></Route>
+        <Route path="/tv/:id"><Suspense fallback={<PageLoader />}><TitleDetail /></Suspense></Route>
+        <Route path="/anime/:id"><Suspense fallback={<PageLoader />}><TitleDetail /></Suspense></Route>
+        <Route path="/title/:mediaType/:id"><Suspense fallback={<PageLoader />}><TitleDetail /></Suspense></Route>
 
-        <Route path="/categories/all/:type"><Redirect to="/categories" /></Route>
+        <Route path="/category/:name"><LegacyCatalogRedirect /></Route>
+        <Route path="/genre/:name"><LegacyCatalogRedirect /></Route>
+        <Route path="/language/:name"><LegacyCatalogRedirect /></Route>
+        <Route path="/studio/:name"><LegacyCatalogRedirect /></Route>
         <Route path="/category"><Redirect to="/categories" /></Route>
         <Route path="/genre"><Redirect to="/categories" /></Route>
         <Route path="/language"><Redirect to="/categories" /></Route>
-        <Route path="/category/:name"><LegacyCatalogRedirect kind="category" /></Route>
-        <Route path="/genre/:name"><LegacyCatalogRedirect kind="genre" /></Route>
-        <Route path="/language/:name"><LegacyCatalogRedirect kind="language" /></Route>
-
-        <Route path="/me/profiles"><Redirect to="/profiles" /></Route>
-        <Route path="/settings/subscription"><Redirect to="/settings" /></Route>
-        <Route path="/search"><Redirect to="/explore" /></Route>
-        <Route path="/browse"><Redirect to="/explore" /></Route>
-        <Route path="/discover"><Redirect to="/explore" /></Route>
+        <Route path="/categories/all/:type"><Redirect to="/categories" /></Route>
+        <Route path="/collection/:id"><Redirect to="/explore" /></Route>
+        <Route path="/creator"><Redirect to="/explore" /></Route>
+        <Route path="/creators"><Redirect to="/explore" /></Route>
+        <Route path="/live-tv"><Redirect to="/sports" /></Route>
         <Route path="/spark"><Redirect to="/sparks" /></Route>
         <Route path="/watch-party"><Redirect to="/space" /></Route>
         <Route path="/watch-party/:code"><Redirect to="/space" /></Route>
         <Route path="/help"><Redirect to="/settings/help" /></Route>
         <Route path="/legal"><Redirect to="/settings/help" /></Route>
         <Route path="/legal/:page"><Redirect to="/settings/help" /></Route>
-
-        <Route path="/watch/:mediaType/:id/:season/:episode">
-          <Suspense fallback={<PageLoader />}><Watch /></Suspense>
-        </Route>
-        <Route path="/watch/:mediaType/:id">
-          <Suspense fallback={<PageLoader />}><Watch /></Suspense>
-        </Route>
-        <Route path="/profiles"><Suspense fallback={<PageLoader />}><Profiles /></Suspense></Route>
+        <Route path="/me/profiles"><Redirect to="/profiles" /></Route>
+        <Route path="/settings/subscription"><Redirect to="/settings" /></Route>
+        <Route path="/search"><Redirect to="/explore" /></Route>
+        <Route path="/browse"><Redirect to="/explore" /></Route>
+        <Route path="/discover"><Redirect to="/explore" /></Route>
 
         <Route>
           <div className="min-h-screen bg-black text-white flex flex-col">
             <DesktopSidebar />
-            <BingrTopBar />
-            <main className={cn("flex-1 mobile-content md:pb-0 animate-slide-up", "md:ml-[80px]")}>
+            <main className={cn("flex-1 mobile-content animate-slide-up", "md:pl-[80px] lg:pl-[100px]")}> 
               <Switch>
                 <Route path="/"><Redirect to="/home" /></Route>
                 <Route path="/home" component={Home} />
@@ -138,7 +120,6 @@ function Router() {
                 <Route path="/space"><Suspense fallback={<PageLoader />}><Space /></Suspense></Route>
                 <Route path="/sports"><Suspense fallback={<PageLoader />}><Sports /></Suspense></Route>
                 <Route path="/sparks"><Suspense fallback={<PageLoader />}><Sparks /></Suspense></Route>
-                <Route path="/title/:mediaType/:id"><Suspense fallback={<PageLoader />}><TitleDetail /></Suspense></Route>
                 <Route path="/catalog/:mediaType/:category"><Suspense fallback={<PageLoader />}><Catalog /></Suspense></Route>
                 <Route path="/settings"><Suspense fallback={<PageLoader />}><Settings /></Suspense></Route>
                 <Route path="/settings/account"><Suspense fallback={<PageLoader />}><SettingsAccount /></Suspense></Route>
@@ -163,11 +144,9 @@ export default function App() {
         <WouterRouter>
           <TooltipProvider>
             <NetworkStatus />
-            <ProfileGuard>
-              <Router />
-            </ProfileGuard>
+            <ProfileGuard><AppRouter /></ProfileGuard>
             <Toaster />
-            <SonnerToaster position="bottom-center" toastOptions={{ style: { background: "#111116", color: "#fff", border: "1px solid rgba(255,255,255,0.08)" } }} />
+            <SonnerToaster position="bottom-center" toastOptions={{ style: { background: "#08080b", color: "#fff", border: "1px solid rgba(255,255,255,.08)" } }} />
           </TooltipProvider>
         </WouterRouter>
       </QueryClientProvider>
