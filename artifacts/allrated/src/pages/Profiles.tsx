@@ -1,51 +1,69 @@
-import { useEffect, useState } from "react";
-import { ArrowLeft, Check, Pencil, Plus } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Check, Pencil, Plus } from "lucide-react";
 import { useLocation } from "wouter";
 import { useProfiles, DEFAULT_AVATARS } from "@/hooks/useProfiles";
 import { useAuth } from "@/hooks/useAuth";
 import { Seo } from "@/components/Seo";
 
-function Avatar({ src, name, selected = false }: { src: string; name: string; selected?: boolean }) {
+function Avatar({ src, name, selected, editing, onClick }: { src: string; name: string; selected: boolean; editing: boolean; onClick: () => void }) {
   return (
-    <span className="relative block h-24 w-24 shrink-0">
-      <img src={src} alt={name} draggable={false} className="h-full w-full rounded-full object-cover" onError={(e) => { e.currentTarget.src = DEFAULT_AVATARS[0]; }} />
-      {selected && <span className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full border-[3px] border-black bg-white text-black"><Check className="h-4 w-4" strokeWidth={3} /></span>}
-    </span>
+    <button type="button" onClick={onClick} className="group flex flex-col items-center gap-3 outline-none">
+      <span className="relative block h-24 w-24 overflow-visible md:h-28 md:w-28">
+        <span className="relative block h-full w-full overflow-hidden rounded-full ring-1 ring-white/10 transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-1 group-hover:shadow-xl group-hover:ring-2 group-hover:ring-white">
+          <img src={src} alt={name} draggable={false} className="h-full w-full object-cover transition-transform duration-300" onError={(e) => { e.currentTarget.src = DEFAULT_AVATARS[0]; }} />
+          {editing && <span className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-black/60"><Pencil className="h-7 w-7 text-white" /></span>}
+        </span>
+        {!editing && selected && <span className="absolute bottom-0 right-0 z-20 flex h-8 w-8 items-center justify-center rounded-full border-[3px] border-black bg-white text-black shadow-lg md:h-9 md:w-9"><Check className="h-4 w-4 md:h-5 md:w-5" strokeWidth={3} /></span>}
+      </span>
+      <span className="max-w-[8rem] truncate text-sm font-medium text-white/80 transition-colors group-hover:text-white">{name}</span>
+    </button>
+  );
+}
+
+function AvatarCarousel({ index, onChange }: { index: number; onChange: (index: number) => void }) {
+  const [dragStart, setDragStart] = useState<number | null>(null);
+  const [drag, setDrag] = useState(0);
+  const move = (delta: number) => onChange(Math.max(0, Math.min(DEFAULT_AVATARS.length - 1, index + delta)));
+  const endDrag = () => {
+    if (dragStart === null) return;
+    if (Math.abs(drag) > 10) move(drag < 0 ? 1 : -1);
+    setDragStart(null);
+    setDrag(0);
+  };
+  return (
+    <div className="relative mx-auto h-56 w-full overflow-hidden touch-pan-y select-none">
+      <button type="button" aria-label="Previous" onClick={() => move(-1)} disabled={index === 0} className="absolute left-4 top-1/2 z-30 rounded-full bg-black/40 p-3 text-white/50 backdrop-blur-sm transition hover:text-white disabled:opacity-30 md:left-8"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg></button>
+      <div className="absolute inset-0 flex items-center justify-center overflow-hidden" onPointerDown={(e) => { setDragStart(e.clientX); e.currentTarget.setPointerCapture(e.pointerId); }} onPointerMove={(e) => { if (dragStart !== null) setDrag(Math.max(-130, Math.min(130, e.clientX - dragStart))); }} onPointerUp={endDrag} onPointerCancel={endDrag}>
+        <div className="absolute left-1/2 top-1/2 flex items-center gap-5" style={{ transform: `translate(calc(-50px - ${index * 120}px + ${drag}px), -50%)`, transition: dragStart === null ? "transform 400ms cubic-bezier(.22,.9,.3,1)" : "none" }}>
+          {DEFAULT_AVATARS.map((src, i) => {
+            const distance = Math.abs(i - index);
+            const chosen = i === index;
+            return <button type="button" key={`${src}-${i}`} onClick={() => onChange(i)} className="relative flex h-[100px] w-[100px] shrink-0 items-center justify-center outline-none" style={{ transform: `scale(${chosen ? 1.4 : 1})`, opacity: distance > 8 ? 0 : Math.max(0.1, 1 - distance * 0.1), transition: "transform 400ms cubic-bezier(.22,.9,.3,1), opacity 300ms" }}><span className={`relative block overflow-visible rounded-full ${chosen ? "h-24 w-24 ring-2 ring-white ring-offset-4 ring-offset-black" : "h-20 w-20 opacity-60"}`}><img src={src} alt="" draggable={false} className="h-full w-full rounded-full object-cover" />{chosen && <span className="absolute -bottom-2 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-white text-black shadow-lg"><Check className="h-3.5 w-3.5" strokeWidth={3} /></span>}</span></button>;
+          })}
+        </div>
+      </div>
+      <button type="button" aria-label="Next" onClick={() => move(1)} disabled={index === DEFAULT_AVATARS.length - 1} className="absolute right-4 top-1/2 z-30 rounded-full bg-black/40 p-3 text-white/50 backdrop-blur-sm transition hover:text-white disabled:opacity-30 md:right-12"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg></button>
+    </div>
   );
 }
 
 function EditProfile({ id, onClose }: { id: string; onClose: () => void }) {
   const { profiles, updateProfile, deleteProfile } = useProfiles();
-  const p = profiles.find((x) => x.id === id);
-  const [name, setName] = useState(p?.name || "");
-  const [avatar, setAvatar] = useState(p?.avatar || DEFAULT_AVATARS[0]);
-  const [index, setIndex] = useState(Math.max(0, DEFAULT_AVATARS.indexOf(p?.avatar || DEFAULT_AVATARS[0])));
-  useEffect(() => { if (p) { setName(p.name); setAvatar(p.avatar); setIndex(Math.max(0, DEFAULT_AVATARS.indexOf(p.avatar))); } }, [p]);
-  if (!p) return null;
-  const select = (i: number) => { const n = Math.max(0, Math.min(DEFAULT_AVATARS.length - 1, i)); setIndex(n); setAvatar(DEFAULT_AVATARS[n]); };
-  const save = () => { const n = name.trim(); if (!n) return; updateProfile(p.id, { name: n, avatar }); onClose(); };
-  const remove = () => { if (confirm(`Delete ${p.name || "this profile"}?`)) { deleteProfile(p.id); onClose(); } };
+  const profile = profiles.find((item) => item.id === id);
+  const initialIndex = Math.max(0, DEFAULT_AVATARS.indexOf(profile?.avatar || DEFAULT_AVATARS[0]));
+  const [index, setIndex] = useState(initialIndex);
+  const [name, setName] = useState(profile?.name || "");
+  useEffect(() => { if (profile) { setIndex(Math.max(0, DEFAULT_AVATARS.indexOf(profile.avatar))); setName(profile.name); } }, [profile]);
+  if (!profile) return null;
+  const save = () => { const nextName = name.trim(); if (!nextName) return; updateProfile(profile.id, { name: nextName, avatar: DEFAULT_AVATARS[index] }); onClose(); };
+  const remove = () => { if (window.confirm("Delete this profile? Watch history for it stays on your account.")) { deleteProfile(profile.id); onClose(); } };
   return (
-    <div className="fixed inset-0 z-[100] overflow-hidden bg-black text-white">
-      <header className="relative flex h-20 items-center px-6">
-        <button onClick={onClose} aria-label="Back" className="flex h-10 w-10 items-center justify-center rounded-full"><ArrowLeft className="h-6 w-6" /></button>
-        <h1 className="absolute left-1/2 -translate-x-1/2 text-[18px] font-bold leading-7">Edit Profile</h1>
-      </header>
-      <main className="flex h-[calc(100vh-80px)] flex-col gap-12 overflow-y-auto px-4 pb-20">
-        <section className="relative mx-auto mt-16 h-56 w-full max-w-[760px] shrink-0 overflow-hidden">
-          <button onClick={() => select(index - 1)} disabled={!index} aria-label="Previous avatar" className="absolute left-4 top-1/2 z-30 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 p-3 disabled:opacity-0">‹</button>
-          <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-            <div className="absolute left-1/2 top-1/2 flex items-center gap-5" style={{ transform: `translate(calc(-50px - ${index * 120}px), -50%)`, transition: "transform 400ms cubic-bezier(.22,.9,.3,1)" }}>
-              {DEFAULT_AVATARS.map((src, i) => <button key={`${src}-${i}`} onClick={() => select(i)} className="relative flex h-[100px] w-[100px] shrink-0 items-center justify-center" style={{ transform: i === index ? "scale(1.4)" : "scale(1)", opacity: Math.max(.14, 1 - Math.abs(i - index) * .19), transition: "transform 400ms cubic-bezier(.22,.9,.3,1),opacity 300ms" }}><span className={`relative block h-20 w-20 rounded-full ${i === index ? "ring-2 ring-white ring-offset-4 ring-offset-black" : ""}`}><img src={src} alt="" draggable={false} className="h-full w-full rounded-full object-cover" />{i === index && <span className="absolute -bottom-1.5 -right-1.5 flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white text-black"><Check className="h-5 w-5" strokeWidth={3} /></span>}</span></button>)}
-            </div>
-          </div>
-          <button onClick={() => select(index + 1)} disabled={index === DEFAULT_AVATARS.length - 1} aria-label="Next avatar" className="absolute right-4 top-1/2 z-30 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 p-3 disabled:opacity-0">›</button>
-        </section>
-        <input value={name} onChange={(e) => setName(e.target.value)} maxLength={20} placeholder="Profile Name" className="mx-auto h-[90px] w-full max-w-[760px] shrink-0 rounded-[10px] border border-white/15 bg-[#101012] px-5 text-[22px] font-medium outline-none placeholder:text-white/30" />
-        <div className="mx-auto flex w-full max-w-[760px] flex-col gap-6">
-          <button onClick={save} className="h-14 w-full rounded-[10px] bg-white text-[16px] font-semibold text-black">Save &amp; Continue</button>
-          <button onClick={remove} className="w-full py-2 text-[15px] font-medium text-red-500">Delete profile</button>
-        </div>
+    <div className="fixed inset-0 z-[100] flex flex-col bg-black font-sans text-white animate-[rrFadeIn_.2s_ease]">
+      <header className="relative flex items-center px-6 py-5 md:px-12"><button type="button" onClick={onClose} aria-label="Back" className="rounded-full p-2 text-white/80 transition hover:bg-white/10 hover:text-white"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg></button><h2 className="absolute left-1/2 -translate-x-1/2 text-lg font-bold tracking-tight text-white/90 md:text-xl">Edit Profile</h2></header>
+      <main className="flex flex-1 flex-col items-center justify-center gap-10 overflow-y-auto px-4 pb-20 md:gap-12">
+        <AvatarCarousel index={index} onChange={setIndex} />
+        <div className="w-full max-w-sm"><input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Profile Name" maxLength={20} className="h-[58px] w-full rounded-lg border border-white/20 bg-transparent px-4 text-base text-white outline-none transition focus:border-white focus:bg-white/5 placeholder:text-white/40" /></div>
+        <div className="flex w-full max-w-sm flex-col gap-5"><button type="button" onClick={save} disabled={!name.trim()} className="h-14 w-full rounded-lg bg-white text-sm font-semibold text-black shadow-lg transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-40">Save &amp; Continue</button><button type="button" onClick={remove} className="w-full py-2 text-sm font-medium text-red-400/80 transition hover:text-red-400">Delete profile</button></div>
       </main>
     </div>
   );
@@ -56,29 +74,28 @@ export default function Profiles() {
   const { profile } = useAuth();
   const { profiles, activeId, setActiveId, addProfile, isHydrated } = useProfiles();
   const [editing, setEditing] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState(false);
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
-  const [avatar, setAvatar] = useState(DEFAULT_AVATARS[0]);
+  const [avatarIndex, setAvatarIndex] = useState(0);
+  const selectedAvatar = useMemo(() => DEFAULT_AVATARS[avatarIndex] || DEFAULT_AVATARS[0], [avatarIndex]);
   if (!isHydrated) return <div className="min-h-screen bg-black" />;
-  const choose = (id: string) => { setActiveId(id); navigate("/home"); };
-  const create = () => { const n = name.trim(); if (!n) return; const id = addProfile(n, avatar); setActiveId(id); setAdding(false); navigate("/home"); };
+  const choose = (id: string) => { setActiveId(id); if (!editMode) navigate("/home"); };
+  const create = () => { const nextName = name.trim(); if (!nextName) return; const id = addProfile(nextName, selectedAvatar); setActiveId(id); setAdding(false); setName(""); navigate("/home"); };
   return (
-    <div className="min-h-screen bg-black font-sans text-white" data-testid="page-profiles">
+    <div className="min-h-screen w-full bg-black font-sans text-white" data-testid="page-profiles">
       <Seo title="Who's watching?" />
-      <header className="flex h-[100px] items-center justify-between px-6 md:px-10">
-        <img src="/brand/logo.png" alt="RabbitRip" className="h-[54px] w-[54px] object-contain" />
-        <button onClick={() => navigate("/home")} className="h-[38px] rounded-lg border border-white/15 bg-white/5 px-4 text-[14px] font-medium">Continue</button>
-      </header>
-      <main className="flex min-h-[calc(100vh-100px)] flex-col items-center justify-center px-6 pb-24 pt-10">
-        <h1 className="mb-12 text-[26px] font-bold leading-8 tracking-tight md:text-[32px]">Who's watching?</h1>
-        <div className="flex max-w-4xl flex-wrap items-start justify-center gap-8 md:gap-10">
-          {profiles.map((p) => <button key={p.id} onClick={() => choose(p.id)} className="group flex w-24 flex-col items-center gap-3"><Avatar src={p.avatar} name={p.name} selected={p.id === activeId} /><span className="max-w-24 truncate text-[14px] font-medium text-white/80 transition group-hover:text-white">{p.name}</span></button>)}
-          <button onClick={() => setAdding(true)} className="group flex w-24 flex-col items-center gap-3"><span className="flex h-24 w-24 items-center justify-center rounded-full border border-dashed border-white/25 transition group-hover:border-white/50"><Plus className="h-9 w-9 text-white/55" /></span><span className="text-[14px] font-medium text-white/60">Add</span></button>
+      <header className="relative flex items-center justify-between px-6 py-5 md:px-12"><div className="flex items-center"><img src="/brand/logo.png" alt="RabbitRip" className="h-[54px] w-[54px] object-contain drop-shadow-lg" /></div><button type="button" onClick={() => setEditMode((value) => !value)} className="flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white"><Pencil className="h-4 w-4" />{editMode ? "Done" : "Edit"}</button></header>
+      <main className="flex min-h-[calc(100vh-100px)] flex-col items-center justify-center px-6 pb-24">
+        <h1 className="mb-12 text-center text-2xl font-bold tracking-tight text-white/90 md:text-3xl">{editMode ? "Edit Profile" : "Who's watching?"}</h1>
+        <div className="flex max-w-4xl flex-wrap items-start justify-center gap-8 md:gap-12">
+          {profiles.map((item) => <Avatar key={item.id} src={item.avatar} name={item.name} selected={item.id === activeId} editing={editMode} onClick={() => editMode ? setEditing(item.id) : choose(item.id)} />)}
+          {profiles.length < 3 && <button type="button" onClick={() => { setAvatarIndex(0); setName(""); setAdding(true); }} className="group flex flex-col items-center gap-3 outline-none"><span className="flex h-24 w-24 items-center justify-center rounded-full border border-dashed border-white/25 bg-white/[0.03] text-white/60 transition group-hover:border-white/50 group-hover:bg-white/10 group-hover:text-white md:h-28 md:w-28"><Plus className="h-9 w-9" /></span><span className="text-sm font-medium text-white/70 transition group-hover:text-white">Add</span></button>}
         </div>
-        {activeId && <button onClick={() => setEditing(activeId)} className="mt-12 inline-flex h-10 items-center gap-2 rounded-lg bg-white/5 px-4 text-[14px] font-medium"><Pencil className="h-4 w-4" />Edit Profile</button>}
+        {!editMode && activeId && <button type="button" onClick={() => setEditing(activeId)} className="mt-12 inline-flex items-center gap-2 rounded-lg bg-white/5 px-4 py-2.5 text-sm font-medium text-white/80 transition hover:bg-white/10"><Pencil className="h-4 w-4" />Edit Profile</button>}
       </main>
       {editing && <EditProfile id={editing} onClose={() => setEditing(null)} />}
-      {adding && <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 px-6"><div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#101012] p-6"><div className="mb-5 flex justify-between"><h2 className="text-lg font-semibold">Add profile</h2><button onClick={() => setAdding(false)}>×</button></div><div className="mb-5 grid max-h-56 grid-cols-4 gap-4 overflow-y-auto">{DEFAULT_AVATARS.map((src, i) => <button key={`${src}-${i}`} onClick={() => setAvatar(src)}><img src={src} alt="" className={`mx-auto h-14 w-14 rounded-full object-cover ${avatar === src ? "ring-2 ring-white ring-offset-2 ring-offset-[#101012]" : "opacity-70"}`} /></button>)}</div><input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Profile Name" className="mb-4 h-12 w-full rounded-lg border border-white/15 bg-transparent px-4 outline-none" /><button disabled={!name.trim()} onClick={create} className="h-12 w-full rounded-lg bg-white font-semibold text-black disabled:opacity-40">Create profile</button></div></div>}
+      {adding && <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 px-6 backdrop-blur-sm"><div className="w-full max-w-sm rounded-2xl border border-white/[0.08] bg-[#080808]/95 p-6 shadow-[0_24px_80px_-12px_rgba(0,0,0,.9)]"><div className="mb-5 flex items-center justify-between"><h2 className="text-lg font-semibold">Add profile</h2><button type="button" onClick={() => setAdding(false)} className="text-2xl text-white/50 hover:text-white">×</button></div><div className="mb-5 grid max-h-56 grid-cols-5 gap-4 overflow-y-auto">{DEFAULT_AVATARS.map((src, i) => <button type="button" key={`${src}-${i}`} onClick={() => setAvatarIndex(i)}><img src={src} alt="" className={`mx-auto h-14 w-14 rounded-full object-cover transition ${avatarIndex === i ? "ring-2 ring-white ring-offset-2 ring-offset-[#080808]" : "opacity-65 hover:opacity-100"}`} /></button>)}</div><input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Profile Name" maxLength={20} className="mb-4 h-12 w-full rounded-lg border border-white/15 bg-transparent px-4 outline-none" /><button type="button" disabled={!name.trim()} onClick={create} className="h-12 w-full rounded-lg bg-white font-semibold text-black disabled:opacity-40">Create profile</button></div></div>}
     </div>
   );
 }
