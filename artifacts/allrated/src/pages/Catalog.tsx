@@ -31,7 +31,7 @@ function buildFetcher(name: string): (page: number) => Promise<CatalogPage> {
   };
   const studioMap: Record<string, number> = {
     'Disney Plus Studios': 2, 'Disney+ Studios': 2,
-    'HBO Max Studios': 3268, 'HBO Max Studios': 3268,
+    'HBO Max Studios': 3268, 'HBO Max': 3268,
     'Peacock Studios': 3353, 'Paramount Studios': 4, 'Paramount+ Studios': 4,
     'Netflix Studios': 213, 'Hulu Studios': 453, 'Prime Video Studios': 1024,
     'Apple TV+ Studios': 350,
