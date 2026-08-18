@@ -1,29 +1,25 @@
-import { useEffect, useMemo } from "react";
-import { useGetTrending, useGetCatalogList, useGetAnime } from "@workspace/api-client-react";
-import { useRegion } from "@/hooks/useRegion";
-import { HeroSection } from "@/components/HeroSection";
-import { ContentTray } from "@/components/ContentTray";
-import { BingrHomeSections, PopularGenresSection, StudiosSection } from "@/components/BingrHomeSections";
-import { PopularLanguagesTray } from "@/components/PopularLanguagesTray";
-import { ContinueWatchingRow } from "@/components/ContinueWatchingRow";
-import { Seo } from "@/components/Seo";
+import { useEffect, useMemo } from 'react';
+import { useGetTrending, useGetCatalogList, useGetAnime } from '@workspace/api-client-react';
+import { useRegion } from '@/hooks/useRegion';
+import { HeroSection } from '@/components/HeroSection';
+import { ContentTray } from '@/components/ContentTray';
+import { BingrHomeSections, PopularGenresSection, StudiosSection } from '@/components/BingrHomeSections';
+import { PopularLanguagesTray } from '@/components/PopularLanguagesTray';
+import { ContinueWatchingRow } from '@/components/ContinueWatchingRow';
+import { Seo } from '@/components/Seo';
 
 export default function Home() {
   const { region } = useRegion();
-  const trending = useGetTrending({ mediaType: "all", window: "week", region });
-  const trendingMovies = useGetTrending({ mediaType: "movie", window: "week", region });
-  const trendingTv = useGetTrending({ mediaType: "tv", window: "week", region });
-  const nowPlayingMovies = useGetCatalogList({ mediaType: "movie", category: "now_playing", region });
-  const popularMovies = useGetCatalogList({ mediaType: "movie", category: "popular", region });
-  const topRatedMovies = useGetCatalogList({ mediaType: "movie", category: "top_rated", region });
-  const popularTv = useGetCatalogList({ mediaType: "tv", category: "popular", region });
-  const topRatedTv = useGetCatalogList({ mediaType: "tv", category: "top_rated", region });
+  const trending = useGetTrending({ mediaType: 'all', window: 'week', region });
+  const trendingMovies = useGetTrending({ mediaType: 'movie', window: 'week', region });
+  const nowPlayingMovies = useGetCatalogList({ mediaType: 'movie', category: 'now_playing', region });
+  const popularMovies = useGetCatalogList({ mediaType: 'movie', category: 'popular', region });
+  const topRatedMovies = useGetCatalogList({ mediaType: 'movie', category: 'top_rated', region });
+  const popularTv = useGetCatalogList({ mediaType: 'tv', category: 'popular', region });
+  const topRatedTv = useGetCatalogList({ mediaType: 'tv', category: 'top_rated', region });
   const anime = useGetAnime();
 
-  useEffect(() => {
-    void nowPlayingMovies.refetch();
-    void trending.refetch();
-  }, [region]);
+  useEffect(() => { void nowPlayingMovies.refetch(); void trending.refetch(); }, [region]);
 
   const heroTitles = useMemo(() => {
     const merged = [...(trending.data || []), ...(nowPlayingMovies.data || []), ...(trendingMovies.data || [])];
@@ -41,9 +37,9 @@ export default function Home() {
       <Seo />
       <HeroSection titles={heroTitles} />
       <div className="relative z-10 -mt-4 pb-20">
+        <ContinueWatchingRow />
         <BingrHomeSections />
         <ContentTray heading="New Movies" titles={nowPlayingMovies.data} loading={nowPlayingMovies.isLoading} viewAllHref="/catalog/movie/New%20Movies" />
-        <ContinueWatchingRow />
         <ContentTray heading="Popular TV Shows" titles={popularTv.data} loading={popularTv.isLoading} viewAllHref="/catalog/tv/Popular%20TV%20Shows" />
         <StudiosSection />
         <ContentTray heading="Top Rated Movies" titles={topRatedMovies.data} loading={topRatedMovies.isLoading} viewAllHref="/catalog/movie/Top%20Rated%20Movies" />
