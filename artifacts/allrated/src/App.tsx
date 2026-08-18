@@ -57,9 +57,11 @@ function LegacyTitleRedirect({ mediaType }: { mediaType: 'movie' | 'tv' }) {
   return <Redirect to={`/title/${mediaType}/${id}`} />;
 }
 
-function LegacyCatalogRedirect() {
+function LegacyCatalogRedirect({ kind }: { kind: 'category' | 'genre' | 'language' }) {
   const { name } = useParams<{ name: string }>();
-  return <Redirect to={`/catalog/movie/${name}`} />;
+  const decoded = decodeURIComponent(name ?? '');
+  const targetName = kind === 'genre' && decoded ? `${decoded} Movies` : decoded;
+  return <Redirect to={`/catalog/movie/${encodeURIComponent(targetName)}`} />;
 }
 
 function Router() {
@@ -80,9 +82,13 @@ function Router() {
         <Route path="/anime/:id"><LegacyTitleRedirect mediaType="tv" /></Route>
         <Route path="/me/profiles"><Redirect to="/profiles" /></Route>
         <Route path="/settings/subscription"><Redirect to="/settings" /></Route>
-        <Route path="/category/:name"><LegacyCatalogRedirect /></Route>
-        <Route path="/genre/:name"><LegacyCatalogRedirect /></Route>
-        <Route path="/language/:name"><LegacyCatalogRedirect /></Route>
+        <Route path="/search"><Redirect to="/explore" /></Route>
+        <Route path="/browse"><Redirect to="/explore" /></Route>
+        <Route path="/discover"><Redirect to="/explore" /></Route>
+        <Route path="/spark"><Redirect to="/sparks" /></Route>
+        <Route path="/category/:name"><LegacyCatalogRedirect kind="category" /></Route>
+        <Route path="/genre/:name"><LegacyCatalogRedirect kind="genre" /></Route>
+        <Route path="/language/:name"><LegacyCatalogRedirect kind="language" /></Route>
 
         <Route path="/watch/:mediaType/:id/:season/:episode">
           <Suspense fallback={<PageLoader />}><Watch /></Suspense>
