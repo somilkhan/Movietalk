@@ -14,7 +14,7 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 - API: `artifacts/api-server/` (Express, port 8080)
 - CinePro: `artifacts/cinepro-core/` (streaming engine, port 3001)
 
-## Current Status — CLEANUP PHASES 1–4 + BINGR PARITY PHASE 3 CATALOG/CATEGORIES
+## Current Status — CLEANUP PHASES 1–4 + BINGR PARITY PHASE 4 ACCOUNT/SETTINGS
 
 ### Completed
 - Home Trending is driven by catalog data rather than a fixed Reacher/Spider-Man snapshot.
@@ -34,10 +34,9 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 - Explore/search now uses a more Bingr-like Discover/Explore hierarchy, responsive search surface, type filtering, mobile filter UI, and preserved recent-search behavior.
 - Title/detail pages now have a scoped cinematic parity polish layer for responsive viewport sizing, safe-area handling, tap behavior, and reduced-motion support.
 - Phase 3 catalog grid polish is now applied directly to `Catalog.tsx`: Bingr-style compact poster metadata, restrained card elevation/hover treatment, responsive 3–8 column density, capped content width, tighter header hierarchy, and larger infinite-scroll prefetch margin.
-- Phase 3 category/rail polish remains in place through the existing category rail surface; real catalog data and routes are preserved.
-- Latest category-page pass tightened the Bingr-style Categories surface: consistent max-width/header hierarchy, responsive horizontal rails, compact 16:9 category cards, restrained hover treatment, desktop-only rail controls, and consistent spacing across Browse/Studios/Languages/Sports/Genres.
-- Hero and home content remain data-driven from RabbitRip's catalog and existing logo/trailer endpoints; no fake or hardcoded media was introduced.
-- Navigation/UI changes remain scoped to parity and must not alter the streaming architecture.
+- Categories now share the same parity rail rhythm with responsive 16:9 cards and desktop-only rail controls.
+- Phase 4 settings/account surfaces now share a centered capped layout, compact bordered rows/cards, consistent icon containers, restrained hover states, responsive account actions, and a contained region picker.
+- Existing auth, device storage, region selection, routing, and streaming architecture were preserved.
 - Phase 5 server-selector consolidation is intentionally deferred and must not be changed unless explicitly requested.
 
 ### Streaming architecture — DO NOT CHANGE
@@ -53,7 +52,7 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 - Verify Explore/search UI, recent-search behavior, and type filtering on mobile/desktop.
 - Verify title/detail cinematic surface on mobile/desktop and verify trailer fallback/control behavior.
 - Verify Phase 3 catalog/category desktop/mobile spacing, poster grid density, horizontal category rails, navigation targets, and infinite-scroll loading.
-- Verify the latest Categories pass on mobile/desktop, including rail scrolling and all category/studio/language/genre targets.
+- Verify Phase 4 settings/account on mobile/desktop, region picker, account actions, device rows, and logout navigation.
 - Deploy `main` and verify Bingr stream HTTP 200 with `sources` and `subtitles`.
 - Finish a movie/episode and verify Home shows recommendations for that exact completed title.
 - Verify TV S/E values reach the Bingr request.
