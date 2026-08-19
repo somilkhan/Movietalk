@@ -5,7 +5,12 @@
   body:has(input[autocomplete="current-password"]) .rr-glow,
   body:has(input[autocomplete="current-password"]) .rr-glow + div { display:none !important; }
 
-  body:has(input[autocomplete="current-password"]) main > div:first-child { height:300px !important; background:#000 !important; }
+  /* Match the reference's poster header height and remove the original flex-center drift. */
+  body:has(input[autocomplete="current-password"]) main > div:first-child {
+    height:410px !important;
+    min-height:410px !important;
+    background:#000 !important;
+  }
   body:has(input[autocomplete="current-password"]) main > div:first-child > div:nth-child(2) { display:none !important; }
 
   /* Bingr has no RabbitRip logo tile or subtitle on this mobile screen. */
@@ -21,9 +26,14 @@
   }
   body:has(input[autocomplete="current-password"]) h1 + p { display:none !important; }
 
+  /* Do not let the flex:1 shell center the form vertically on mobile. */
+  body:has(input[autocomplete="current-password"]) main > div:nth-child(2) {
+    flex:none !important;
+  }
   body:has(input[autocomplete="current-password"]) main > div:nth-child(2) > div {
+    flex:none !important;
     max-width:100% !important;
-    padding:20px 48px 26px !important;
+    padding:18px 48px 26px !important;
     justify-content:flex-start !important;
   }
   body:has(input[autocomplete="current-password"]) main > div:nth-child(2) > div > div:first-child { margin-bottom:12px !important; }
