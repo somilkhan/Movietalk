@@ -27,6 +27,9 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 - Existing bottom mobile navigation remains active for route switching.
 - Bingr parity Phase 2 rebuilt the Home hero toward the Bingr reference with responsive cinematic sizing, layered gradients, logo/title presentation, metadata/actions, carousel controls, and playback controls.
 - Hero trailer failure now falls back to the catalog backdrop poster; play/pause is controlled through a stable video ref.
+- Hero mobile sizing was tightened for short screens while desktop sizing stayed unchanged.
+- Hero video uses metadata preload.
+- Removed duplicate Home-level catalog/trending `refetch()` calls so React Query controls initial loading/cache without issuing a second immediate request.
 - Home now uses a focused Bingr-style content rail set rather than many extra genre-specific rows.
 - Hero and home content remain data-driven from RabbitRip's catalog and existing logo/trailer endpoints; no fake or hardcoded media was introduced.
 - Navigation/UI changes remain scoped to parity and must not alter the streaming architecture.
@@ -42,6 +45,7 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 ### Runtime verification still required
 - Verify Phase 1 navigation on mobile/desktop.
 - Verify Phase 2 Home hero layout on mobile/desktop, trailer fallback, hero navigation, carousel controls, and responsive content rails.
+- Verify Explore/search UI, recent-search behavior, and type filtering on mobile/desktop.
 - Deploy `main` and verify Bingr stream HTTP 200 with `sources` and `subtitles`.
 - Finish a movie/episode and verify Home shows recommendations for that exact completed title.
 - Verify TV S/E values reach the Bingr request.
