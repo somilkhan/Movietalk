@@ -13,6 +13,10 @@ import {
 
 const app: Express = express();
 
+// Vercel/reverse proxies provide the client IP through X-Forwarded-For.
+// Trust the immediate proxy so express-rate-limit can derive a stable client key.
+app.set("trust proxy", 1);
+
 // Security headers
 app.use(helmetMiddleware);
 
