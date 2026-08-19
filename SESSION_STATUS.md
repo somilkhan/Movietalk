@@ -1,17 +1,20 @@
 # SESSION STATUS
 
-## 2026-08-19 — Bingr parity Phase 2 home foundation
+## 2026-08-20 — Bingr parity Phase 2 home rails + hero hardening
 
 ### Scope
-Phase 2 home-page parity is now in progress on `feat/bingr-parity-polish`. The goal is to match Bingr's content-first home composition while keeping RabbitRip's real catalog/backend data.
+Phase 2 home-page parity continues on `feat/bingr-parity-polish`. The goal is to match Bingr's content-first home composition while keeping RabbitRip's real catalog/backend data.
 
 ### Completed / tracked
 - Phase 1 navigation foundation remains intact.
 - Desktop Bingr top bar is mounted globally for the authenticated app shell.
 - Mobile Bingr header/search overlay is mounted globally for non-home authenticated pages.
 - Existing bottom mobile navigation remains the primary mobile route switcher.
-- Home hero was rebuilt toward the Bingr reference: large cinematic viewport, layered horizontal/vertical fades, responsive content positioning, logo/title treatment, metadata, watch/see-more actions, featured controls, dots, and mute/play controls.
-- Hero continues to use RabbitRip catalog titles plus existing logo/trailer endpoints; no hardcoded titles or fake media were introduced.
+- Home hero uses RabbitRip catalog titles plus existing logo/trailer endpoints; no fake media was introduced.
+- Hero trailer failure now falls back to the catalog backdrop poster instead of leaving a broken video surface.
+- Hero play/pause is controlled through a stable video ref, with responsive cinematic sizing and existing carousel/mute controls retained.
+- Home content was streamlined to a Bingr-style core rail set: Continue Watching, Trending, New Movies, Popular TV Shows, Studios, Top Rated Movies, Top Rated TV Shows, Popular Genres, Popular Movies, and Popular Languages.
+- Removed the extra genre-specific home rails that made the home page drift from the Bingr content-first composition.
 - No CinePro/Bingr streaming consolidation was introduced.
 - Phase 5 server-selector behavior remains untouched.
 
@@ -36,11 +39,6 @@ Completed the four requested cleanup phases. Phase 5 (server-selector consolidat
 - **Navigation:** replaced broken Home category links with routes supported by the current application router.
 - **Studios/Genres:** image cards now have real navigation behavior instead of dead clickable-looking containers.
 - **Phase 5:** player server selector was not changed.
-
-### Streaming safety
-- Bingr and CinePro remain separate systems.
-- Existing `POST /api/bingr/stream` architecture was not replaced or routed through CinePro.
-- TV season/episode routing remains based on the actual watch URL.
 
 ### Verification status
 Code-level cleanup is committed. Runtime/Vercel verification is still required before claiming full production parity, especially: completion -> Home recommendation flow, TV season/episode stream request, subtitles, and existing Bingr playback HTTP 200.
