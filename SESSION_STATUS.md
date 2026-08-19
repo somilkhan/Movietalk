@@ -3,27 +3,22 @@
 ## 2026-08-20 — Bingr parity Phase 3 catalog/categories surface polish
 
 ### Scope
-Phase 3 has started on `feat/bingr-parity-polish`. The goal is to carry the Bingr content-first visual language through catalog/category browsing while keeping RabbitRip's real catalog/backend data and routing.
+Phase 3 is active on `feat/bingr-parity-polish`. The goal is to carry the Bingr content-first visual language through catalog/category browsing while keeping RabbitRip's real catalog/backend data and routing.
 
-### Completed / tracked
-- Phase 1 navigation foundation remains intact.
-- Desktop Bingr top bar is mounted globally for the authenticated app shell.
-- Mobile Bingr header/search overlay is mounted globally for non-home authenticated pages.
-- Existing bottom mobile navigation remains the primary mobile route switcher.
-- Home hero uses RabbitRip catalog titles plus existing logo/trailer endpoints; no fake media was introduced.
-- Hero trailer failure falls back to the catalog backdrop poster instead of leaving a broken video surface.
-- Hero play/pause is controlled through a stable video ref, with responsive cinematic sizing and existing carousel/mute controls retained.
-- Hero mobile sizing was tightened to avoid the previous 620px minimum dominating short screens; desktop sizing remains unchanged.
-- Trailer video explicitly uses metadata preload.
-- Removed duplicate Home-level `refetch()` calls that caused initial trending/new-movies requests to be issued twice; React Query remains the source of truth for loading/cache behavior.
-- Home content is streamlined to a Bingr-style core rail set: Continue Watching, Trending, New Movies, Popular TV Shows, Studios, Top Rated Movies, Top Rated TV Shows, Popular Genres, Popular Movies, and Popular Languages.
-- Removed extra genre-specific home rails that made the home page drift from the Bingr content-first composition.
-- Explore/search page has a more Bingr-like Discover/Explore hierarchy, larger responsive search surface, cleaner result metadata, responsive type filtering, mobile filter popover, and preserved recent-search behavior.
-- Explore results remain data-driven from existing trending/search catalog hooks; no fake results were introduced.
-- Title/detail surface has a scoped Bingr parity polish layer for cinematic hero sizing, safe-area handling, responsive mobile viewport behavior, tap behavior, and reduced-motion support. It does not alter the streaming/player architecture.
-- Phase 3 now includes a dedicated catalog/categories parity layer for card elevation, grid rhythm, horizontal-rail scrolling, mobile sizing, and browsing-surface spacing. It is CSS-only and does not replace catalog data or routing.
+### Latest completed pass
+- `Catalog.tsx` now carries the catalog parity treatment directly: compact poster metadata, restrained ring/elevation hover, subtle poster scale, responsive 3–8 column density, capped desktop content width, tighter Browse/title hierarchy, and a larger infinite-scroll prefetch margin.
+- Loading skeletons use the same responsive grid density as the finished catalog instead of a separate hardcoded layout.
+- Existing catalog fetch maps, real API routes, title navigation, and infinite-query behavior remain intact.
+- Category rails remain data-driven and route-backed; no fake catalog entries were added.
 - No CinePro/Bingr streaming consolidation was introduced.
 - Phase 5 server-selector behavior remains untouched.
+
+### Existing parity work retained
+- Phase 1 navigation foundation and Bingr desktop/mobile shell.
+- Phase 2 cinematic Home hero, trailer fallback, play/pause, carousel controls, responsive sizing, and streamlined content rails.
+- Explore/search hierarchy, type filtering, mobile filters, and recent-search behavior.
+- Title/detail cinematic parity surface.
+- Catalog/category card elevation, grid rhythm, horizontal rails, mobile sizing, and browsing spacing.
 
 ### Streaming safety
 - Bingr and CinePro remain separate.
@@ -31,7 +26,7 @@ Phase 3 has started on `feat/bingr-parity-polish`. The goal is to carry the Bing
 - Existing `POST /api/bingr/stream`, `useHlsPlayer`, and `/api/proxy` architecture remains unchanged.
 
 ### Verification status
-Runtime verification is still required before claiming production/pixel parity. Phase 2 verification should cover desktop/mobile home hero layout, trailer fallback, hero navigation, carousel controls, responsive content rails, Explore/search, recent-search behavior, type filtering, title/detail layout, and the remaining home sections. Phase 3 verification should cover catalog/category desktop/mobile spacing, card grids, horizontal category rails, navigation targets, and infinite-scroll loading.
+Runtime verification is still required before claiming production/pixel parity. Verify Phase 3 catalog/category desktop/mobile spacing, poster density, horizontal rails, navigation targets, and infinite-scroll loading. Also retain the previously tracked verification for Home, Explore/search, title/detail, playback HTTP 200, TV S/E requests, subtitles, and Studios/Genres navigation.
 
 ## 2026-08-15 — Hardcode / ghost-code cleanup
 
