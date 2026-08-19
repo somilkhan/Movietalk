@@ -23,7 +23,9 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 - “Your next Bingr after” is driven by the actual most recently completed title and existing recommendation/similar APIs.
 - Broken Home category navigation was replaced with supported application routes.
 - Studios and Popular Genres cards now navigate instead of being dead UI.
-- Bingr parity Phase 1 foundation work is tracked on this branch; navigation/UI changes must stay scoped to parity and must not alter the streaming architecture.
+- Bingr parity Phase 1 now mounts the Bingr desktop top bar and mobile header/search shell in the main authenticated app shell.
+- Existing bottom mobile navigation remains active for route switching.
+- Navigation/UI changes remain scoped to parity and must not alter the streaming architecture.
 - Phase 5 server-selector consolidation is intentionally deferred and must not be changed unless explicitly requested.
 
 ### Streaming architecture — DO NOT CHANGE
