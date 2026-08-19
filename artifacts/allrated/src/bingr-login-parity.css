@@ -5,51 +5,51 @@
   body:has(input[autocomplete="current-password"]) .rr-glow,
   body:has(input[autocomplete="current-password"]) .rr-glow + div { display:none !important; }
 
-  /* Match the reference's poster header height and remove the original flex-center drift. */
+  /* Bingr's poster header is substantially shorter than RabbitRip's original mobile shell. */
   body:has(input[autocomplete="current-password"]) main > div:first-child {
-    height:410px !important;
-    min-height:410px !important;
+    height:220px !important;
+    min-height:220px !important;
     background:#000 !important;
   }
   body:has(input[autocomplete="current-password"]) main > div:first-child > div:nth-child(2) { display:none !important; }
 
   /* Bingr has no RabbitRip logo tile or subtitle on this mobile screen. */
   body:has(input[autocomplete="current-password"]) main > div:nth-child(2) > div > div:first-child > div:first-child { display:none !important; }
-  body:has(input[autocomplete="current-password"]) h1 { font-size:0 !important; line-height:1.15 !important; margin:0 !important; }
+  body:has(input[autocomplete="current-password"]) h1 { font-size:0 !important; line-height:1.15 !important; margin:0 !important; white-space:nowrap !important; }
   body:has(input[autocomplete="current-password"]) h1::after {
     content:"Welcome back to Bingr";
     display:inline-block;
-    font-size:30px;
+    font-size:20px;
     line-height:1.15;
     font-weight:600;
     letter-spacing:-.02em;
   }
   body:has(input[autocomplete="current-password"]) h1 + p { display:none !important; }
 
-  /* Do not let the flex:1 shell center the form vertically on mobile. */
+  /* Keep the form top-anchored instead of vertically centering it in the remaining screen. */
   body:has(input[autocomplete="current-password"]) main > div:nth-child(2) {
     flex:none !important;
   }
   body:has(input[autocomplete="current-password"]) main > div:nth-child(2) > div {
     flex:none !important;
     max-width:100% !important;
-    padding:18px 48px 26px !important;
+    padding:18px 29px 26px !important;
     justify-content:flex-start !important;
   }
   body:has(input[autocomplete="current-password"]) main > div:nth-child(2) > div > div:first-child { margin-bottom:12px !important; }
 
   body:has(input[autocomplete="current-password"]) form { gap:8px !important; }
   body:has(input[autocomplete="current-password"]) form label {
-    height:76px !important;
+    height:46px !important;
     border-color:#202024 !important;
     background:#090909 !important;
     border-radius:13px !important;
   }
-  body:has(input[autocomplete="current-password"]) form label input { color:#fff !important; font-size:19px !important; }
+  body:has(input[autocomplete="current-password"]) form label input { color:#fff !important; font-size:13px !important; }
   body:has(input[autocomplete="current-password"]) form label input::placeholder { color:#6f6f74 !important; }
 
   body:has(input[autocomplete="current-password"]) form > button[type="submit"] {
-    height:80px !important;
+    height:49px !important;
     margin-top:14px !important;
     border-radius:13px !important;
     background:#929292 !important;
