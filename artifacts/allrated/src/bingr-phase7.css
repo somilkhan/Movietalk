@@ -1,0 +1,31 @@
+/* Phase 7 — final parity cleanup. Presentation/accessibility only. */
+
+/* Do not suppress native focus indicators globally. Restore a consistent Bingr-like focus treatment. */
+:where(button, a, input, select, textarea, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid rgba(255,255,255,.72) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.08) !important;
+}
+
+:where(button, a, input, select, textarea):focus:not(:focus-visible) { outline: none !important; }
+
+/* Never let route shells create accidental horizontal scrolling. */
+html, body, #root { max-width: 100%; overflow-x: clip; }
+
+/* Avoid iOS input zoom while preserving readable controls. */
+@media (max-width: 767px) {
+  input, select, textarea { font-size: 16px !important; }
+}
+
+/* Safe-area aware fixed surfaces. */
+@media (max-width: 767px) {
+  .rr-mobile-nav { margin-bottom: env(safe-area-inset-bottom); }
+}
+
+/* Keep media/cards visually stable while images decode. */
+img { max-width: 100%; }
+
+/* Motion reduction is global, but does not disable functionality. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+}
