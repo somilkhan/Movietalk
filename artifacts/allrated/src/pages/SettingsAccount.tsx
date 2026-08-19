@@ -3,39 +3,24 @@ import { ChevronLeft, Laptop, Smartphone, LogIn, LogOut } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { useAuth } from "@/hooks/useAuth";
 
-interface Device {
-  id: string;
-  name: string;
-  type: "desktop" | "mobile";
-  lastUsed: string;
-  isCurrent: boolean;
-}
+interface Device { id: string; name: string; type: "desktop" | "mobile"; lastUsed: string; isCurrent: boolean; }
 
 function getDevices(): Device[] {
-  try {
-    const raw = localStorage.getItem("bingr.devices");
-    if (raw) return JSON.parse(raw);
-  } catch { /* ignore */ }
+  try { const raw = localStorage.getItem("bingr.devices"); if (raw) return JSON.parse(raw); } catch {}
   const ua = navigator.userAgent;
   const isMobile = /Android|iPhone|iPad|iPod/.test(ua);
   const browser = ua.includes("Firefox") ? "Firefox" : ua.includes("Chrome") ? "Chrome" : "Browser";
-  const platform = isMobile ? "Android" : "Desktop";
-  return [{ id: "current", name: `${browser} on ${platform}`, type: isMobile ? "mobile" : "desktop", lastUsed: "Just now", isCurrent: true }];
+  return [{ id: "current", name: `${browser} on ${isMobile ? "Android" : "Desktop"}`, type: isMobile ? "mobile" : "desktop", lastUsed: "Just now", isCurrent: true }];
 }
 
 function DeviceRow({ device }: { device: Device }) {
-  return (
-    <div className="flex items-center justify-between pr-0 lg:pr-8">
-      <div className="flex items-center gap-5">
-        <div className="text-white/70">{device.type === "desktop" ? <Laptop className="w-6 h-6" /> : <Smartphone className="w-6 h-6" />}</div>
-        <div className="flex flex-col gap-1">
-          <span className="font-semibold text-[15px] text-white/90">{device.name}</span>
-          <span className="text-[13px] font-medium text-white/50">Last used : {device.lastUsed}</span>
-        </div>
-      </div>
-      <button disabled={device.isCurrent} className="px-6 py-2.5 rounded-lg bg-[#1a1c22] text-[14px] font-semibold text-white/90 disabled:opacity-50">Log Out</button>
+  return <div className="flex items-center justify-between gap-4 rounded-xl border border-white/[0.045] bg-white/[0.018] px-4 py-4 md:px-5">
+    <div className="flex min-w-0 items-center gap-4">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/[0.055] text-white/65">{device.type === "desktop" ? <Laptop className="h-[19px] w-[19px]" /> : <Smartphone className="h-[19px] w-[19px]" />}</div>
+      <div className="min-w-0"><div className="truncate text-[14px] font-semibold text-white/90">{device.name}</div><div className="mt-0.5 text-[12px] font-medium text-white/40">Last used · {device.lastUsed}{device.isCurrent ? " · Current device" : ""}</div></div>
     </div>
-  );
+    <button disabled={device.isCurrent} className="shrink-0 rounded-lg border border-white/[0.07] bg-white/[0.035] px-4 py-2 text-[12px] font-semibold text-white/60 transition-colors hover:bg-white/[0.07] hover:text-white disabled:cursor-default disabled:opacity-35">Log Out</button>
+  </div>;
 }
 
 export default function SettingsAccount() {
@@ -44,31 +29,20 @@ export default function SettingsAccount() {
   const devices = getDevices();
   const thisDevice = devices.find((d) => d.isCurrent);
   const otherDevices = devices.filter((d) => !d.isCurrent);
+  async function handleLogout() { await logout(); navigate("/login"); }
 
-  async function handleLogout() {
-    await logout();
-    navigate('/login');
-  }
+  return <div className="min-h-screen bg-[#07070b] pb-28 text-white md:pb-10" data-testid="page-settings-account">
+    <Seo title="Account & Devices" />
+    <main className="mx-auto w-full max-w-[860px] px-4 pt-8 sm:px-6 md:pt-14 lg:px-8">
+      <Link href="/settings"><a className="mb-7 inline-flex items-center gap-1.5 text-[13px] font-medium text-white/40 transition-colors hover:text-white"><ChevronLeft className="h-4 w-4" />Back to Settings</a></Link>
+      <header className="mb-8"><p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/25">Account</p><h1 className="text-[24px] font-bold tracking-[-0.025em] text-white md:text-[28px]">Account &amp; Devices</h1></header>
 
-  return (
-    <div className="min-h-screen bg-[#07070b] text-white pb-28 md:pb-8" data-testid="page-settings-account">
-      <Seo title="Account & Devices" />
-      <div className="relative z-10 pl-0 md:pl-[80px] lg:pl-[100px] pt-12 md:pt-20">
-        <div className="px-6 md:px-12">
-          <Link href="/settings"><button className="flex items-center gap-2 text-white/60 hover:text-white mb-6 -ml-2"><ChevronLeft className="w-6 h-6" /><span className="font-medium text-[15px]">Back to Settings</span></button></Link>
-          <div className="flex items-center justify-between pr-0 lg:pr-8 mb-10">
-            <span className="text-[17px] font-semibold text-white/90">Donate to RabbitRip</span>
-            <a href="https://discord.gg/ytxEStcQzQ" target="_blank" rel="noreferrer" className="px-6 py-2.5 rounded-lg bg-[#1a1c22] hover:bg-[#252830] transition-colors text-[14px] font-semibold text-white/90">Donate</a>
-          </div>
-          <div className="flex items-center justify-between pr-0 lg:pr-8 mt-10 lg:mt-0 mb-10">
-            <div className="flex flex-col gap-1"><span className="text-[13px] font-medium text-white/50">Registered Email</span><span className="text-[16px] font-semibold text-white/90">{profile?.email || "Not signed in"}</span></div>
-            {profile ? <button onClick={handleLogout} className="flex items-center gap-2 rounded-lg bg-white/10 px-5 py-2.5 text-[14px] font-semibold text-white hover:bg-white/15"><LogOut className="h-4 w-4" /> Sign out</button> : <button onClick={() => navigate('/login')} className="flex items-center gap-2 rounded-lg bg-white px-5 py-2.5 text-[14px] font-semibold text-black hover:bg-white/90"><LogIn className="h-4 w-4" /> Sign in</button>}
-          </div>
-          <h3 className="text-[17px] font-semibold text-white/90 mb-6">This Device</h3>
-          {thisDevice && <DeviceRow device={thisDevice} />}
-          {otherDevices.length > 0 && <><h3 className="text-[17px] font-semibold text-white/90 mt-10 mb-6">Other Devices</h3><div className="flex flex-col gap-8">{otherDevices.map((device) => <DeviceRow key={device.id} device={device} />)}</div></>}
-        </div>
-      </div>
-    </div>
-  );
+      <section className="mb-8 rounded-xl border border-white/[0.05] bg-white/[0.018] p-4 md:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/30">Registered Email</div><div className="mt-1 text-[15px] font-semibold text-white/90">{profile?.email || "Not signed in"}</div></div>{profile ? <button onClick={handleLogout} className="inline-flex items-center justify-center gap-2 self-start rounded-lg bg-white/[0.08] px-4 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-white/[0.13]"><LogOut className="h-4 w-4" />Sign out</button> : <button onClick={() => navigate("/login")} className="inline-flex items-center justify-center gap-2 self-start rounded-lg bg-white px-4 py-2.5 text-[13px] font-semibold text-black hover:bg-white/90"><LogIn className="h-4 w-4" />Sign in</button>}</div>
+      </section>
+
+      <section className="mb-9"><div className="mb-3 text-[15px] font-semibold text-white/85">This Device</div>{thisDevice && <DeviceRow device={thisDevice} />}</section>
+      {otherDevices.length > 0 && <section><div className="mb-3 text-[15px] font-semibold text-white/85">Other Devices</div><div className="space-y-2.5">{otherDevices.map((device) => <DeviceRow key={device.id} device={device} />)}</div></section>}
+    </main>
+  </div>;
 }
