@@ -1,0 +1,60 @@
+/* Bingr parity — title/detail surface polish. Scoped so player and CinePro UI are untouched. */
+[data-testid="page-title-detail"] {
+  background: #000;
+  color: #fff;
+}
+
+[data-testid="page-title-detail"] > .relative {
+  isolation: isolate;
+}
+
+[data-testid="page-title-detail"] > .relative > img:first-child {
+  object-position: center center;
+  will-change: transform, opacity;
+}
+
+[data-testid="page-title-detail"] iframe {
+  border: 0;
+}
+
+/* Keep the cinematic copy readable without changing the existing content order. */
+[data-testid="page-title-detail"] .absolute.inset-x-0.bottom-6 {
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}
+
+/* Metadata/actions should wrap cleanly instead of pushing the hero off-screen. */
+[data-testid="page-title-detail"] button,
+[data-testid="page-title-detail"] a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 767px) {
+  [data-testid="page-title-detail"] > .relative {
+    min-height: 100svh;
+    height: 100svh;
+  }
+
+  [data-testid="page-title-detail"] > .relative > img:first-child,
+  [data-testid="page-title-detail"] iframe {
+    min-height: 100svh;
+  }
+
+  [data-testid="page-title-detail"] .absolute.inset-x-0 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+@media (min-width: 768px) {
+  [data-testid="page-title-detail"] > .relative {
+    min-height: 100vh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-testid="page-title-detail"] * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
