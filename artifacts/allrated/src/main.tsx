@@ -6,6 +6,7 @@ import './bingr-parity.css';
 import './bingr-parity-final.css';
 import './bingr-reference-polish.css';
 import './bingr-parity-v2.css';
+import './bingr-title-detail-polish.css';
 import './player-watermark.css';
 import './subtitle-polyfill';
 import { initAnalytics } from '@/hooks/useAnalytics';
