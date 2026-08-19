@@ -9,6 +9,7 @@ import './bingr-parity-v2.css';
 import './bingr-title-detail-polish.css';
 import './bingr-catalog-polish.css';
 import './bingr-phase6.css';
+import './bingr-phase7.css';
 import './player-watermark.css';
 import './subtitle-polyfill';
 import { initAnalytics } from '@/hooks/useAnalytics';
