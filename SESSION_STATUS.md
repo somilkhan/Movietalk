@@ -1,5 +1,25 @@
 # SESSION STATUS
 
+## 2026-08-19 — Bingr parity Phase 1 foundation
+
+### Scope
+Phase 1 foundation is being completed on `feat/bingr-parity-polish`. The goal is Bingr-style UI/UX parity while preserving RabbitRip's existing backend and streaming systems.
+
+### Completed / tracked
+- Existing cleanup phases remain intact.
+- Bingr parity work is isolated to the parity branch.
+- Navigation foundation is the current Phase 1 focus across desktop and mobile.
+- No CinePro/Bingr streaming consolidation was introduced.
+- Phase 5 server-selector behavior remains untouched.
+
+### Streaming safety
+- Bingr and CinePro remain separate systems.
+- Existing Bingr extraction/request flow remains in `useBingrSources` + `artifacts/allrated/api/bingr/stream.js`.
+- Existing `POST /api/bingr/stream`, `useHlsPlayer`, and `/api/proxy` architecture remains unchanged.
+
+### Verification status
+Runtime verification is still required before claiming production/pixel parity. Required checks include navigation on mobile/desktop, Bingr playback HTTP 200 with sources/subtitles, TV season/episode propagation, completion/recommendation behavior, and Studios/Genres navigation.
+
 ## 2026-08-15 — Hardcode / ghost-code cleanup
 
 ### Scope
