@@ -13,6 +13,9 @@ Phase 2 home-page parity continues on `feat/bingr-parity-polish`. The goal is to
 - Home hero uses RabbitRip catalog titles plus existing logo/trailer endpoints; no fake media was introduced.
 - Hero trailer failure now falls back to the catalog backdrop poster instead of leaving a broken video surface.
 - Hero play/pause is controlled through a stable video ref, with responsive cinematic sizing and existing carousel/mute controls retained.
+- Hero mobile sizing was tightened to avoid the previous 620px minimum dominating short screens; desktop sizing remains unchanged.
+- Trailer video now explicitly uses metadata preload.
+- Removed duplicate Home-level `refetch()` calls that caused the initial trending/new-movies requests to be issued twice; React Query remains the source of truth for loading/cache behavior.
 - Home content was streamlined to a Bingr-style core rail set: Continue Watching, Trending, New Movies, Popular TV Shows, Studios, Top Rated Movies, Top Rated TV Shows, Popular Genres, Popular Movies, and Popular Languages.
 - Removed the extra genre-specific home rails that made the home page drift from the Bingr content-first composition.
 - No CinePro/Bingr streaming consolidation was introduced.
@@ -24,7 +27,7 @@ Phase 2 home-page parity continues on `feat/bingr-parity-polish`. The goal is to
 - Existing `POST /api/bingr/stream`, `useHlsPlayer`, and `/api/proxy` architecture remains unchanged.
 
 ### Verification status
-Runtime verification is still required before claiming production/pixel parity. Phase 2 verification should cover desktop/mobile home hero layout, trailer fallback, hero navigation, carousel controls, and responsive content rails, followed by the remaining home sections.
+Runtime verification is still required before claiming production/pixel parity. Phase 2 verification should cover desktop/mobile home hero layout, trailer fallback, hero navigation, carousel controls, responsive content rails, search/explore, and the remaining home sections.
 
 ## 2026-08-15 — Hardcode / ghost-code cleanup
 
