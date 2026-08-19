@@ -9,7 +9,8 @@ Phase 3 is active on `feat/bingr-parity-polish`. The goal is to carry the Bingr 
 - `Catalog.tsx` now carries the catalog parity treatment directly: compact poster metadata, restrained ring/elevation hover, subtle poster scale, responsive 3–8 column density, capped desktop content width, tighter Browse/title hierarchy, and a larger infinite-scroll prefetch margin.
 - Loading skeletons use the same responsive grid density as the finished catalog instead of a separate hardcoded layout.
 - Existing catalog fetch maps, real API routes, title navigation, and infinite-query behavior remain intact.
-- Category rails remain data-driven and route-backed; no fake catalog entries were added.
+- `Categories.tsx` now uses the same parity rhythm: consistent max-width/header treatment, responsive horizontal rails, compact 16:9 cards, restrained hover lift/scale, desktop-only rail controls, and consistent spacing across Browse, Studios, Popular Languages, Popular Sports, and Popular Genres.
+- Category/studio/language/genre routes remain data-driven and unchanged.
 - No CinePro/Bingr streaming consolidation was introduced.
 - Phase 5 server-selector behavior remains untouched.
 
