@@ -41,7 +41,7 @@ export function BingrTopBar() {
           <Bell className="h-4 w-4" />
         </button>
         <Link href={activeProfile ? "/space" : "/profiles"} aria-label={activeProfile ? "Open My Space" : "Choose profile"} className="flex h-11 items-center gap-2 rounded-2xl border border-white/[0.07] bg-black/30 px-2 pr-3 backdrop-blur-xl transition hover:bg-white/[0.06]">
-          {activeProfile ? <img src={activeProfile.avatar} alt="" className="h-8 w-8 rounded-xl object-cover" /> : <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10"><UserRound className="h-4 w-4 text-white/60" /></span>}
+          {activeProfile ? <img src={activeProfile.avatar} alt="" className="h-8 w-8 rounded-full object-cover ring-1 ring-white/15" /> : <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10"><UserRound className="h-4 w-4 text-white/60" /></span>}
           <span className="hidden lg:block max-w-28 truncate text-xs font-semibold text-white/75">{activeProfile?.name || "Profile"}</span>
         </Link>
       </div>
