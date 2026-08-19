@@ -60,7 +60,28 @@ function buildFetcher(name: string): (page: number) => Promise<CatalogPage> {
 }
 
 function PosterCard({ title }: { title: Title }) {
-  return <Link href={`/title/${title.mediaType}/${title.id}`} className="group/card flex flex-col"><div className="relative rounded-lg overflow-hidden aspect-[2/3] bg-[#1a1c24] ring-1 ring-white/5 transition-all duration-300 group-hover/card:ring-white/20 group-hover/card:-translate-y-1">{title.posterPath ? <img src={title.posterPath} alt={title.title} loading="lazy" className="w-full h-full object-cover" /> : <div className="flex h-full w-full items-center justify-center px-2 text-center text-xs text-white/40">{title.title}</div>}</div><div className="mt-2 truncate text-[13px] font-semibold text-white/90 leading-tight">{title.title}</div><div className="flex items-center flex-wrap mt-0.5 gap-x-1 text-[11px] text-white/40">{title.voteAverage > 0 && <><span className="text-white/60">★ {title.voteAverage.toFixed(1)}</span><span>·</span></>}{title.year && <><span>{title.year}</span><span>·</span></>}<span>{title.mediaType === 'movie' ? 'Movie' : 'Series'}</span></div></Link>;
+  return (
+    <Link href={`/title/${title.mediaType}/${title.id}`} className="group/card min-w-0 flex flex-col">
+      <div className="relative aspect-[2/3] overflow-hidden rounded-[7px] bg-[#14151b] ring-1 ring-white/[0.06] shadow-[0_8px_24px_rgba(0,0,0,0.22)] transition-[transform,box-shadow,ring-color] duration-300 group-hover/card:-translate-y-1 group-hover/card:ring-white/[0.18] group-hover/card:shadow-[0_14px_30px_rgba(0,0,0,0.38)]">
+        {title.posterPath ? (
+          <img src={title.posterPath} alt={title.title} loading="lazy" className="block h-full w-full object-cover transition-transform duration-500 group-hover/card:scale-[1.035]" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center px-2 text-center text-xs text-white/35">{title.title}</div>
+        )}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-70" />
+      </div>
+      <div className="mt-2 truncate text-[12.5px] font-semibold leading-[1.25] text-white/90 sm:text-[13px]">{title.title}</div>
+      <div className="mt-1 flex min-h-[14px] flex-wrap items-center gap-x-1 text-[10.5px] leading-none text-white/35 sm:text-[11px]">
+        {title.voteAverage > 0 && <><span className="text-white/55">★ {title.voteAverage.toFixed(1)}</span><span>·</span></>}
+        {title.year && <><span>{title.year}</span><span>·</span></>}
+        <span>{title.mediaType === 'movie' ? 'Movie' : 'Series'}</span>
+      </div>
+    </Link>
+  );
+}
+
+function CatalogSkeleton({ count = 21 }: { count?: number }) {
+  return <div className="grid grid-cols-3 gap-x-2.5 gap-y-6 sm:grid-cols-4 sm:gap-x-3.5 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">{Array.from({ length: count }).map((_, i) => <div key={i} className="aspect-[2/3] animate-pulse rounded-[7px] bg-white/[0.055]" />)}</div>;
 }
 
 export default function Catalog() {
@@ -75,9 +96,39 @@ export default function Catalog() {
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
-    const observer = new IntersectionObserver((entries) => { if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) fetchNextPage(); }, { rootMargin: '400px' });
-    observer.observe(sentinel); return () => observer.disconnect();
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) fetchNextPage();
+    }, { rootMargin: '500px 0px' });
+    observer.observe(sentinel);
+    return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  return <div className="min-h-screen bg-black pb-24 md:pb-12"><Seo title={name || 'Catalog'} /><div className="pt-10 pb-8 px-6 lg:px-20 flex items-center gap-4"><button onClick={() => history.back()} className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition flex-shrink-0" aria-label="Back"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg></button><h1 className="text-2xl md:text-3xl font-bold text-white">{name}</h1></div>{isError && <div className="flex items-center justify-center py-20 text-white/40 text-sm">Failed to load. Try going back and trying again.</div>}<div className="px-6 lg:px-20">{isLoading && <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-x-3 gap-y-6">{Array.from({length:21}).map((_,i)=><div key={i} className="animate-pulse rounded-lg bg-white/5 aspect-[2/3]" />)}</div>}{!isLoading && allTitles.length > 0 && <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-x-3 gap-y-6">{allTitles.map((title,i)=><PosterCard key={`${title.id}-${i}`} title={title} />)}{isFetchingNextPage && Array.from({length:7}).map((_,i)=><div key={`skel-${i}`} className="animate-pulse rounded-lg bg-white/5 aspect-[2/3]" />)}</div>}{!isLoading && allTitles.length === 0 && !isError && <div className="flex flex-col items-center justify-center py-32 text-white/30"><p className="text-lg font-medium">Nothing found</p></div>}<div ref={sentinelRef} className="h-1 w-full" />{!hasNextPage && allTitles.length > 0 && !isLoading && <p className="mt-8 pb-4 text-center text-sm text-white/20">You've seen everything in this category</p>}</div></div>;
+  return (
+    <div className="min-h-screen bg-black pb-24 md:pb-12">
+      <Seo title={name || 'Catalog'} />
+      <header className="mx-auto flex w-full max-w-[1920px] items-center gap-3 px-4 pb-7 pt-8 sm:px-6 sm:pt-10 lg:px-12 xl:px-16 2xl:px-20">
+        <button onClick={() => history.back()} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/[0.055] text-white/55 ring-1 ring-white/[0.06] transition hover:bg-white/[0.09] hover:text-white" aria-label="Back">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg>
+        </button>
+        <div className="min-w-0">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/30">Browse</p>
+          <h1 className="truncate text-[22px] font-bold tracking-[-0.02em] text-white sm:text-2xl md:text-[28px]">{name}</h1>
+        </div>
+      </header>
+
+      <main className="mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-12 xl:px-16 2xl:px-20">
+        {isError && <div className="flex items-center justify-center py-20 text-sm text-white/40">Failed to load. Try going back and trying again.</div>}
+        {isLoading && <CatalogSkeleton />}
+        {!isLoading && allTitles.length > 0 && (
+          <div className="grid grid-cols-3 gap-x-2.5 gap-y-6 sm:grid-cols-4 sm:gap-x-3.5 md:grid-cols-5 md:gap-y-7 lg:grid-cols-6 lg:gap-x-4 xl:grid-cols-7 2xl:grid-cols-8">
+            {allTitles.map((title, i) => <PosterCard key={`${title.id}-${i}`} title={title} />)}
+            {isFetchingNextPage && <>{Array.from({ length: 8 }).map((_, i) => <div key={`skel-${i}`} className="aspect-[2/3] animate-pulse rounded-[7px] bg-white/[0.055]" />)}</>}
+          </div>
+        )}
+        {!isLoading && allTitles.length === 0 && !isError && <div className="flex min-h-[45vh] flex-col items-center justify-center text-white/30"><p className="text-lg font-medium">Nothing found</p></div>}
+        <div ref={sentinelRef} className="h-1 w-full" />
+        {!hasNextPage && allTitles.length > 0 && !isLoading && <p className="pb-4 pt-10 text-center text-xs text-white/20">You've seen everything in this category</p>}
+      </main>
+    </div>
+  );
 }
