@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Pause, Play, Volume2, VolumeX } from 'lucide-react';
 import { Link } from 'wouter';
 import type { Title } from '@workspace/api-client-react';
@@ -10,6 +10,7 @@ export function HeroSection({ titles }: { titles: Title[] | undefined }) {
   const [trailerUrl, setTrailerUrl] = useState<string | null>(null);
   const [muted, setMuted] = useState(true);
   const [playing, setPlaying] = useState(true);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const title = Array.isArray(titles) ? titles[index] : undefined;
   const items = useMemo(() => (titles || []).slice(0, 8), [titles]);
   const next = items.length ? items[(index + 1) % items.length] : undefined;
@@ -41,7 +42,13 @@ export function HeroSection({ titles }: { titles: Title[] | undefined }) {
     return () => window.clearInterval(timer);
   }, [items.length, playing]);
 
-  if (!title) return <section className="relative w-full min-h-[70dvh] bg-black animate-pulse" data-testid="hero-section" />;
+  useEffect(() => {
+    if (!videoRef.current) return;
+    if (playing) void videoRef.current.play().catch(() => setPlaying(false));
+    else videoRef.current.pause();
+  }, [playing, trailerUrl]);
+
+  if (!title) return <section className="relative min-h-[68dvh] w-full bg-black animate-pulse" data-testid="hero-section" />;
 
   const genres = getGenreNames(title.genreIds ?? [], 4);
   const mediaRoute = title.mediaType === 'movie' ? 'movie' : title.mediaType === 'tv' ? 'tv' : 'anime';
@@ -49,21 +56,21 @@ export function HeroSection({ titles }: { titles: Title[] | undefined }) {
   const go = (delta: number) => setIndex((current) => (current + delta + items.length) % items.length);
 
   return (
-    <section className="relative isolate w-full min-h-[720px] h-[78vh] max-h-[900px] overflow-hidden bg-black text-white" data-testid="hero-section">
+    <section className="relative isolate h-[72dvh] min-h-[620px] max-h-[900px] w-full overflow-hidden bg-black text-white md:h-[78vh]" data-testid="hero-section">
       <div className="absolute inset-0 z-0 bg-black">
         {trailerUrl ? (
-          <video src={trailerUrl} autoPlay loop playsInline muted={muted} className="absolute inset-0 h-full w-full object-cover object-center opacity-95" onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} />
+          <video ref={videoRef} src={trailerUrl} autoPlay loop playsInline muted={muted} poster={backdrop || undefined} className="absolute inset-0 h-full w-full object-cover object-center opacity-95" onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onError={() => setTrailerUrl(null)} />
         ) : backdrop ? (
           <img src={backdrop} alt="" className="absolute inset-0 h-full w-full object-cover object-center opacity-95" />
         ) : null}
       </div>
-      <div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(90deg,rgba(0,0,0,.92)_0%,rgba(0,0,0,.68)_28%,rgba(0,0,0,.18)_65%,transparent_100%)]" />
-      <div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(0deg,#000_0%,rgba(0,0,0,.92)_9%,rgba(0,0,0,.35)_42%,transparent_76%)]" />
-      <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_75%_35%,transparent_0%,rgba(0,0,0,.12)_48%,rgba(0,0,0,.35)_100%)]" />
+      <div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(90deg,rgba(0,0,0,.94)_0%,rgba(0,0,0,.72)_27%,rgba(0,0,0,.2)_63%,transparent_100%)]" />
+      <div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(0deg,#000_0%,rgba(0,0,0,.94)_10%,rgba(0,0,0,.38)_43%,transparent_78%)]" />
+      <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_75%_35%,transparent_0%,rgba(0,0,0,.1)_48%,rgba(0,0,0,.4)_100%)]" />
 
       <div className="absolute inset-x-0 bottom-0 z-[2] flex max-w-[760px] flex-col px-5 pb-12 pt-32 sm:px-8 sm:pb-16 md:left-[100px] md:right-auto md:px-0 md:pb-24 lg:left-[140px] lg:pb-28">
         {logoPath ? (
-          <img src={logoPath} alt={title.title} className="mb-5 max-h-24 w-auto max-w-[min(72vw,430px)] object-contain object-left-bottom drop-shadow-2xl md:max-h-32" onError={() => setLogoPath(null)} />
+          <img src={logoPath} alt={title.title} className="mb-5 max-h-20 w-auto max-w-[min(78vw,430px)] object-contain object-left-bottom drop-shadow-2xl sm:max-h-24 md:max-h-32" onError={() => setLogoPath(null)} />
         ) : (
           <h1 className="mb-4 max-w-[720px] text-[clamp(2.2rem,5vw,4.8rem)] font-bold leading-[.96] tracking-[-.045em] drop-shadow-2xl">{title.title}</h1>
         )}
@@ -93,7 +100,7 @@ export function HeroSection({ titles }: { titles: Title[] | undefined }) {
 
       <div className="absolute right-5 top-20 z-[3] flex items-center gap-2 md:right-8 md:top-24">
         <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/30 text-white/70 backdrop-blur-xl transition hover:bg-white/10 hover:text-white" aria-label={muted ? 'Unmute' : 'Mute'} onClick={() => setMuted((value) => !value)}>{muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}</button>
-        <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/30 text-white/70 backdrop-blur-xl transition hover:bg-white/10 hover:text-white" aria-label={playing ? 'Pause' : 'Play'} onClick={() => { const video = document.querySelector('[data-testid="hero-section"] video') as HTMLVideoElement | null; if (video) { if (video.paused) void video.play(); else video.pause(); } setPlaying((value) => !value); }}>{playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</button>
+        <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/30 text-white/70 backdrop-blur-xl transition hover:bg-white/10 hover:text-white" aria-label={playing ? 'Pause' : 'Play'} onClick={() => setPlaying((value) => !value)}>{playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</button>
       </div>
     </section>
   );
