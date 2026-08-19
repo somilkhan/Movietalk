@@ -1,0 +1,87 @@
+/* Phase 6 — final global responsive parity layer. UI-only; data, routing and playback stay untouched. */
+
+:root { --bingr-safe-bottom: max(12px, env(safe-area-inset-bottom)); }
+
+/* Shared page rhythm */
+.mobile-content { min-width: 0; overflow-x: clip; }
+.mobile-content > * { min-width: 0; }
+
+/* Desktop top bar */
+@media (min-width: 768px) {
+  .rr-topbar { padding-top: 14px !important; }
+  .rr-search-shell { border-color: rgba(255,255,255,.07) !important; background: rgba(10,10,14,.58) !important; }
+  footer { padding-top: 32px !important; padding-bottom: 32px !important; }
+}
+
+/* Mobile header / search */
+@media (max-width: 767px) {
+  .mobile-header {
+    padding-top: env(safe-area-inset-top) !important;
+    height: calc(56px + env(safe-area-inset-top)) !important;
+    background: rgba(7,7,11,.84) !important;
+    border-bottom-color: rgba(255,255,255,.065) !important;
+  }
+  .mobile-header > div { height: 56px !important; }
+  .mobile-content { padding-top: 56px; padding-bottom: 94px !important; }
+  .mobile-content:has([data-testid="page-home"]) { padding-top: 0; }
+
+  .rr-mobile-nav {
+    bottom: var(--bingr-safe-bottom) !important;
+    width: min(calc(100vw - 24px), 390px) !important;
+  }
+
+  [data-testid="page-explore"],
+  [data-testid="page-catalog"],
+  [data-testid="page-categories"],
+  [data-testid="page-space"],
+  [data-testid="page-settings"] {
+    padding-top: 0 !important;
+  }
+
+  [data-testid="page-explore"] .grid,
+  [data-testid="page-catalog"] .grid { min-width: 0; }
+
+  [data-testid="page-explore"] input,
+  [data-testid="page-catalog"] select,
+  [data-testid="page-categories"] select,
+  [data-testid="page-settings"] select { max-width: 100%; }
+}
+
+/* Search overlay */
+.mobile-header + div[style] { overscroll-behavior: contain; }
+.mobile-header + div[style] input { caret-color: white; }
+
+/* Consistent interactive states */
+button, a, select { -webkit-tap-highlight-color: transparent; }
+@media (hover: none) {
+  [data-testid="title-card"]:hover > div > div:first-child { transform: none !important; }
+}
+
+/* Prevent poster grids from causing horizontal page scroll on narrow devices. */
+@media (max-width: 420px) {
+  [data-testid="page-catalog"] .grid { column-gap: .5rem !important; }
+  [data-testid="page-catalog"] .group\/card { min-width: 0 !important; }
+  [data-testid="page-categories"] .group\/cat,
+  [data-testid="page-categories"] .group\/genre { width: 136px !important; }
+  .rr-mobile-nav { height: 60px !important; padding: 6px !important; }
+  .rr-mobile-nav .rr-nav-button { width: 42px !important; height: 42px !important; }
+}
+
+/* Auth surfaces stay centered and never overflow mobile viewport. */
+[data-testid="page-login"],
+[data-testid="page-register"] { overflow-x: clip; }
+@media (max-width: 767px) {
+  [data-testid="page-login"] main,
+  [data-testid="page-register"] main { width: 100%; max-width: 100vw; }
+}
+
+/* Profile/settings dialogs */
+[role="dialog"] { max-width: calc(100vw - 24px); }
+@media (max-width: 767px) {
+  [role="dialog"] { max-height: calc(100dvh - 24px); overflow-y: auto; }
+}
+
+/* Reduce motion without changing layout/logic for users who request it. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+}
