@@ -71,18 +71,18 @@ export default function Login() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#040405] text-white selection:bg-white/20">
+    <div className="relative min-h-screen overflow-hidden bg-[#07070b] text-[#e9e9ee] selection:bg-white/20">
       <Seo title="Sign in" />
       <style>{`@keyframes rrMarqueeUp{from{transform:translateY(0)}to{transform:translateY(-50%)}}@keyframes rrMarqueeDown{from{transform:translateY(-50%)}to{transform:translateY(0)}}@keyframes rrReveal{from{opacity:0;transform:translateY(22px);filter:blur(8px)}to{opacity:1;transform:none;filter:blur(0)}}@keyframes rrGlow{0%,100%{opacity:.2;transform:scale(.96)}50%{opacity:.45;transform:scale(1.05)}}.rr-up{animation:rrMarqueeUp 34s linear infinite}.rr-down{animation:rrMarqueeDown 42s linear infinite}.rr-reveal{animation:rrReveal .75s cubic-bezier(.22,1,.36,1) both}.rr-glow{animation:rrGlow 7s ease-in-out infinite}`}</style>
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="rr-glow absolute -left-40 -top-40 h-[500px] w-[500px] rounded-full bg-white/[0.07] blur-[120px]" />
-        <div className="absolute -right-40 top-1/3 h-[500px] w-[500px] rounded-full bg-[#5865f2]/[0.09] blur-[140px]" />
+        <div className="absolute -right-40 top-1/3 h-[500px] w-[500px] rounded-full bg-[#4752c4]/[0.14] blur-[140px]" />
       </div>
 
       <main className="relative z-10 flex min-h-screen flex-col">
         <div className="relative h-[180px] shrink-0 w-full overflow-hidden bg-black md:h-[220px]">
           <div className="absolute inset-x-0 top-0 z-10 h-14 bg-gradient-to-b from-black to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 z-10 h-28 bg-gradient-to-t from-[#040405] via-black/90 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 z-10 h-28 bg-gradient-to-t from-[#07070b] via-black/90 to-transparent" />
           <div className="grid h-full grid-cols-3 gap-2 px-2 opacity-50 md:gap-3">
             {posterColumns.map((column, index) => <div key={index} className="h-full overflow-hidden"><div className={`flex flex-col gap-2 md:gap-3 ${index === 1 ? 'rr-down' : 'rr-up'}`}>{[...column,...column].map((src,i)=><img key={`${src}-${i}`} src={src} alt="" loading="lazy" className="aspect-[2/3] w-full shrink-0 rounded-xl object-cover" />)}</div></div>)}
           </div>
@@ -101,7 +101,7 @@ export default function Login() {
                 <div className="rounded-xl border border-white/[0.08] bg-white p-3 shadow-2xl" aria-label="RabbitRip mobile QR preview"><FakeQr /></div>
                 <p className="mt-4 text-sm font-semibold text-white">Open RabbitRip on mobile</p>
                 <p className="mt-1.5 max-w-[210px] text-xs leading-relaxed text-white/40">Scan this code to open the RabbitRip login page on your phone.</p>
-                <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/60"><ScanLine className="h-3.5 w-3.5" /> Mobile access</span>
+                <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#4752c4]/20 px-3 py-1.5 text-xs font-semibold text-white/70"><ScanLine className="h-3.5 w-3.5" /> Mobile access</span>
               </div>
               <div className="hidden items-center justify-center md:flex"><div className="flex h-full flex-col items-center"><div className="w-px flex-1 bg-gradient-to-b from-transparent via-white/15 to-transparent"/><span className="my-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/30">or</span><div className="w-px flex-1 bg-gradient-to-b from-white/15 via-transparent to-transparent"/></div></div>
 
@@ -110,12 +110,12 @@ export default function Login() {
                 <div className="flex items-center gap-3 md:hidden"><span className="h-px flex-1 bg-white/[0.08]"/><span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/30">or</span><span className="h-px flex-1 bg-white/[0.08]"/></div>
 
                 <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
-                  <label className="flex items-center rounded-xl border border-white/[0.08] bg-white/[0.04] transition focus-within:border-white/30"><span className="pl-3 text-white/35"><Mail className="h-4 w-4"/></span><input required type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" className="h-12 flex-1 bg-transparent px-3 text-sm text-white outline-none placeholder:text-white/25"/></label>
-                  <label className="flex items-center rounded-xl border border-white/[0.08] bg-white/[0.04] transition focus-within:border-white/30"><span className="pl-3 text-white/35"><span className="text-sm">••</span></span><input required minLength={6} type={showPassword?'text':'password'} autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Password" className="h-12 flex-1 bg-transparent px-3 text-sm text-white outline-none placeholder:text-white/25"/><button type="button" onClick={()=>setShowPassword(v=>!v)} className="px-3 text-white/35 transition hover:text-white/80" aria-label={showPassword?'Hide password':'Show password'}>{showPassword?<EyeOff className="h-4 w-4"/>:<Eye className="h-4 w-4"/>}</button></label>
+                  <label className="flex items-center rounded-xl border border-white/[0.08] bg-[#252830]/50 transition focus-within:border-[#4752c4]"><span className="pl-3 text-white/35"><Mail className="h-4 w-4"/></span><input required type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" className="h-12 flex-1 bg-transparent px-3 text-sm text-white outline-none placeholder:text-white/25"/></label>
+                  <label className="flex items-center rounded-xl border border-white/[0.08] bg-[#252830]/50 transition focus-within:border-[#4752c4]"><span className="pl-3 text-white/35"><span className="text-sm">••</span></span><input required minLength={6} type={showPassword?'text':'password'} autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Password" className="h-12 flex-1 bg-transparent px-3 text-sm text-white outline-none placeholder:text-white/25"/><button type="button" onClick={()=>setShowPassword(v=>!v)} className="px-3 text-white/35 transition hover:text-white/80" aria-label={showPassword?'Hide password':'Show password'}>{showPassword?<EyeOff className="h-4 w-4"/>:<Eye className="h-4 w-4"/>}</button></label>
                   <div className="flex justify-end -mt-0.5"><button type="button" onClick={()=>setResetOpen(true)} className="text-xs font-medium text-white/45 transition hover:text-white">Forgot password?</button></div>
                   {error && <div className="rounded-xl border border-red-400/15 bg-red-500/[0.07] px-3 py-2.5 text-xs leading-5 text-red-200">{error}</div>}
                   {notice && <div className="rounded-xl border border-emerald-400/15 bg-emerald-500/[0.07] px-3 py-2.5 text-xs leading-5 text-emerald-200">{notice}</div>}
-                  <button disabled={loading||!!oauthLoading} type="submit" className="mt-1 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-white px-6 text-base font-semibold text-black shadow-sm transition hover:bg-white/90 active:bg-white/80 disabled:pointer-events-none disabled:opacity-50">{loading?<Loader2 className="h-4 w-4 animate-spin"/>:<><span>Sign in</span><ArrowRight className="h-4 w-4"/></>}</button>
+                  <button disabled={loading||!!oauthLoading} type="submit" className="mt-1 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#4752c4] px-6 text-base font-semibold text-white shadow-[0_8px_30px_-10px_rgba(71,82,196,.9)] transition hover:bg-[#5865d8] active:bg-[#3c45a8] disabled:pointer-events-none disabled:opacity-50">{loading?<Loader2 className="h-4 w-4 animate-spin"/>:<><span>Sign in</span><ArrowRight className="h-4 w-4"/></>}</button>
                 </form>
 
                 <div className="flex items-center gap-3 py-0.5"><span className="h-px flex-1 bg-white/[0.08]"/><span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-white/30">or continue with</span><span className="h-px flex-1 bg-white/[0.08]"/></div>
@@ -131,7 +131,7 @@ export default function Login() {
         </div>
       </main>
 
-      {resetOpen && <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/75 px-5 backdrop-blur-sm"><form onSubmit={handleReset} className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#111217] p-6 shadow-2xl"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10"><Mail className="h-4 w-4"/></div><div><h2 className="font-semibold">Reset password</h2><p className="text-xs text-white/40">We'll send a recovery link.</p></div></div><input required type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" className="mt-5 h-12 w-full rounded-xl border border-white/10 bg-black/30 px-4 text-sm outline-none focus:border-white/30"/><div className="mt-5 flex gap-3"><button type="button" onClick={()=>setResetOpen(false)} className="h-11 flex-1 rounded-xl border border-white/10 text-sm text-white/60 hover:text-white">Cancel</button><button disabled={resetLoading} className="h-11 flex-1 rounded-xl bg-white text-sm font-semibold text-black disabled:opacity-50">{resetLoading?'Sending…':'Send link'}</button></div></form></div>}
+      {resetOpen && <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/75 px-5 backdrop-blur-sm"><form onSubmit={handleReset} className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#252830] p-6 shadow-2xl"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#4752c4]/20"><Mail className="h-4 w-4"/></div><div><h2 className="font-semibold">Reset password</h2><p className="text-xs text-white/40">We'll send a recovery link.</p></div></div><input required type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" className="mt-5 h-12 w-full rounded-xl border border-white/10 bg-black/30 px-4 text-sm outline-none focus:border-[#4752c4]"/><div className="mt-5 flex gap-3"><button type="button" onClick={()=>setResetOpen(false)} className="h-11 flex-1 rounded-xl border border-white/10 text-sm text-white/60 hover:text-white">Cancel</button><button disabled={resetLoading} className="h-11 flex-1 rounded-xl bg-[#4752c4] text-sm font-semibold text-white disabled:opacity-50">{resetLoading?'Sending…':'Send link'}</button></div></form></div>}
     </div>
   );
 }
