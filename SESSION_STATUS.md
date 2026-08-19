@@ -8,6 +8,9 @@ Phase 1 foundation is being completed on `feat/bingr-parity-polish`. The goal is
 ### Completed / tracked
 - Existing cleanup phases remain intact.
 - Bingr parity work is isolated to the parity branch.
+- Desktop Bingr top bar is now mounted globally for the authenticated app shell, including search, Explore, notifications, and profile entry points.
+- Mobile Bingr header/search overlay is now mounted globally for non-home authenticated pages.
+- Existing bottom mobile navigation remains the primary mobile route switcher.
 - Navigation foundation is the current Phase 1 focus across desktop and mobile.
 - No CinePro/Bingr streaming consolidation was introduced.
 - Phase 5 server-selector behavior remains untouched.
