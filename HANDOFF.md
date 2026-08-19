@@ -14,7 +14,7 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 - API: `artifacts/api-server/` (Express, port 8080)
 - CinePro: `artifacts/cinepro-core/` (streaming engine, port 3001)
 
-## Current Status — CLEANUP PHASES 1–4 + BINGR PARITY PHASE 1 FOUNDATION
+## Current Status — CLEANUP PHASES 1–4 + BINGR PARITY PHASE 2 HOME FOUNDATION
 
 ### Completed
 - Home Trending is driven by catalog data rather than a fixed Reacher/Spider-Man snapshot.
@@ -23,8 +23,10 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 - “Your next Bingr after” is driven by the actual most recently completed title and existing recommendation/similar APIs.
 - Broken Home category navigation was replaced with supported application routes.
 - Studios and Popular Genres cards now navigate instead of being dead UI.
-- Bingr parity Phase 1 now mounts the Bingr desktop top bar and mobile header/search shell in the main authenticated app shell.
+- Bingr parity Phase 1 mounted the Bingr desktop top bar and mobile header/search shell in the main authenticated app shell.
 - Existing bottom mobile navigation remains active for route switching.
+- Bingr parity Phase 2 rebuilt the Home hero toward the Bingr reference with responsive cinematic sizing, layered gradients, logo/title presentation, metadata/actions, carousel controls, and playback controls.
+- Hero content remains data-driven from RabbitRip's catalog and existing logo/trailer endpoints; no fake or hardcoded media was introduced.
 - Navigation/UI changes remain scoped to parity and must not alter the streaming architecture.
 - Phase 5 server-selector consolidation is intentionally deferred and must not be changed unless explicitly requested.
 
@@ -36,12 +38,13 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 - TV watch URLs use `/watch/tv/:id/:season/:episode` and pass the actual season/episode into the existing Bingr POST request.
 
 ### Runtime verification still required
+- Verify Phase 1 navigation on mobile/desktop.
+- Verify Phase 2 Home hero layout on mobile/desktop, trailer fallback, hero navigation, carousel controls, and responsive content rails.
 - Deploy `main` and verify Bingr stream HTTP 200 with `sources` and `subtitles`.
 - Finish a movie/episode and verify Home shows recommendations for that exact completed title.
 - Verify TV S/E values reach the Bingr request.
 - Verify subtitle rendering and existing player behavior.
 - Verify Studios/Genres navigation on mobile and desktop.
-- Verify the Bingr parity Phase 1 navigation foundation on both mobile and desktop before moving to the next parity phase.
 
 ## Important
 Do not claim production/runtime parity until the deployed build has been tested. Do not modify Phase 5 server-selector behavior without explicit user instruction.
