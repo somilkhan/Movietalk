@@ -8,6 +8,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { NetworkStatus } from '@/components/NetworkStatus';
 import { DesktopSidebar } from '@/components/DesktopSidebar';
 import { MobileNav } from '@/components/MobileNav';
+import { MobileHeader } from '@/components/MobileHeader';
 import { BingrTopBar } from '@/components/BingrTopBar';
 import { ProfileGuard } from '@/components/ProfileGuard';
 import { GlobalUiFixes } from '@/components/GlobalUiFixes';
@@ -45,6 +46,7 @@ function AppRouter() {
   const [location] = useLocation();
   const isWatchPage = location.startsWith('/watch');
   const isTitlePage = location.startsWith('/title/') || /^\/(movie|tv|anime)\//.test(location);
+  const showShell = !location.startsWith('/login') && !location.startsWith('/register') && !location.startsWith('/profiles');
   return <><ScrollToTop /><GlobalUiFixes /><Switch>
     <Route path="/login"><LoginRoute /></Route><Route path="/register"><Register /></Route><Route path="/profiles"><Suspense fallback={<PageLoader />}><Profiles /></Suspense></Route>
     <Route path="/watch/:mediaType/:id/:season/:episode"><Suspense fallback={<PageLoader />}><Watch /></Suspense></Route><Route path="/watch/:mediaType/:id"><Suspense fallback={<PageLoader />}><Watch /></Suspense></Route>
@@ -54,7 +56,7 @@ function AppRouter() {
     <Route path="/collection/:id"><Redirect to="/explore" /></Route><Route path="/creator"><Redirect to="/explore" /></Route><Route path="/creators"><Redirect to="/explore" /></Route><Route path="/live-tv"><Redirect to="/sports" /></Route><Route path="/spark"><Redirect to="/sparks" /></Route><Route path="/watch-party"><Redirect to="/space" /></Route><Route path="/watch-party/:code"><Redirect to="/space" /></Route><Route path="/help"><Redirect to="/settings/help" /></Route><Route path="/legal"><Redirect to="/settings/help" /></Route><Route path="/legal/:page"><Redirect to="/settings/help" /></Route><Route path="/me/profiles"><Redirect to="/profiles" /></Route><Route path="/settings/subscription"><Redirect to="/settings" /></Route>
     <Route path="/search"><Redirect to="/explore" /></Route><Route path="/browse"><Redirect to="/explore" /></Route><Route path="/discover"><Redirect to="/explore" /></Route>
     <Route path="/history"><Redirect to="/space" /></Route><Route path="/watchlist"><Redirect to="/space" /></Route>
-    <Route><div className="min-h-screen bg-black text-white flex flex-col"><DesktopSidebar /><BingrTopBar /><main className={cn('flex-1 mobile-content animate-slide-up')}><Switch>
+    <Route><div className="min-h-screen bg-black text-white flex flex-col">{showShell && <><DesktopSidebar /><BingrTopBar /><MobileHeader /></>}<main className={cn('flex-1 mobile-content animate-slide-up')}><Switch>
       <Route path="/"><Redirect to="/home" /></Route><Route path="/home" component={Home} /><Route path="/movies"><Suspense fallback={<PageLoader />}><Movies /></Suspense></Route><Route path="/tv"><Suspense fallback={<PageLoader />}><Tv /></Suspense></Route><Route path="/anime"><Suspense fallback={<PageLoader />}><Anime /></Suspense></Route><Route path="/explore"><Suspense fallback={<PageLoader />}><Explore /></Suspense></Route><Route path="/categories"><Suspense fallback={<PageLoader />}><Categories /></Suspense></Route><Route path="/space"><Suspense fallback={<PageLoader />}><Space /></Suspense></Route><Route path="/sports"><Suspense fallback={<PageLoader />}><Sports /></Suspense></Route><Route path="/sparks"><Suspense fallback={<PageLoader />}><Sparks /></Suspense></Route><Route path="/catalog/:mediaType/:category"><Suspense fallback={<PageLoader />}><Catalog /></Suspense></Route><Route path="/settings"><Suspense fallback={<PageLoader />}><Settings /></Suspense></Route><Route path="/settings/account"><Suspense fallback={<PageLoader />}><SettingsAccount /></Suspense></Route><Route path="/settings/parental"><Suspense fallback={<PageLoader />}><SettingsParental /></Suspense></Route><Route path="/settings/help"><Suspense fallback={<PageLoader />}><SettingsHelp /></Suspense></Route><Route component={NotFound} />
     </Switch></main>{!isWatchPage && !isTitlePage && <MobileNav />}{!isWatchPage && <Footer />}</div></Route>
   </Switch></>;
