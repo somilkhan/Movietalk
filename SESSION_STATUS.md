@@ -1,14 +1,15 @@
 # SESSION STATUS
 
-## 2026-08-20 — Bingr parity Phase 4 account/settings surface polish
+## 2026-08-20 — Bingr parity Phase 4 account/settings + profile surface polish
 
 ### Scope
-Phase 4 begins with the authenticated account/settings surfaces, carrying the same Bingr dark content-first visual rhythm into settings without changing auth, profile, device, region, or backend behavior.
+Phase 4 covers authenticated account-adjacent surfaces: settings, account/devices, and profile/avatar selection. The pass keeps auth, profile storage, region state, routes, and backend behavior intact while tightening the Bingr dark content-first visual language.
 
 ### Latest completed pass
-- `Settings.tsx` now uses a centered/capped content column, tighter Bingr-style heading hierarchy, compact bordered setting rows, consistent icon containers, restrained hover states, and a contained region picker.
-- `SettingsAccount.tsx` now uses the same centered/capped layout, compact account summary, consistent device cards, responsive sign-in/sign-out actions, and clearer current-device treatment.
-- Existing auth/logout, local device storage, region selection, and routes remain intact.
+- `Settings.tsx`: centered/capped content column, tighter Bingr-style heading hierarchy, compact bordered setting rows, consistent icon containers, restrained hover states, contained region picker.
+- `SettingsAccount.tsx`: same centered/capped layout, compact account summary, consistent device cards, responsive sign-in/sign-out actions, clearer current-device treatment.
+- `Profiles.tsx`: polished profile picker with compact Bingr-style header, tighter typography/spacing, restrained avatar sizing, focused edit mode, cleaner avatar carousel controls, and more compact add/edit profile dialogs.
+- Existing auth/logout, profile storage, avatar data, region selection, and routes remain intact.
 - No streaming/CinePro changes were introduced.
 - Phase 5 server-selector behavior remains untouched.
 
@@ -25,4 +26,4 @@ Phase 4 begins with the authenticated account/settings surfaces, carrying the sa
 - Existing `POST /api/bingr/stream`, `useHlsPlayer`, and `/api/proxy` architecture remains unchanged.
 
 ### Verification status
-Runtime verification is still required before claiming production/pixel parity. Verify Phase 4 settings/account on mobile/desktop, including region picker, account actions, device rows, and logout navigation. Retain all previous verification requirements for Home, Explore/search, title/detail, catalog/categories, playback HTTP 200, TV S/E requests, subtitles, and Studios/Genres navigation.
+Runtime verification is still required before claiming production/pixel parity. Verify Phase 4 settings/account/profile on mobile/desktop, including region picker, account actions, device rows, profile selection/edit/add/delete, and logout navigation. Retain all previous verification requirements for Home, Explore/search, title/detail, catalog/categories, playback HTTP 200, TV S/E requests, subtitles, and Studios/Genres navigation.
