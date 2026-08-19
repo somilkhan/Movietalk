@@ -1,9 +1,9 @@
 # SESSION STATUS
 
-## 2026-08-20 — Bingr parity Phase 2 title/detail polish
+## 2026-08-20 — Bingr parity Phase 3 catalog/categories surface polish
 
 ### Scope
-Phase 2 Bingr parity continues on `feat/bingr-parity-polish`. The goal is to match Bingr's content-first UI/UX while keeping RabbitRip's real catalog/backend data.
+Phase 3 has started on `feat/bingr-parity-polish`. The goal is to carry the Bingr content-first visual language through catalog/category browsing while keeping RabbitRip's real catalog/backend data and routing.
 
 ### Completed / tracked
 - Phase 1 navigation foundation remains intact.
@@ -20,7 +20,8 @@ Phase 2 Bingr parity continues on `feat/bingr-parity-polish`. The goal is to mat
 - Removed extra genre-specific home rails that made the home page drift from the Bingr content-first composition.
 - Explore/search page has a more Bingr-like Discover/Explore hierarchy, larger responsive search surface, cleaner result metadata, responsive type filtering, mobile filter popover, and preserved recent-search behavior.
 - Explore results remain data-driven from existing trending/search catalog hooks; no fake results were introduced.
-- Title/detail surface now has a scoped Bingr parity polish layer for cinematic hero sizing, safe-area handling, responsive mobile viewport behavior, tap behavior, and reduced-motion support. It does not alter the streaming/player architecture.
+- Title/detail surface has a scoped Bingr parity polish layer for cinematic hero sizing, safe-area handling, responsive mobile viewport behavior, tap behavior, and reduced-motion support. It does not alter the streaming/player architecture.
+- Phase 3 now includes a dedicated catalog/categories parity layer for card elevation, grid rhythm, horizontal-rail scrolling, mobile sizing, and browsing-surface spacing. It is CSS-only and does not replace catalog data or routing.
 - No CinePro/Bingr streaming consolidation was introduced.
 - Phase 5 server-selector behavior remains untouched.
 
@@ -30,7 +31,7 @@ Phase 2 Bingr parity continues on `feat/bingr-parity-polish`. The goal is to mat
 - Existing `POST /api/bingr/stream`, `useHlsPlayer`, and `/api/proxy` architecture remains unchanged.
 
 ### Verification status
-Runtime verification is still required before claiming production/pixel parity. Phase 2 verification should cover desktop/mobile home hero layout, trailer fallback, hero navigation, carousel controls, responsive content rails, Explore/search, recent-search behavior, type filtering, title/detail layout, and the remaining home sections.
+Runtime verification is still required before claiming production/pixel parity. Phase 2 verification should cover desktop/mobile home hero layout, trailer fallback, hero navigation, carousel controls, responsive content rails, Explore/search, recent-search behavior, type filtering, title/detail layout, and the remaining home sections. Phase 3 verification should cover catalog/category desktop/mobile spacing, card grids, horizontal category rails, navigation targets, and infinite-scroll loading.
 
 ## 2026-08-15 — Hardcode / ghost-code cleanup
 
