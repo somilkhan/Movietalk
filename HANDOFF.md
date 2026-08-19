@@ -14,7 +14,7 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 - API: `artifacts/api-server/` (Express, port 8080)
 - CinePro: `artifacts/cinepro-core/` (streaming engine, port 3001)
 
-## Current Status — CLEANUP PHASES 1–4
+## Current Status — CLEANUP PHASES 1–4 + BINGR PARITY PHASE 1 FOUNDATION
 
 ### Completed
 - Home Trending is driven by catalog data rather than a fixed Reacher/Spider-Man snapshot.
@@ -23,6 +23,7 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 - “Your next Bingr after” is driven by the actual most recently completed title and existing recommendation/similar APIs.
 - Broken Home category navigation was replaced with supported application routes.
 - Studios and Popular Genres cards now navigate instead of being dead UI.
+- Bingr parity Phase 1 foundation work is tracked on this branch; navigation/UI changes must stay scoped to parity and must not alter the streaming architecture.
 - Phase 5 server-selector consolidation is intentionally deferred and must not be changed unless explicitly requested.
 
 ### Streaming architecture — DO NOT CHANGE
@@ -38,6 +39,7 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 - Verify TV S/E values reach the Bingr request.
 - Verify subtitle rendering and existing player behavior.
 - Verify Studios/Genres navigation on mobile and desktop.
+- Verify the Bingr parity Phase 1 navigation foundation on both mobile and desktop before moving to the next parity phase.
 
 ## Important
 Do not claim production/runtime parity until the deployed build has been tested. Do not modify Phase 5 server-selector behavior without explicit user instruction.
