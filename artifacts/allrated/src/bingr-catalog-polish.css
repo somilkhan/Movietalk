@@ -1,0 +1,77 @@
+/* Bingr parity — catalog/category browsing surfaces. Data and routing remain untouched. */
+[data-testid="page-catalog"],
+[data-testid="page-categories"] {
+  background: #07070b !important;
+  color: #fff;
+}
+
+[data-testid="page-catalog"] .group\/card > div:first-child {
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(0,0,0,.16);
+  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+}
+
+[data-testid="page-catalog"] .group\/card:hover > div:first-child {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 36px rgba(0,0,0,.28);
+}
+
+[data-testid="page-catalog"] h1,
+[data-testid="page-categories"] h1 {
+  letter-spacing: -.035em;
+}
+
+[data-testid="page-catalog"] .grid {
+  row-gap: 1.65rem;
+}
+
+[data-testid="page-categories"] .group\/cat,
+[data-testid="page-categories"] .group\/genre {
+  box-shadow: 0 10px 28px rgba(0,0,0,.14);
+}
+
+[data-testid="page-categories"] .group\/cat:hover,
+[data-testid="page-categories"] .group\/genre:hover {
+  box-shadow: 0 16px 38px rgba(0,0,0,.28);
+}
+
+[data-testid="page-categories"] .scroll-smooth {
+  scroll-padding-inline: 1rem;
+  overscroll-behavior-inline: contain;
+}
+
+@media (max-width: 767px) {
+  [data-testid="page-catalog"] > div:first-of-type {
+    padding-top: 1.25rem;
+    padding-inline: 1rem;
+  }
+
+  [data-testid="page-catalog"] > div:nth-of-type(2) {
+    padding-inline: 1rem;
+  }
+
+  [data-testid="page-catalog"] .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: .65rem;
+    row-gap: 1.35rem;
+  }
+
+  [data-testid="page-catalog"] .group\/card > div:first-child {
+    border-radius: 8px;
+  }
+
+  [data-testid="page-catalog"] .group\/card:hover > div:first-child,
+  [data-testid="page-categories"] .group\/cat:hover,
+  [data-testid="page-categories"] .group\/genre:hover {
+    transform: none;
+  }
+
+  [data-testid="page-categories"] .relative.z-10 {
+    padding-top: 1.5rem;
+  }
+
+  [data-testid="page-categories"] .group\/cat,
+  [data-testid="page-categories"] .group\/genre {
+    width: 148px;
+  }
+}
