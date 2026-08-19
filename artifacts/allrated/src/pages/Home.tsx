@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useGetTrending, useGetCatalogList } from '@workspace/api-client-react';
 import { useRegion } from '@/hooks/useRegion';
 import { HeroSection } from '@/components/HeroSection';
@@ -16,11 +16,6 @@ export default function Home() {
   const topRatedMovies = useGetCatalogList({ mediaType: 'movie', category: 'top_rated', region });
   const popularTv = useGetCatalogList({ mediaType: 'tv', category: 'popular', region });
   const topRatedTv = useGetCatalogList({ mediaType: 'tv', category: 'top_rated', region });
-
-  useEffect(() => {
-    void nowPlayingMovies.refetch();
-    void trending.refetch();
-  }, [region]);
 
   const heroTitles = useMemo(() => {
     const seen = new Set<string>();
