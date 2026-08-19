@@ -10,97 +10,135 @@ Supported workflow:
 - ChatGPT / Kimi / other coding agents
 - Vercel for production deployment
 
-**Replit is not a supported development, deployment, or runtime environment. Do not add Replit-specific tooling or configuration.**
+**Replit is not supported. Do not add Replit tooling, configuration, dependencies, or deployment assumptions.**
 
-## Production service boundaries
+## Production architecture
 
-- **Vercel** — hosting, deployment, serverless functions, and production environment variables.
-- **Supabase Auth** — authentication and OAuth.
-- **Neon** — PostgreSQL persistence.
-- **TMDB** — movie/TV metadata and poster/catalog data.
-- **External streaming APIs/providers** — playback/streaming data.
+```text
+Browser
+  |
+  v
+Vercel
+  +-- React/Vite frontend
+  +-- /api/* serverless functions
+  |
+  +--> Supabase Auth       identity, sessions, OAuth
+  +--> Neon/PostgreSQL     application persistence
+  +--> TMDB                movie/TV metadata and posters
+  +--> External streaming APIs/providers
+                              playback/stream data
+```
 
-Keep these responsibilities separate. TMDB is not a streaming provider. Supabase is not the application database. Streaming providers are not the catalog source.
+### Service boundaries
 
-## Before editing
+| Responsibility | Owner |
+|---|---|
+| Hosting, deployment, runtime configuration | Vercel |
+| Authentication, OAuth, user identity | Supabase Auth |
+| Application PostgreSQL data | Neon/PostgreSQL |
+| Movie/TV metadata and posters | TMDB |
+| Video/streaming data | External streaming APIs/providers |
+| Browser UI | `artifacts/allrated/` |
 
-1. Read this file.
-2. Read `ARCHITECTURE.md` for system boundaries.
-3. Identify the owning package or API surface before changing code.
-4. Search for existing implementations before creating a new one.
-5. Trace callers and deployment ownership for routes that exist in multiple API surfaces.
-6. Preserve existing public routes and API contracts unless the task explicitly changes them.
-7. Prefer the smallest coherent change over broad rewrites.
+These boundaries are architectural invariants. Do not move authentication into the application database, treat TMDB as a streaming provider, or make a streaming provider the catalog source.
 
 ## Repository boundaries
 
-- `artifacts/allrated/` — primary RabbitRip web application and its Vercel functions.
-- `artifacts/api-server/` — separate Express server package; verify whether a change affects production before modifying/removing it.
+- `artifacts/allrated/` — primary RabbitRip web application and Vercel functions.
+- `artifacts/api-server/` — separate Express server package; verify deployment ownership before changing or removing it.
 - `artifacts/cinepro-core/` — separate CinePro service/core. Do not silently merge it into the RabbitRip/Bingr request path.
-- `lib/` — shared workspace packages, including database and API packages.
-- `api/` — root-level serverless code whose production ownership must be verified before extending or duplicating it.
-- `clone-data/` — reference/research material, not runtime application logic.
+- `lib/` — shared workspace packages, including database/API packages.
+- `api/` — serverless code whose production ownership must be verified before extending, duplicating, or deleting it.
 - `scripts/` — repository tooling.
+- `docs/` — canonical engineering documentation and architectural decisions.
 
-## Rules
+## Legacy surfaces
 
-1. Never commit secrets, API keys, tokens, cookies, or private credentials.
-2. Never expose environment secrets in documentation or client-side code.
-3. Do not introduce Replit dependencies, plugins, workflows, or configuration.
-4. Do not create duplicate API implementations when an existing route already owns the behavior.
-5. Keep authentication, database, catalog metadata, and streaming provider responsibilities separate.
-6. Keep Bingr and CinePro as separate systems unless an explicit architectural change is requested.
-7. Do not move large directories merely to make names look cleaner; prove ownership and dependency relationships first.
-8. Do not delete runtime code solely because it looks old. Confirm references and deployment ownership first.
-9. Treat Vercel environment variables as the production configuration source of truth.
-10. Update documentation when architecture, API ownership, environment requirements, or developer workflow changes.
+`artifacts/allrated/api/index.js` is a legacy monolithic API surface. It contains older authentication/session logic and other routes that are not equivalent to the current Supabase/Neon architecture.
 
-## Change workflow
+**Do not delete it merely because it is old.** Inventory its routes, trace callers, verify Vercel routing, and migrate any still-used functionality before removing it. The `/api` catch-all must remain until those live routes are migrated and verified.
+
+`artifacts/cinepro-core/` is also not automatically part of the current streaming path. Keep it separate until deployment and caller evidence supports a deliberate migration.
+
+## Agent workflow
 
 ```text
-READ → TRACE → PLAN → EDIT → VALIDATE → REVIEW DIFF → DOCUMENT
+READ → TRACE → PLAN → EDIT → TEST → VERIFY → DOCUMENT → DIFF → COMMIT
 ```
 
-### Validation
+### Before editing
 
-At minimum, run the checks appropriate to the affected package:
+1. Read this file and the relevant architecture/API documentation.
+2. Identify the owning package or API surface.
+3. Search for callers and duplicate implementations.
+4. Check Vercel routing/deployment ownership for API changes.
+5. Determine whether the target is production code, legacy code, tooling, or historical material.
+6. Preserve public routes/contracts unless the task intentionally includes a migration.
 
-- frontend typecheck
-- frontend build
-- API/server typecheck or build
-- focused runtime verification for changed endpoints
+### After editing
 
-Do not claim production correctness from static inspection alone.
+- Inspect the complete diff.
+- Run the narrowest useful validation first.
+- Run affected package typecheck/build when practical.
+- Verify changed API routes and deployment configuration.
+- Update canonical documentation when behavior, ownership, or workflow changes.
 
-## Dependency changes
+## Engineering rules
 
-When adding or removing a dependency:
+1. Code plus canonical documentation is the source of truth.
+2. Never commit secrets, API keys, tokens, cookies, or private credentials.
+3. Treat Vercel environment variables as production configuration; never copy real values into Git or docs.
+4. Do not introduce duplicate API/business logic.
+5. Prefer existing workspace utilities and dependencies over unnecessary new packages.
+6. Keep business logic out of presentational React components when a service/module boundary exists.
+7. Do not delete runtime code solely because it looks old; prove references and deployment ownership first.
+8. Do not make broad rewrites when a smaller coherent change is sufficient.
+9. Keep Supabase Auth, Neon persistence, TMDB metadata, and streaming-provider responsibilities separate.
+10. Keep Bingr and CinePro separate unless an explicit architectural decision changes that boundary.
+11. Do not create session-status, handoff, or agent-memory files as a substitute for canonical docs.
 
-1. Verify it is actually required.
-2. Update the owning `package.json`.
-3. Regenerate/update `pnpm-lock.yaml` with pnpm.
-4. Run the relevant build/typecheck.
-5. Confirm no stale references remain.
+## Dependencies and lockfile
+
+RabbitRip is a pnpm workspace. When adding/removing dependencies:
+
+1. Update the owning `package.json` or workspace catalog.
+2. Regenerate `pnpm-lock.yaml` with the repository-compatible pnpm version.
+3. Run the relevant typecheck/build.
+4. Confirm stale dependency references are gone.
+
+Never hand-edit package resolution data when package-manager regeneration is available.
 
 ## Environment variables
 
-Secrets and provider configuration belong in Vercel environment variables, not Git.
+Production provider configuration belongs in Vercel environment variables.
 
-Known production integration categories include:
+Known integration categories include:
 
 - Supabase URL and publishable key for frontend authentication.
 - Neon `DATABASE_URL` for PostgreSQL access.
 - TMDB credentials for server-side catalog access where required.
 - Streaming-provider configuration/credentials where required.
 
-Never copy real production values into `.env.example` or documentation.
+Never place real values in source control, documentation, or `.env.example`.
 
 ## Documentation ownership
 
-- `README.md` — what RabbitRip is and how to orient yourself.
-- `ARCHITECTURE.md` — system structure, external services, and runtime boundaries.
-- `DEVELOPMENT.md` — local development and validation.
-- `docs/API.md` — API ownership and contracts.
+- `README.md` — project purpose and orientation.
+- `ARCHITECTURE.md` — system structure, service boundaries, and data flow.
+- `DEVELOPMENT.md` — local development, build, and validation workflow.
+- `docs/API.md` — API surfaces, ownership, and contracts.
 - `docs/decisions/` — durable architectural decisions.
 
-Git history is the historical record. Do not create session-memory files that pretend to be current architecture.
+Git history is the historical record. Do not recreate historical state as current architecture.
+
+## Definition of done
+
+A change is complete only when, as applicable:
+
+- source is internally consistent;
+- dependencies and lockfile are synchronized;
+- typecheck/build passes;
+- Vercel routing still matches intended API ownership;
+- no obsolete platform configuration was introduced;
+- affected documentation is accurate;
+- the final diff contains only intentional changes.
