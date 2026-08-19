@@ -14,7 +14,7 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 - API: `artifacts/api-server/` (Express, port 8080)
 - CinePro: `artifacts/cinepro-core/` (streaming engine, port 3001)
 
-## Current Status — CLEANUP PHASES 1–4 + BINGR PARITY PHASE 2 HOME + EXPLORE + TITLE DETAIL POLISH
+## Current Status — CLEANUP PHASES 1–4 + BINGR PARITY PHASE 3 CATALOG/CATEGORIES
 
 ### Completed
 - Home Trending is driven by catalog data rather than a fixed Reacher/Spider-Man snapshot.
@@ -33,6 +33,7 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 - Home now uses a focused Bingr-style content rail set rather than many extra genre-specific rows.
 - Explore/search now uses a more Bingr-like Discover/Explore hierarchy, responsive search surface, type filtering, mobile filter UI, and preserved recent-search behavior.
 - Title/detail pages now have a scoped cinematic parity polish layer for responsive viewport sizing, safe-area handling, tap behavior, and reduced-motion support.
+- Phase 3 started with a dedicated `bingr-catalog-polish.css` surface for catalog/category grid rhythm, card elevation, horizontal rail behavior, mobile sizing, and browsing spacing. It is visual-only and preserves existing real catalog data and routes.
 - Hero and home content remain data-driven from RabbitRip's catalog and existing logo/trailer endpoints; no fake or hardcoded media was introduced.
 - Navigation/UI changes remain scoped to parity and must not alter the streaming architecture.
 - Phase 5 server-selector consolidation is intentionally deferred and must not be changed unless explicitly requested.
@@ -49,6 +50,7 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 - Verify Phase 2 Home hero layout on mobile/desktop, trailer fallback, hero navigation, carousel controls, and responsive content rails.
 - Verify Explore/search UI, recent-search behavior, and type filtering on mobile/desktop.
 - Verify title/detail cinematic surface on mobile/desktop and verify trailer fallback/control behavior.
+- Verify Phase 3 catalog/category desktop/mobile spacing, poster grid density, horizontal category rails, navigation targets, and infinite-scroll loading.
 - Deploy `main` and verify Bingr stream HTTP 200 with `sources` and `subtitles`.
 - Finish a movie/episode and verify Home shows recommendations for that exact completed title.
 - Verify TV S/E values reach the Bingr request.
