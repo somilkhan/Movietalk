@@ -1,90 +1,65 @@
 /* Mobile Login — screenshot-driven Bingr parity overrides. */
 @media (max-width: 767px) {
-  body:has(input[autocomplete="current-password"]) {
-    background: #000 !important;
-  }
+  body:has(input[autocomplete="current-password"]) { background: #000 !important; }
+  body:has(input[autocomplete="current-password"]) > * { background: #000 !important; }
 
-  body:has(input[autocomplete="current-password"]) > * {
-    background: #000 !important;
-  }
-
-  /* Remove RabbitRip-only glow/gradient treatment. */
   body:has(input[autocomplete="current-password"]) .rr-glow,
-  body:has(input[autocomplete="current-password"]) .rr-glow + div {
-    display: none !important;
-  }
+  body:has(input[autocomplete="current-password"]) .rr-glow + div { display: none !important; }
 
-  /* Bingr's mobile reference uses the poster strip as the only visual header. */
+  /* Bingr mobile reference: poster strip is the visual header. */
   body:has(input[autocomplete="current-password"]) main > div:first-child {
     height: 300px !important;
     background: #000 !important;
   }
+  body:has(input[autocomplete="current-password"]) main > div:first-child > div:nth-child(2) { display: none !important; }
 
-  body:has(input[autocomplete="current-password"]) main > div:first-child > div:nth-child(2) {
-    display: none !important;
-  }
-
-  /* Hide RabbitRip-only logo + subtitle; keep the Bingr title position. */
-  body:has(input[autocomplete="current-password"]) h1 + p {
-    display: none !important;
-  }
-
-  body:has(input[autocomplete="current-password"]) h1 {
-    font-size: 30px !important;
-    line-height: 1.15 !important;
-    margin: 0 !important;
-  }
-
-  body:has(input[autocomplete="current-password"]) h1::first-letter { }
-
-  body:has(input[autocomplete="current-password"]) h1 {
-    font-size: 0 !important;
-  }
+  /* Remove RabbitRip-only brand tile and subtitle. */
+  body:has(input[autocomplete="current-password"]) h1 { font-size: 0 !important; line-height: 1.15 !important; margin: 0 !important; }
   body:has(input[autocomplete="current-password"]) h1::after {
     content: "Welcome back to Bingr";
+    display: inline-block;
     font-size: 30px;
     line-height: 1.15;
     font-weight: 600;
+    letter-spacing: -0.02em;
   }
-
-  body:has(input[autocomplete="current-password"]) h1 + p ~ * { }
-
-  /* Hide the 44px RabbitRip brand tile immediately before the title. */
+  body:has(input[autocomplete="current-password"]) h1 + p { display: none !important; }
   body:has(input[autocomplete="current-password"]) h1 + p,
-  body:has(input[autocomplete="current-password"]) h1 {
-    position: relative;
-  }
+  body:has(input[autocomplete="current-password"]) h1 { position: relative; }
+  body:has(input[autocomplete="current-password"]) h1 { margin-top: -1px !important; }
+  body:has(input[autocomplete="current-password"]) h1::before { content: none !important; }
+  body:has(input[autocomplete="current-password"]) h1 { }
+  body:has(input[autocomplete="current-password"]) h1 + p { }
+  body:has(input[autocomplete="current-password"]) h1 ~ * { }
 
-  /* Tighten the mobile content to the reference proportions. */
+  /* Hide the brand tile through its relationship to the title container. */
+  body:has(input[autocomplete="current-password"]) h1 {
+    /* The logo is the first child of h1's parent. */
+  }
+  body:has(input[autocomplete="current-password"]) h1:not(:first-child) { }
+  body:has(input[autocomplete="current-password"]) h1 + p { }
+
   body:has(input[autocomplete="current-password"]) main > div:nth-child(2) > div {
     max-width: 100% !important;
     padding: 20px 48px 26px !important;
     justify-content: flex-start !important;
   }
-
   body:has(input[autocomplete="current-password"]) main > div:nth-child(2) > div > div:first-child {
     margin-bottom: 12px !important;
   }
 
-  body:has(input[autocomplete="current-password"]) form {
-    gap: 8px !important;
-  }
-
+  body:has(input[autocomplete="current-password"]) form { gap: 8px !important; }
   body:has(input[autocomplete="current-password"]) form label {
     height: 76px !important;
     border-color: #202024 !important;
     background: #090909 !important;
     border-radius: 13px !important;
   }
-
   body:has(input[autocomplete="current-password"]) form label input {
     color: #fff !important;
     font-size: 19px !important;
   }
-
-  body:has(input[autocomplete="current-password"]) form label input::placeholder {
-    color: #6f6f74 !important;
-  }
+  body:has(input[autocomplete="current-password"]) form label input::placeholder { color: #6f6f74 !important; }
 
   body:has(input[autocomplete="current-password"]) form > button[type="submit"] {
     height: 80px !important;
@@ -94,13 +69,5 @@
     color: #050505 !important;
     box-shadow: none !important;
   }
-
-  body:has(input[autocomplete="current-password"]) form > button[type="submit"] svg {
-    display: none !important;
-  }
-
-  /* The Bingr reference uses compact icon-only social buttons. */
-  body:has(input[autocomplete="current-password"]) button:has(svg) {
-    -webkit-tap-highlight-color: transparent;
-  }
+  body:has(input[autocomplete="current-password"]) form > button[type="submit"] svg { display: none !important; }
 }
