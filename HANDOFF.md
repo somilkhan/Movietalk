@@ -14,7 +14,7 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 - API: `artifacts/api-server/` (Express, port 8080)
 - CinePro: `artifacts/cinepro-core/` (streaming engine, port 3001)
 
-## Current Status — CLEANUP PHASES 1–4 + BINGR PARITY PHASE 2 HOME FOUNDATION
+## Current Status — CLEANUP PHASES 1–4 + BINGR PARITY PHASE 2 HOME RAILS + HERO HARDENING
 
 ### Completed
 - Home Trending is driven by catalog data rather than a fixed Reacher/Spider-Man snapshot.
@@ -26,7 +26,9 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 - Bingr parity Phase 1 mounted the Bingr desktop top bar and mobile header/search shell in the main authenticated app shell.
 - Existing bottom mobile navigation remains active for route switching.
 - Bingr parity Phase 2 rebuilt the Home hero toward the Bingr reference with responsive cinematic sizing, layered gradients, logo/title presentation, metadata/actions, carousel controls, and playback controls.
-- Hero content remains data-driven from RabbitRip's catalog and existing logo/trailer endpoints; no fake or hardcoded media was introduced.
+- Hero trailer failure now falls back to the catalog backdrop poster; play/pause is controlled through a stable video ref.
+- Home now uses a focused Bingr-style content rail set rather than many extra genre-specific rows.
+- Hero and home content remain data-driven from RabbitRip's catalog and existing logo/trailer endpoints; no fake or hardcoded media was introduced.
 - Navigation/UI changes remain scoped to parity and must not alter the streaming architecture.
 - Phase 5 server-selector consolidation is intentionally deferred and must not be changed unless explicitly requested.
 
