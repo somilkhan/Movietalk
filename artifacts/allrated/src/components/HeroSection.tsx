@@ -48,7 +48,7 @@ export function HeroSection({ titles }: { titles: Title[] | undefined }) {
     else videoRef.current.pause();
   }, [playing, trailerUrl]);
 
-  if (!title) return <section className="relative min-h-[68dvh] w-full bg-black animate-pulse" data-testid="hero-section" />;
+  if (!title) return <section className="relative min-h-[500px] w-full bg-black animate-pulse" data-testid="hero-section" />;
 
   const genres = getGenreNames(title.genreIds ?? [], 4);
   const mediaRoute = title.mediaType === 'movie' ? 'movie' : title.mediaType === 'tv' ? 'tv' : 'anime';
@@ -56,10 +56,10 @@ export function HeroSection({ titles }: { titles: Title[] | undefined }) {
   const go = (delta: number) => setIndex((current) => (current + delta + items.length) % items.length);
 
   return (
-    <section className="relative isolate h-[72dvh] min-h-[620px] max-h-[900px] w-full overflow-hidden bg-black text-white md:h-[78vh]" data-testid="hero-section">
+    <section className="relative isolate h-[68dvh] min-h-[500px] max-h-[760px] w-full overflow-hidden bg-black text-white md:h-[78vh] md:min-h-[620px] md:max-h-[900px]" data-testid="hero-section">
       <div className="absolute inset-0 z-0 bg-black">
         {trailerUrl ? (
-          <video ref={videoRef} src={trailerUrl} autoPlay loop playsInline muted={muted} poster={backdrop || undefined} className="absolute inset-0 h-full w-full object-cover object-center opacity-95" onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onError={() => setTrailerUrl(null)} />
+          <video ref={videoRef} src={trailerUrl} autoPlay loop playsInline muted={muted} preload="metadata" poster={backdrop || undefined} className="absolute inset-0 h-full w-full object-cover object-center opacity-95" onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onError={() => setTrailerUrl(null)} />
         ) : backdrop ? (
           <img src={backdrop} alt="" className="absolute inset-0 h-full w-full object-cover object-center opacity-95" />
         ) : null}
