@@ -33,7 +33,8 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 - Home now uses a focused Bingr-style content rail set rather than many extra genre-specific rows.
 - Explore/search now uses a more Bingr-like Discover/Explore hierarchy, responsive search surface, type filtering, mobile filter UI, and preserved recent-search behavior.
 - Title/detail pages now have a scoped cinematic parity polish layer for responsive viewport sizing, safe-area handling, tap behavior, and reduced-motion support.
-- Phase 3 started with a dedicated `bingr-catalog-polish.css` surface for catalog/category grid rhythm, card elevation, horizontal rail behavior, mobile sizing, and browsing spacing. It is visual-only and preserves existing real catalog data and routes.
+- Phase 3 catalog grid polish is now applied directly to `Catalog.tsx`: Bingr-style compact poster metadata, restrained card elevation/hover treatment, responsive 3–8 column density, capped content width, tighter header hierarchy, and larger infinite-scroll prefetch margin.
+- Phase 3 category/rail polish remains in place through the existing category rail surface; real catalog data and routes are preserved.
 - Hero and home content remain data-driven from RabbitRip's catalog and existing logo/trailer endpoints; no fake or hardcoded media was introduced.
 - Navigation/UI changes remain scoped to parity and must not alter the streaming architecture.
 - Phase 5 server-selector consolidation is intentionally deferred and must not be changed unless explicitly requested.
