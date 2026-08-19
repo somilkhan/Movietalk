@@ -1,121 +1,49 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Check, Monitor, AlertCircle, ChevronDown } from 'lucide-react';
+import { AlertCircle, Check, ChevronDown, Monitor } from 'lucide-react';
 import type { Backend } from './BackendSelector';
 
-interface OmssSource {
-  url: string;
-  type: 'hls' | 'mp4' | string;
-  quality: string;
-  provider: { id: string; name: string };
-}
-interface BingrServer {
-  id: string;
-  name: string;
-  cc: string;
-}
+interface OmssSource { url: string; type: 'hls' | 'mp4' | string; quality: string; provider: { id: string; name: string }; }
+interface BingrServer { id: string; name: string; cc: string; }
 
-export function SourceSelector({
-  backend, movietalkSources, movietalkActiveIdx, movietalkFailedSet, onMovietalkSelect,
-  bingrServers, bingrActiveId, onBingrSelect,
-}: {
-  backend: Backend;
-  movietalkSources: OmssSource[];
-  movietalkActiveIdx: number;
-  movietalkFailedSet: Set<number>;
-  onMovietalkSelect: (idx: number) => void;
-  bingrServers: BingrServer[];
-  bingrActiveId: string;
-  onBingrSelect: (id: string) => void;
+const trigger = 'group flex h-9 items-center gap-2 rounded-lg border border-white/[0.07] bg-black/45 px-2.5 text-white/75 shadow-lg backdrop-blur-xl transition hover:border-white/[0.12] hover:bg-white/[0.08] hover:text-white md:h-10 md:px-3';
+const panel = 'overflow-hidden rounded-xl border border-white/[0.08] bg-[#09090b]/95 p-1.5 text-white shadow-[0_18px_50px_-12px_rgba(0,0,0,.85)] backdrop-blur-2xl';
+
+export function SourceSelector({ backend, movietalkSources, movietalkActiveIdx, movietalkFailedSet, onMovietalkSelect, bingrServers, bingrActiveId, onBingrSelect }: {
+  backend: Backend; movietalkSources: OmssSource[]; movietalkActiveIdx: number; movietalkFailedSet: Set<number>; onMovietalkSelect: (idx: number) => void;
+  bingrServers: BingrServer[]; bingrActiveId: string; onBingrSelect: (id: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const close = () => setOpen(false);
+  const activeIndex = bingrServers.findIndex((server) => server.id === bingrActiveId);
+  const label = backend === 'movietalk' ? 'Source' : 'Server';
+  const count = backend === 'movietalk' ? (movietalkSources.length ? movietalkActiveIdx + 1 : '-') : (activeIndex >= 0 ? activeIndex + 1 : '-');
 
-  if (backend === 'movietalk') {
-    return (
-      <div className="relative" onMouseLeave={() => setOpen(false)}>
-        <button onClick={(e) => { e.stopPropagation(); setOpen(v => !v); }} onMouseEnter={() => setOpen(true)}
-          className="flex items-center gap-2 p-2 md:px-3 md:py-2 rounded-lg bg-black/40 backdrop-blur-md text-white/90 hover:text-white hover:bg-white/10 transition-all text-sm font-semibold">
-          <Monitor className="w-4 h-4" />
-          <span className="hidden md:inline">Source</span>
-          <span className="hidden md:inline opacity-50 font-normal">{movietalkSources.length > 0 ? movietalkActiveIdx + 1 : '-'}</span>
-          <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} />
-        </button>
-        <div className={cn("absolute bottom-full right-0 mb-2 min-w-[16rem] max-w-[calc(100vw-1rem)] z-50 transition-all duration-200 origin-bottom-right", open ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none")}>
-          <div className="bg-black/70 backdrop-blur-2xl border border-white/10 text-white rounded-xl shadow-2xl py-2 text-sm flex flex-col w-max max-w-[calc(100vw-1rem)]">
-            <div className="text-white/50 text-[11px] font-bold px-5 mb-2 uppercase tracking-wider">Source</div>
-            {movietalkSources.length === 0 ? (
-              <div className="px-5 py-3 text-white/40 text-sm">No sources available</div>
-            ) : (
-              <div className="flex flex-col max-h-[300px] overflow-y-auto">
-                {movietalkSources.map((s, idx) => {
-                  const isActive = movietalkActiveIdx === idx;
-                  const failed = movietalkFailedSet.has(idx);
-                  const isHls = s.type === 'hls' || s.url.includes('.m3u8');
-                  return (
-                    <button key={idx} onClick={() => { onMovietalkSelect(idx); setOpen(false); }}
-                      className="flex items-center gap-3 px-5 py-2.5 hover:bg-white/10 text-left transition-colors">
-                      <span className={cn("w-4 text-white", isActive ? "opacity-100" : "opacity-0")}><Check className="w-4 h-4" /></span>
-                      <div className="flex-1 min-w-0">
-                        <div className={cn("flex items-center gap-2", isActive ? "text-white font-semibold" : "text-white/80")}>
-                          <span>Source {idx + 1}</span>
-                          {s.quality !== 'Auto' && <span className="text-[9px] font-black tracking-wider px-1 py-0.5 rounded bg-green-500/20 text-green-400">{s.quality}</span>}
-                          {isHls && <span className="text-[9px] font-black tracking-wider px-1 py-0.5 rounded bg-blue-500/20 text-blue-300">HLS</span>}
-                        </div>
-                        <div className="text-[11px] uppercase font-semibold mt-0.5 text-white/40 truncate">{s.provider.name}</div>
-                      </div>
-                      {failed && !isActive && <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            <div className="mt-2 border-t border-white/10 px-5 pt-2.5 pb-1 flex items-start gap-2 text-white/50 text-[11px] leading-snug max-w-[280px]">
-              <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-400/80" />
-              <span>HLS sources play natively; others may show ads.</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  return <div className="relative" onMouseLeave={close}>
+    <button type="button" aria-haspopup="menu" aria-expanded={open} aria-label={`${label} selector`} onClick={(event) => { event.stopPropagation(); setOpen((value) => !value); }} onMouseEnter={() => setOpen(true)} className={trigger}>
+      <Monitor className="h-4 w-4 text-white/55" />
+      <span className="hidden text-[12px] font-semibold md:inline">{label}</span>
+      <span className="hidden text-[12px] font-medium text-white/35 md:inline">{count}</span>
+      <ChevronDown className={cn('h-3.5 w-3.5 text-white/40 transition-transform', open && 'rotate-180')} />
+    </button>
 
-  const activeIndex = bingrServers.findIndex(s => s.id === bingrActiveId);
-  return (
-    <div className="relative" onMouseLeave={() => setOpen(false)}>
-      <button onClick={(e) => { e.stopPropagation(); setOpen(v => !v); }} onMouseEnter={() => setOpen(true)}
-        className="flex items-center gap-2 p-2 md:px-3 md:py-2 rounded-lg bg-black/40 backdrop-blur-md text-white/90 hover:text-white hover:bg-white/10 transition-all text-sm font-semibold">
-        <Monitor className="w-4 h-4" />
-        <span className="hidden md:inline">Server</span>
-        <span className="hidden md:inline opacity-50 font-normal">{activeIndex + 1}</span>
-        <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} />
-      </button>
-      <div className={cn("absolute bottom-full right-0 mb-2 min-w-[16rem] max-w-[calc(100vw-1rem)] z-50 transition-all duration-200 origin-bottom-right", open ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none")}>
-        <div className="bg-black/70 backdrop-blur-2xl border border-white/10 text-white rounded-xl shadow-2xl py-2 text-sm flex flex-col w-max max-w-[calc(100vw-1rem)]">
-          <div className="text-white/50 text-[11px] font-bold px-5 mb-2 uppercase tracking-wider">Server</div>
-          <div className="flex flex-col max-h-[300px] overflow-y-auto">
-            {bingrServers.map((server, idx) => {
-              const isActive = server.id === bingrActiveId;
-              return (
-                <button key={server.id} onClick={() => { onBingrSelect(server.id); setOpen(false); }}
-                  className="flex items-center gap-3 px-5 py-2.5 hover:bg-white/10 text-left transition-colors">
-                  <span className={cn("w-4 text-white", isActive ? "opacity-100" : "opacity-0")}><Check className="w-4 h-4" /></span>
-                  <div className="flex-1 min-w-0">
-                    <div className={cn("flex items-center gap-2", isActive ? "text-white font-semibold" : "text-white/80")}>
-                      <span>Server {idx + 1}</span>
-                      <span className="text-[9px] font-black tracking-wider px-1 py-0.5 rounded bg-blue-500/20 text-blue-300">HLS</span>
-                    </div>
-                    <div className="text-[11px] uppercase font-semibold mt-0.5 text-white/40 truncate">{server.cc} &bull; {server.name}</div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-          <div className="mt-2 border-t border-white/10 px-5 pt-2.5 pb-1 flex items-start gap-2 text-white/50 text-[11px] leading-snug max-w-[280px]">
-            <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-400/80" />
-            <span>Bingr servers &mdash; streaming via api.bingr.one</span>
-          </div>
+    <div className={cn('absolute bottom-full right-0 z-50 mb-2 origin-bottom-right transition-all duration-150', open ? 'scale-100 opacity-100' : 'pointer-events-none scale-95 opacity-0')}>
+      <div role="menu" className={`${panel} min-w-[260px] max-w-[calc(100vw-1rem)]`}>
+        <div className="px-3 pb-2 pt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white/30">{label}</div>
+        <div className="max-h-[300px] overflow-y-auto pr-0.5">
+          {backend === 'movietalk' ? (
+            movietalkSources.length === 0 ? <div className="px-3 py-4 text-xs font-medium text-white/35">No sources available</div> : movietalkSources.map((source, idx) => {
+              const active = idx === movietalkActiveIdx; const failed = movietalkFailedSet.has(idx); const isHls = source.type === 'hls' || source.url.includes('.m3u8');
+              return <button type="button" role="menuitem" key={`${source.provider.id}-${idx}`} onClick={() => { onMovietalkSelect(idx); close(); }} className={cn('flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-left transition-colors hover:bg-white/[0.07]', active && 'bg-white/[0.055]')}>
+                <span className="flex w-4 justify-center">{active && <Check className="h-3.5 w-3.5" />}</span>
+                <span className="min-w-0 flex-1"><span className={cn('flex items-center gap-1.5 text-[12px]', active ? 'font-semibold text-white' : 'font-medium text-white/70')}><span>Source {idx + 1}</span>{source.quality !== 'Auto' && <b className="rounded bg-emerald-500/15 px-1 py-0.5 text-[8px] tracking-wider text-emerald-300">{source.quality}</b>}{isHls && <b className="rounded bg-sky-500/15 px-1 py-0.5 text-[8px] tracking-wider text-sky-300">HLS</b>}</span><span className="mt-0.5 block truncate text-[10px] font-medium uppercase tracking-wide text-white/30">{source.provider.name}</span></span>
+                {failed && !active && <AlertCircle className="h-3.5 w-3.5 shrink-0 text-amber-400" />}
+              </button>;
+            })
+          ) : bingrServers.map((server, idx) => { const active = server.id === bingrActiveId; return <button type="button" role="menuitem" key={server.id} onClick={() => { onBingrSelect(server.id); close(); }} className={cn('flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-left transition-colors hover:bg-white/[0.07]', active && 'bg-white/[0.055]')}><span className="flex w-4 justify-center">{active && <Check className="h-3.5 w-3.5" />}</span><span className="min-w-0 flex-1"><span className={cn('flex items-center gap-1.5 text-[12px]', active ? 'font-semibold text-white' : 'font-medium text-white/70')}><span>Server {idx + 1}</span><b className="rounded bg-sky-500/15 px-1 py-0.5 text-[8px] tracking-wider text-sky-300">HLS</b></span><span className="mt-0.5 block truncate text-[10px] font-medium uppercase tracking-wide text-white/30">{server.cc} · {server.name}</span></span></button>; })}
         </div>
+        <div className="mt-1.5 flex items-start gap-2 border-t border-white/[0.07] px-2.5 pt-2.5 pb-1 text-[10px] leading-snug text-white/30"><AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400/70" /><span>{backend === 'bingr' ? 'Bingr servers · streaming via api.bingr.one' : 'HLS sources play natively; other sources may show ads.'}</span></div>
       </div>
     </div>
-  );
+  </div>;
 }
