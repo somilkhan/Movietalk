@@ -1,27 +1,27 @@
 # SESSION STATUS
 
-## 2026-08-19 — Bingr parity Phase 1 foundation
+## 2026-08-19 — Bingr parity Phase 2 home foundation
 
 ### Scope
-Phase 1 foundation is being completed on `feat/bingr-parity-polish`. The goal is Bingr-style UI/UX parity while preserving RabbitRip's existing backend and streaming systems.
+Phase 2 home-page parity is now in progress on `feat/bingr-parity-polish`. The goal is to match Bingr's content-first home composition while keeping RabbitRip's real catalog/backend data.
 
 ### Completed / tracked
-- Existing cleanup phases remain intact.
-- Bingr parity work is isolated to the parity branch.
-- Desktop Bingr top bar is now mounted globally for the authenticated app shell, including search, Explore, notifications, and profile entry points.
-- Mobile Bingr header/search overlay is now mounted globally for non-home authenticated pages.
+- Phase 1 navigation foundation remains intact.
+- Desktop Bingr top bar is mounted globally for the authenticated app shell.
+- Mobile Bingr header/search overlay is mounted globally for non-home authenticated pages.
 - Existing bottom mobile navigation remains the primary mobile route switcher.
-- Navigation foundation is the current Phase 1 focus across desktop and mobile.
+- Home hero was rebuilt toward the Bingr reference: large cinematic viewport, layered horizontal/vertical fades, responsive content positioning, logo/title treatment, metadata, watch/see-more actions, featured controls, dots, and mute/play controls.
+- Hero continues to use RabbitRip catalog titles plus existing logo/trailer endpoints; no hardcoded titles or fake media were introduced.
 - No CinePro/Bingr streaming consolidation was introduced.
 - Phase 5 server-selector behavior remains untouched.
 
 ### Streaming safety
-- Bingr and CinePro remain separate systems.
+- Bingr and CinePro remain separate.
 - Existing Bingr extraction/request flow remains in `useBingrSources` + `artifacts/allrated/api/bingr/stream.js`.
 - Existing `POST /api/bingr/stream`, `useHlsPlayer`, and `/api/proxy` architecture remains unchanged.
 
 ### Verification status
-Runtime verification is still required before claiming production/pixel parity. Required checks include navigation on mobile/desktop, Bingr playback HTTP 200 with sources/subtitles, TV season/episode propagation, completion/recommendation behavior, and Studios/Genres navigation.
+Runtime verification is still required before claiming production/pixel parity. Phase 2 verification should cover desktop/mobile home hero layout, trailer fallback, hero navigation, carousel controls, and responsive content rails, followed by the remaining home sections.
 
 ## 2026-08-15 — Hardcode / ghost-code cleanup
 
