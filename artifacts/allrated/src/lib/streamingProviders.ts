@@ -24,11 +24,6 @@ export interface NormalizedStream {
   headers?: Record<string, string>;
 }
 
-/**
- * RabbitRip streaming hierarchy.
- * Server 1 = Bingr and its named source entries.
- * Server 2 = CineMove; CineMove source data is resolved at runtime.
- */
 export const STREAMING_SERVERS: readonly StreamingServer[] = [
   { id: 'bingr', name: 'Bingr', provider: 'bingr', sourceIds: ['s11', 's40', 's12', 's30', 's1', 's2', 's3', 's4', 's5'] },
   { id: 'cinemove', name: 'CineMove', provider: 'cinemove', sourceIds: [] },
@@ -58,6 +53,9 @@ export function getStreamServer(serverId: string) {
 }
 
 export function getStreamProvider(serverId: string) {
+  // Keep the old watch-page state routable during migration; it resolves to
+  // CineMove and is never exposed as a provider/server name.
+  if (serverId === 'cinepro') return 'cinemove';
   return getStreamingServer(serverId)?.provider ?? (BINGR_SOURCES.some((source) => source.id === serverId) ? 'bingr' : null);
 }
 
