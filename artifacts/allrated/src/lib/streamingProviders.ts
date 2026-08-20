@@ -1,11 +1,13 @@
 export type StreamingMediaType = 'movie' | 'tv';
 export type StreamType = 'hls' | 'mp4' | 'dash';
 
-export interface StreamServer {
+export type StreamingProviderId = 'bingr' | 'cinepro' | (string & {});
+
+export interface StreamingServer {
   id: string;
   name: string;
-  provider: 'bingr' | 'cinepro';
-  group: 'server-1' | 'server-2';
+  provider: StreamingProviderId;
+  sourceIds: readonly string[];
 }
 
 export interface NormalizedStream {
@@ -15,33 +17,63 @@ export interface NormalizedStream {
   provider: { id: string; name: string };
   serverId: string;
   serverName: string;
+  sourceId: string;
+  sourceName: string;
   audio?: Array<{ id: string; label: string; language?: string }>;
   subtitles?: Array<{ url: string; label: string; language: string }>;
   headers?: Record<string, string>;
 }
 
-export const STREAM_SERVERS: readonly StreamServer[] = [
-  { id: 's11', name: 'Sirius', provider: 'bingr', group: 'server-1' },
-  { id: 's40', name: 'DarkMatter', provider: 'bingr', group: 'server-1' },
-  { id: 's12', name: 'Quasar', provider: 'bingr', group: 'server-1' },
-  { id: 's30', name: 'Apollo', provider: 'bingr', group: 'server-1' },
-  { id: 's1', name: 'Miller', provider: 'bingr', group: 'server-1' },
-  { id: 's2', name: 'Mann', provider: 'bingr', group: 'server-1' },
-  { id: 's3', name: 'Edmunds', provider: 'bingr', group: 'server-1' },
-  { id: 's4', name: 'Luna', provider: 'bingr', group: 'server-1' },
-  { id: 's5', name: 'Aditya', provider: 'bingr', group: 'server-1' },
-  { id: 'cinepro', name: 'CinePro', provider: 'cinepro', group: 'server-2' },
+/**
+ * RabbitRip's server hierarchy.
+ *
+ * Server 1 is Bingr and its named entries are Bingr sources.
+ * Server 2 is CinePro; its source list is intentionally dynamic and comes
+ * from the CinePro response so adding/changing providers never requires a
+ * player-code change.
+ */
+export const STREAMING_SERVERS: readonly StreamingServer[] = [
+  {
+    id: 'bingr',
+    name: 'Bingr',
+    provider: 'bingr',
+    sourceIds: ['s11', 's40', 's12', 's30', 's1', 's2', 's3', 's4', 's5'],
+  },
+  {
+    id: 'cinepro',
+    name: 'CinePro',
+    provider: 'cinepro',
+    sourceIds: [],
+  },
 ] as const;
 
-export const STREAM_SERVER_GROUPS = [
-  { id: 'server-1', name: 'Bingr', serverIds: STREAM_SERVERS.filter((server) => server.group === 'server-1').map((server) => server.id) },
-  { id: 'server-2', name: 'CinePro', serverIds: STREAM_SERVERS.filter((server) => server.group === 'server-2').map((server) => server.id) },
+export const BINGR_SOURCES = [
+  { id: 's11', name: 'Sirius' },
+  { id: 's40', name: 'DarkMatter' },
+  { id: 's12', name: 'Quasar' },
+  { id: 's30', name: 'Apollo' },
+  { id: 's1', name: 'Miller' },
+  { id: 's2', name: 'Mann' },
+  { id: 's3', name: 'Edmunds' },
+  { id: 's4', name: 'Luna' },
+  { id: 's5', name: 'Aditya' },
 ] as const;
+
+export function getStreamingServer(serverId: string) {
+  return STREAMING_SERVERS.find((server) => server.id === serverId) ?? null;
+}
 
 export function getStreamServer(serverId: string) {
-  return STREAM_SERVERS.find((server) => server.id === serverId) ?? null;
+  if (serverId === 'bingr') return getStreamingServer('bingr');
+  if (serverId === 'cinepro') return getStreamingServer('cinepro');
+  const bingrSource = BINGR_SOURCES.find((source) => source.id === serverId);
+  return bingrSource ? { id: bingrSource.id, name: bingrSource.name, provider: 'bingr' as const, sourceIds: [bingrSource.id] } : null;
 }
 
 export function getStreamProvider(serverId: string) {
-  return getStreamServer(serverId)?.provider ?? null;
+  return getStreamingServer(serverId)?.provider ?? (BINGR_SOURCES.some((source) => source.id === serverId) ? 'bingr' : null);
+}
+
+export function getBingrSource(sourceId: string) {
+  return BINGR_SOURCES.find((source) => source.id === sourceId) ?? null;
 }
