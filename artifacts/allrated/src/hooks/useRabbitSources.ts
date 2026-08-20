@@ -16,7 +16,20 @@ export interface RabbitSource {
   headers?: Record<string, string>;
 }
 export interface RabbitSubtitle { url: string; label: string; language: string }
-interface RawSource { url: string; quality?: string | number; language?: string; type?: string; label?: string; name?: string; headers?: Record<string, string>; provider?: { id?: string; name?: string } }
+interface RawSource {
+  url: string;
+  quality?: string | number;
+  language?: string;
+  type?: string;
+  label?: string;
+  name?: string;
+  sourceId?: string;
+  sourceName?: string;
+  headers?: Record<string, string>;
+  audio?: Array<{ id: string; label: string; language?: string }>;
+  subtitles?: RawSubtitle[];
+  provider?: { id?: string; name?: string };
+}
 interface RawSubtitle { url: string; language?: string; label?: string; name?: string }
 interface StreamResponse { scraperName?: string; sources?: RawSource[]; subtitles?: RawSubtitle[]; error?: string }
 
@@ -52,19 +65,20 @@ function normalizeSubtitles(items: RawSubtitle[]): RabbitSubtitle[] {
   }));
 }
 
-function normalizeSources(items: RawSource[], serverId: string, provider: 'bingr' | 'cinepro'): RabbitSource[] {
+function normalizeSources(items: RawSource[], serverId: string, provider: 'bingr' | 'cinemove'): RabbitSource[] {
   const isBingr = provider === 'bingr';
-  const parentServerId = isBingr ? 'bingr' : 'cinepro';
-  const parentServerName = isBingr ? 'Bingr' : 'CinePro';
+  const parentServerId = isBingr ? 'bingr' : 'cinemove';
+  const parentServerName = isBingr ? 'Bingr' : 'CineMove';
   const configuredSource = isBingr ? getStreamServer(serverId) : null;
   const fallbackSourceName = configuredSource?.name ?? parentServerName;
 
   return items.filter((item) => Boolean(item.url)).map((item, index) => {
     const providerId = item.provider?.id ?? provider;
     const providerName = item.provider?.name ?? parentServerName;
+    const sourceId = isBingr ? serverId : (item.sourceId ?? item.provider?.id ?? `${parentServerId}-${index + 1}`);
     const sourceName = isBingr
       ? fallbackSourceName
-      : (item.name ?? item.label ?? item.provider?.name ?? `Source ${index + 1}`);
+      : (item.sourceName ?? item.name ?? item.label ?? item.provider?.name ?? sourceId);
 
     return {
       url: item.url,
@@ -73,8 +87,10 @@ function normalizeSources(items: RawSource[], serverId: string, provider: 'bingr
       provider: { id: providerId, name: providerName },
       serverId: parentServerId,
       serverName: parentServerName,
-      sourceId: isBingr ? serverId : (item.provider?.id ?? `${parentServerId}-${index}`),
+      sourceId,
       sourceName,
+      audio: item.audio,
+      subtitles: normalizeSubtitles(item.subtitles ?? []),
       headers: item.headers,
     };
   });
@@ -124,35 +140,36 @@ export function useRabbitSources(
       const watchIndex = parts.indexOf('watch');
       const urlSeason = Number(parts[watchIndex + 3]);
       const urlEpisode = Number(parts[watchIndex + 4]);
-
-      if (
-        watchIndex >= 0 &&
-        parts[watchIndex + 1] === 'tv' &&
-        Number.isInteger(urlSeason) && urlSeason > 0 &&
-        Number.isInteger(urlEpisode) && urlEpisode > 0
-      ) {
+      if (watchIndex >= 0 && parts[watchIndex + 1] === 'tv' && Number.isInteger(urlSeason) && urlSeason > 0 && Number.isInteger(urlEpisode) && urlEpisode > 0) {
         requestedSeason = urlSeason;
         requestedEpisode = urlEpisode;
       }
     }
 
     try {
-      const provider = getStreamProvider(serverId) === 'cinepro' ? 'cinepro' : 'bingr';
+      const provider = getStreamProvider(serverId) === 'cinemove' ? 'cinemove' : 'bingr';
       let data: StreamResponse;
 
-      if (provider === 'cinepro') {
-        const endpoint =
-          mediaType === 'tv' &&
-          typeof requestedSeason === 'number' &&
-          typeof requestedEpisode === 'number'
-            ? `/api/stream/tv/${tmdbId}/season/${requestedSeason}/episode/${requestedEpisode}`
-            : `/api/stream/movie/${tmdbId}`;
+      if (provider === 'cinemove') {
+        const params = new URLSearchParams({
+          tmdbId: String(tmdbId),
+          mediaType: mediaType === 'tv' ? 'show' : 'movie',
+          title,
+          year: String(year || ''),
+        });
+        if (mediaType === 'tv' && typeof requestedSeason === 'number' && typeof requestedEpisode === 'number') {
+          params.set('season', String(requestedSeason));
+          params.set('episode', String(requestedEpisode));
+        }
 
-        const response = await fetch(endpoint, {
+        const response = await fetch(`/api/cinemove?${params.toString()}`, {
           headers: { Accept: 'application/json' },
           signal: controller.signal,
         });
-        if (!response.ok) throw new Error(`CinePro returned HTTP ${response.status}`);
+        if (!response.ok) {
+          const body = await response.json().catch(() => null);
+          throw new Error(body?.error || `CineMove returned HTTP ${response.status}`);
+        }
         data = await response.json() as StreamResponse;
       } else {
         const body: Record<string, unknown> = {
@@ -178,7 +195,10 @@ export function useRabbitSources(
       if (data.error) throw new Error(data.error);
 
       const parsedSources = normalizeSources(Array.isArray(data.sources) ? data.sources : [], serverId, provider);
-      const parsedSubtitles = normalizeSubtitles(Array.isArray(data.subtitles) ? data.subtitles : []);
+      const responseSubtitles = normalizeSubtitles(Array.isArray(data.subtitles) ? data.subtitles : []);
+      const embeddedSubtitles = parsedSources.flatMap((source) => source.subtitles ?? []);
+      const parsedSubtitles = [...responseSubtitles, ...embeddedSubtitles].filter((item, index, list) => list.findIndex((other) => other.url === item.url) === index);
+
       sourceCache.set(key, { sources: parsedSources, subtitles: parsedSubtitles, expiresAt: Date.now() + CACHE_TTL });
       setSources(parsedSources);
       setSubtitles(parsedSubtitles);
