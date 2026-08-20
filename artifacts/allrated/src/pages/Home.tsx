@@ -16,8 +16,10 @@ export default function Home(){
   const nowPlayingMovies=useGetCatalogList({mediaType:"movie",category:"now_playing",region});
   const popularMovies=useGetCatalogList({mediaType:"movie",category:"popular",region});
   const topRatedMovies=useGetCatalogList({mediaType:"movie",category:"top_rated",region});
-  const popularTv=useGetCatalogList({mediaType:"tv",category:"popular",region});
-  const topRatedTv=useGetCatalogList({mediaType:"tv",category:"top_rated",region});
+  // Popular TV is a global TMDB popularity list. Do not pass the user's
+  // region here, otherwise the backend can turn it into a region-biased list.
+  const popularTv=useGetCatalogList({mediaType:"tv",category:"popular"});
+  const topRatedTv=useGetCatalogList({mediaType:"tv",category:"top_rated"});
   const anime=useGetAnime();
   useEffect(()=>{void nowPlayingMovies.refetch();void trending.refetch()},[region]);
   const heroTitles=useMemo(()=>{const merged=[...(nowPlayingMovies.data||[]),...(trending.data||[]),...(trendingMovies.data||[])];const seen=new Set<string>();return merged.filter(t=>{const k=`${t.mediaType}-${t.id}`;if(seen.has(k))return false;seen.add(k);return true}).slice(0,12)},[nowPlayingMovies.data,trending.data,trendingMovies.data]);
