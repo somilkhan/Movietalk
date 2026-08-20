@@ -1,67 +1,52 @@
 /**
  * CineMove Server 2 adapter.
  *
- * This endpoint talks to CineMove's own /api/stream contract and forwards
- * freshly generated signed media URLs. Signed media-proxy tokens are never
- * stored or hardcoded.
+ * Talks to CineMove's own /api/stream contract and forwards freshly generated
+ * signed media URLs. Signed media-proxy tokens are never stored or hardcoded.
  *
- * Optional environment configuration:
- *   CINEMOVE_URL=https://cinemove.cc
- *   CINEMOVE_SOURCES=sourceA,sourceB,sourceC
- *
- * If CINEMOVE_SOURCES is omitted, the adapter first attempts CineMove's
- * default /api/stream response. When explicit sources are configured, the
- * adapter fans them out concurrently and returns every successful source.
+ * CINEMOVE_SOURCES may override the currently observed CineMove source IDs.
+ * Keeping this in configuration means new CineMove sources can be added
+ * without changing the player or adapter code.
  */
 
 const DEFAULT_CINEMOVE_URL = 'https://cinemove.cc';
+const DEFAULT_SOURCE_IDS = ['holly', 'cinesu', 'pengu', 'hexa', 'vidup'];
 const REQUEST_TIMEOUT_MS = 15_000;
 
 function json(res, status, body) {
   res.status(status).setHeader('Content-Type', 'application/json; charset=utf-8');
   return res.end(JSON.stringify(body));
 }
-
-function baseUrl() {
-  return String(process.env.CINEMOVE_URL || DEFAULT_CINEMOVE_URL).replace(/\/+$/, '');
-}
-
+function baseUrl() { return String(process.env.CINEMOVE_URL || DEFAULT_CINEMOVE_URL).replace(/\/+$/, ''); }
 function positive(value, name) {
   if (!/^\d+$/.test(String(value || ''))) throw Object.assign(new Error(`${name} must be a positive integer`), { statusCode: 400 });
   return String(value);
 }
-
 function sourceList() {
-  return String(process.env.CINEMOVE_SOURCES || '')
-    .split(',')
-    .map((value) => value.trim())
-    .filter(Boolean);
+  const configured = String(process.env.CINEMOVE_SOURCES || '').split(',').map((v) => v.trim()).filter(Boolean);
+  return configured.length ? configured : DEFAULT_SOURCE_IDS;
 }
-
 function firstSetCookie(headers) {
   if (typeof headers.getSetCookie === 'function') return headers.getSetCookie().join('; ');
   return headers.get('set-cookie') || '';
 }
-
+function normalizeSubtitles(items) {
+  return (Array.isArray(items) ? items : []).filter((item) => item && typeof item.url === 'string').map((item) => ({
+    url: item.url,
+    label: item.label || item.name || item.language || 'Auto',
+    language: item.language || item.label || 'unknown',
+  }));
+}
 function normalizePayload(payload, requestedSource) {
   if (!payload || typeof payload !== 'object') return { sources: [], subtitles: [] };
-
   const root = payload;
   const candidates = [
     ...(Array.isArray(root.sources) ? root.sources : []),
     ...(Array.isArray(root.streams) ? root.streams : []),
     ...(Array.isArray(root.results) ? root.results : []),
   ];
-
-  const direct = [root, root.data, root.stream, root.video, root.media].filter((value) => value && typeof value === 'object');
-  for (const item of direct) {
-    if (item.url || item.src || item.streamUrl || item.playbackUrl || item.m3u8 || item.mp4) candidates.push(item);
-  }
-
-  const subtitles = [
-    ...(Array.isArray(root.subtitles) ? root.subtitles : []),
-    ...(Array.isArray(root.subtitle) ? root.subtitle : []),
-  ];
+  const direct = [root, root.data, root.stream, root.video, root.media].filter((v) => v && typeof v === 'object');
+  for (const item of direct) if (item.url || item.src || item.streamUrl || item.playbackUrl || item.m3u8 || item.mp4) candidates.push(item);
 
   const normalized = candidates.map((item, index) => {
     const url = item.url || item.src || item.streamUrl || item.playbackUrl || item.m3u8 || item.mp4;
@@ -79,21 +64,17 @@ function normalizePayload(payload, requestedSource) {
       sourceName,
       provider: { id: 'cinemove', name: 'CineMove' },
       audio: Array.isArray(item.audio) ? item.audio : undefined,
-      subtitles: Array.isArray(item.subtitles) ? item.subtitles : undefined,
+      subtitles: normalizeSubtitles(item.subtitles),
       headers: item.headers && typeof item.headers === 'object' ? item.headers : undefined,
     };
   }).filter(Boolean);
 
-  return { sources: normalized, subtitles };
+  return { sources: normalized, subtitles: normalizeSubtitles(root.subtitles || root.subtitle) };
 }
-
 async function getSession() {
-  const response = await fetch(`${baseUrl()}/`, {
-    headers: { Accept: 'text/html,application/xhtml+xml', 'User-Agent': 'RabbitRip/CineMove-Adapter' },
-  });
+  const response = await fetch(`${baseUrl()}/`, { headers: { Accept: 'text/html,application/xhtml+xml', 'User-Agent': 'RabbitRip/CineMove-Adapter' } });
   return firstSetCookie(response.headers);
 }
-
 async function callStream(params, cookie, source) {
   const query = new URLSearchParams(params);
   if (source) query.set('source', source);
@@ -112,17 +93,11 @@ async function callStream(params, cookie, source) {
     let payload = null;
     try { payload = text ? JSON.parse(text) : null; } catch {}
     return { response, payload };
-  } finally {
-    clearTimeout(timeout);
-  }
+  } finally { clearTimeout(timeout); }
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    res.setHeader('Allow', 'GET');
-    return json(res, 405, { error: 'Method not allowed' });
-  }
-
+  if (req.method !== 'GET') { res.setHeader('Allow', 'GET'); return json(res, 405, { error: 'Method not allowed' }); }
   try {
     const tmdbId = positive(req.query?.tmdbId, 'tmdbId');
     const mediaType = String(req.query?.mediaType || '').toLowerCase();
@@ -138,34 +113,18 @@ export default async function handler(req, res) {
     if (req.query?.imdbId) params.imdbId = String(req.query.imdbId);
 
     const cookie = await getSession().catch(() => '');
-    const configured = sourceList();
     const requested = req.query?.source ? String(req.query.source) : '';
-    const sourcesToTry = requested ? [requested] : configured;
-
+    const sourcesToTry = requested ? [requested] : sourceList();
     const results = [];
     const failures = [];
+    const responses = await Promise.allSettled(sourcesToTry.map((source) => callStream(params, cookie, source)));
 
-    if (!sourcesToTry.length) {
-      const result = await callStream(params, cookie, '');
-      if (!result.response.ok) return json(res, result.response.status, { error: `CineMove returned HTTP ${result.response.status}` });
-      const normalized = normalizePayload(result.payload, '');
-      results.push(...normalized.sources);
-    } else {
-      const responses = await Promise.allSettled(sourcesToTry.map((source) => callStream(params, cookie, source)));
-      responses.forEach((entry, index) => {
-        const source = sourcesToTry[index];
-        if (entry.status === 'rejected') {
-          failures.push({ source, error: entry.reason?.message || 'request failed' });
-          return;
-        }
-        if (!entry.value.response.ok) {
-          failures.push({ source, status: entry.value.response.status });
-          return;
-        }
-        const normalized = normalizePayload(entry.value.payload, source);
-        results.push(...normalized.sources);
-      });
-    }
+    responses.forEach((entry, index) => {
+      const source = sourcesToTry[index];
+      if (entry.status === 'rejected') { failures.push({ source, error: entry.reason?.message || 'request failed' }); return; }
+      if (!entry.value.response.ok) { failures.push({ source, status: entry.value.response.status }); return; }
+      results.push(...normalizePayload(entry.value.payload, source).sources);
+    });
 
     const unique = [];
     const seen = new Set();
@@ -175,15 +134,7 @@ export default async function handler(req, res) {
       seen.add(key);
       unique.push(source);
     }
-
-    if (!unique.length) {
-      return json(res, 502, {
-        error: 'CineMove returned no playable source',
-        failures,
-        hint: configured.length ? undefined : 'Set CINEMOVE_SOURCES if CineMove requires an explicit source parameter.',
-      });
-    }
-
+    if (!unique.length) return json(res, 502, { error: 'CineMove returned no playable source', failures });
     return json(res, 200, { sources: unique, subtitles: [] });
   } catch (error) {
     if (error?.name === 'AbortError') return json(res, 504, { error: 'CineMove request timed out' });
