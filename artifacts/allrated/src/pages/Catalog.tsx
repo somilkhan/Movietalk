@@ -28,23 +28,31 @@ function buildFetcher(name: string): (page: number) => Promise<CatalogPage> {
   };
   const languageMap: Record<string, string> = {
     'English': 'en', 'Japanese': 'ja', 'Korean': 'ko', 'Hindi': 'hi', 'Spanish': 'es', 'French': 'fr', 'German': 'de', 'Chinese': 'zh',
+    'Portuguese': 'pt', 'Tamil': 'ta', 'Telugu': 'te', 'Kannada': 'kn', 'Malayalam': 'ml', 'Marathi': 'mr', 'Bengali': 'bn',
   };
-  const studioMap: Record<string, number> = {
-    'Disney Plus Studios': 2, 'HBO Max Studios': 3268, 'Peacock Studios': 3353, 'Paramount Studios': 4,
-    'Netflix Studios': 213, 'Hulu Studios': 453, 'Prime Video Studios': 1024, 'Apple TV+ Studios': 350,
+  const studioMap: Record<string, string> = {
+    'Hotstar Specials': 'Hotstar Specials',
+    'Disney+': 'Disney Plus Studios',
+    'HBO Max': 'HBO Max Studios',
+    'Peacock': 'Peacock Studios',
+    'Paramount+': 'Paramount Studios',
+    'Netflix': 'Netflix Studios',
+    'Hulu': 'Hulu Studios',
+    'Prime Video': 'Prime Video Studios',
+    'Apple TV+': 'Apple TV+ Studios',
   };
 
   const catalogParams = catalogMap[name];
   const trendingParams = trendingMap[name];
   const genreId = genreMap[name];
   const language = languageMap[name];
-  const studioId = studioMap[name];
+  const studioName = studioMap[name];
 
   return async (page: number): Promise<CatalogPage> => {
     let url: string;
     if (genreId) url = `${BASE}/api/catalog/genre?mediaType=movie&genreId=${genreId}&page=${page}`;
     else if (language) url = `${BASE}/api/catalog/language?mediaType=movie&language=${language}&page=${page}`;
-    else if (studioId) url = `${BASE}/api/catalog/studio?mediaType=movie&companyId=${studioId}&page=${page}`;
+    else if (studioName) url = `${BASE}/api/catalog/studio?mediaType=movie&companyName=${encodeURIComponent(studioName)}&page=${page}`;
     else if (trendingParams) url = `${BASE}/api/catalog/trending?mediaType=${trendingParams.mediaType}&window=${trendingParams.window}&page=${page}`;
     else if (catalogParams) url = `${BASE}/api/catalog/list?mediaType=${catalogParams.mediaType}&category=${catalogParams.category}&page=${page}`;
     else return { titles: [], nextPage: null };
