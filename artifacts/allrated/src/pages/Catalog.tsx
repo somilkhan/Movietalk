@@ -28,6 +28,9 @@ function buildFetcher(name: string): (page: number) => Promise<CatalogPage> {
     'Mythology Movies': 14, 'Superhero Movies': 28, 'Anime Movies': 16, 'Biopic Movies': 36, 'Devotional Movies': 36,
     'Teen Movies': 18, 'Lifestyle Movies': 99, 'Travel Movies': 99, 'Science and Technology Movies': 99,
   };
+  const combinedGenreMap: Record<string, number[]> = {
+    'Sci-Fi & Fantasy Movies': [878, 14],
+  };
   const languageMap: Record<string, string> = {
     English: 'en', Japanese: 'ja', Korean: 'ko', Hindi: 'hi', Spanish: 'es', French: 'fr', German: 'de', Chinese: 'zh',
     Portuguese: 'pt', Tamil: 'ta', Telugu: 'te', Kannada: 'kn', Malayalam: 'ml', Marathi: 'mr', Bengali: 'bn',
@@ -47,11 +50,26 @@ function buildFetcher(name: string): (page: number) => Promise<CatalogPage> {
   const catalogParams = catalogMap[name];
   const trendingParams = trendingMap[name];
   const genreId = genreMap[name];
+  const combinedGenreIds = combinedGenreMap[name];
   const language = languageMap[name];
   const studioCompanyId = studioCompanyIds[name];
   const studioCompanyName = studioCompanyNames[name];
 
   return async (page: number): Promise<CatalogPage> => {
+    if (combinedGenreIds) {
+      const responses = await Promise.all(combinedGenreIds.map((genreId) => fetch(`${BASE}/api/catalog/genre?mediaType=movie&genreId=${genreId}&page=${page}`)));
+      if (responses.some((res) => !res.ok)) throw new Error(`Failed to fetch combined genre page ${page}`);
+      const lists = await Promise.all(responses.map((res) => res.json() as Promise<Title[]>));
+      const seen = new Set<string>();
+      const titles = lists.flat().filter((title) => {
+        const key = `${title.mediaType}-${title.id}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      return { titles, nextPage: titles.length === 20 ? page + 1 : null };
+    }
+
     let url: string;
     if (genreId) url = `${BASE}/api/catalog/genre?mediaType=movie&genreId=${genreId}&page=${page}`;
     else if (language) url = `${BASE}/api/catalog/language?mediaType=movie&language=${language}&page=${page}`;
@@ -88,5 +106,5 @@ export default function Catalog() {
     observer.observe(sentinel); return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  return <div className="min-h-screen bg-black pb-24 md:pb-12"><Seo title={name || 'Catalog'} /><div className="pt-10 pb-8 px-6 lg:px-20 flex items-center gap-4"><button onClick={() => history.back()} className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition flex-shrink-0" aria-label="Back"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg></button><h1 className="text-2xl md:text-3xl font-bold text-white">{name}</h1></div>{isError && <div className="flex items-center justify-center py-20 text-white/40 text-sm">Failed to load. Try going back and trying again.</div>}<div className="px-6 lg:px-20">{isLoading && <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-x-3 gap-y-6">{Array.from({length:21}).map((_,i)=><div key={i} className="animate-pulse rounded-lg bg-white/5 aspect-[2/3]" />)}</div>}{!isLoading && allTitles.length > 0 && <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-x-3 gap-y-6">{allTitles.map((title,i)=><PosterCard key={`${title.id}-${i}`} title={title} />)}{isFetchingNextPage && Array.from({length:7}).map((_,i)=><div key={`skel-${i}`} className="animate-pulse rounded-lg bg-white/5 aspect-[2/3]" />)}</div>}{!isLoading && allTitles.length === 0 && !isError && <div className="flex flex-col items-center justify-center py-32 text-white/30"><p className="text-lg font-medium">Nothing found</p></div>}<div ref={sentinelRef} className="h-1 w-full" />{!hasNextPage && allTitles.length > 0 && !isLoading && <p className="mt-8 pb-4 text-center text-sm text-white/20">You've seen everything in this category</p>}</div></div>;
+  return <div className="min-h-screen bg-black pb-24 md:pb-12"><Seo title={name || 'Catalog'} /><div className="pt-10 pb-8 px-6 lg:px-20 flex items-center gap-4"><button onClick={() => history.back()} className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition flex-shrink-0" aria-label="Back"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M15 18l-6-6 6 6"/></svg></button><h1 className="text-2xl md:text-3xl font-bold text-white">{name}</h1></div>{isError && <div className="flex items-center justify-center py-20 text-white/40 text-sm">Failed to load. Try going back and trying again.</div>}<div className="px-6 lg:px-20">{isLoading && <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-x-3 gap-y-6">{Array.from({length:21}).map((_,i)=><div key={i} className="animate-pulse rounded-lg bg-white/5 aspect-[2/3]" />)}</div>}{!isLoading && allTitles.length > 0 && <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-x-3 gap-y-6">{allTitles.map((title,i)=><PosterCard key={`${title.id}-${i}`} title={title} />)}{isFetchingNextPage && Array.from({length:7}).map((_,i)=><div key={`skel-${i}`} className="animate-pulse rounded-lg bg-white/5 aspect-[2/3]" />)}</div>}{!isLoading && allTitles.length === 0 && !isError && <div className="flex flex-col items-center justify-center py-32 text-white/30"><p className="text-lg font-medium">Nothing found</p></div>}<div ref={sentinelRef} className="h-1 w-full" />{!hasNextPage && allTitles.length > 0 && !isLoading && <p className="mt-8 pb-4 text-center text-sm text-white/20">You've seen everything in this category</p>}</div></div>;
 }
