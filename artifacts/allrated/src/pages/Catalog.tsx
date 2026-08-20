@@ -25,16 +25,24 @@ function buildFetcher(name: string): (page: number) => Promise<CatalogPage> {
     'Action Movies': 28, 'Comedy Movies': 35, 'Horror Movies': 27, 'Romance Movies': 10749, 'Sci-Fi Movies': 878, 'Crime Movies': 80,
     'Drama Movies': 18, 'Family Movies': 10751, 'Reality Movies': 10764, 'Thriller Movies': 53, 'Mystery Movies': 9648,
     'Fantasy Movies': 14, 'Adventure Movies': 12, 'Animation Movies': 16, 'Historical Movies': 36, 'Documentary Movies': 99, 'Musical Movies': 10402,
+    'Mythology Movies': 14, 'Superhero Movies': 28, 'Anime Movies': 16, 'Biopic Movies': 36, 'Devotional Movies': 36,
+    'Teen Movies': 18, 'Lifestyle Movies': 99, 'Travel Movies': 99, 'Science and Technology Movies': 99,
   };
   const languageMap: Record<string, string> = {
-    'English': 'en', 'Japanese': 'ja', 'Korean': 'ko', 'Hindi': 'hi', 'Spanish': 'es', 'French': 'fr', 'German': 'de', 'Chinese': 'zh',
-    'Portuguese': 'pt', 'Tamil': 'ta', 'Telugu': 'te', 'Kannada': 'kn', 'Malayalam': 'ml', 'Marathi': 'mr', 'Bengali': 'bn',
+    English: 'en', Japanese: 'ja', Korean: 'ko', Hindi: 'hi', Spanish: 'es', French: 'fr', German: 'de', Chinese: 'zh',
+    Portuguese: 'pt', Tamil: 'ta', Telugu: 'te', Kannada: 'kn', Malayalam: 'ml', Marathi: 'mr', Bengali: 'bn',
   };
   const studioCompanyIds: Record<string, number> = {
-    'Disney+': 2, 'HBO Max': 3268, 'Peacock': 3353, 'Paramount+': 4,
-    'Netflix': 213, 'Hulu': 453, 'Prime Video': 1024, 'Apple TV+': 350,
+    'Disney+': 2, 'Disney Plus': 2, 'Disney Plus Studios': 2,
+    'HBO Max': 3268, 'HBO Max Studios': 3268,
+    Peacock: 3353, 'Peacock Studios': 3353,
+    'Paramount+': 4, Paramount: 4, 'Paramount Studios': 4, 'Paramount+ Studios': 4,
+    Netflix: 213, 'Netflix Studios': 213,
+    Hulu: 453, 'Hulu Studios': 453,
+    'Prime Video': 1024, 'Prime Video Studios': 1024,
+    'Apple TV+': 350, 'Apple TV+ Studios': 350,
   };
-  const studioCompanyNames: Record<string, string> = { 'Hotstar Specials': 'Hotstar Specials' };
+  const studioCompanyNames: Record<string, string> = { 'Hotstar Specials': 'Hotstar Specials', 'Hotstar Specials Studios': 'Hotstar Specials' };
 
   const catalogParams = catalogMap[name];
   const trendingParams = trendingMap[name];
