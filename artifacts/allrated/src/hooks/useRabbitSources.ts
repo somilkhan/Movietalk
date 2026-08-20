@@ -24,10 +24,33 @@ type CachedPayload = { sources: RabbitSource[]; subtitles: RabbitSubtitle[]; exp
 const CACHE_TTL = 60_000;
 const sourceCache = new Map<string, CachedPayload>();
 
-function cacheKey(serverId: string, mediaType: string, tmdbId: number, season?: number, episode?: number) { return `${serverId}:${mediaType}:${tmdbId}:${season ?? ''}:${episode ?? ''}`; }
-function detectType(raw: RawSource): RabbitStreamType { const type = (raw.type ?? '').toLowerCase(); const url = raw.url.toLowerCase(); if (type.includes('mpegurl') || type.includes('hls') || url.includes('.m3u8')) return 'hls'; if (type.includes('dash') || type.includes('mpd') || url.includes('.mpd')) return 'dash'; return 'mp4'; }
-function normalizeQuality(value?: string | number) { if (value === undefined || value === null || value === '') return 'Auto'; const q = String(value); if (q.includes('2160') || /4k/i.test(q)) return '4K'; if (q.includes('1080')) return '1080p'; if (q.includes('720')) return '720p'; if (q.includes('480')) return '480p'; if (q.includes('360')) return '360p'; return q; }
-function normalizeSubtitles(items: RawSubtitle[]): RabbitSubtitle[] { return items.filter((item) => Boolean(item.url)).map((item) => ({ url: item.url, label: item.label ?? item.name ?? item.language ?? 'Auto', language: item.language ?? item.label ?? 'unknown' })); }
+function cacheKey(serverId: string, mediaType: string, tmdbId: number, season?: number, episode?: number) {
+  return `${serverId}:${mediaType}:${tmdbId}:${season ?? ''}:${episode ?? ''}`;
+}
+function detectType(raw: RawSource): RabbitStreamType {
+  const type = (raw.type ?? '').toLowerCase();
+  const url = raw.url.toLowerCase();
+  if (type.includes('mpegurl') || type.includes('hls') || url.includes('.m3u8')) return 'hls';
+  if (type.includes('dash') || type.includes('mpd') || url.includes('.mpd')) return 'dash';
+  return 'mp4';
+}
+function normalizeQuality(value?: string | number) {
+  if (value === undefined || value === null || value === '') return 'Auto';
+  const q = String(value);
+  if (q.includes('2160') || /4k/i.test(q)) return '4K';
+  if (q.includes('1080')) return '1080p';
+  if (q.includes('720')) return '720p';
+  if (q.includes('480')) return '480p';
+  if (q.includes('360')) return '360p';
+  return q;
+}
+function normalizeSubtitles(items: RawSubtitle[]): RabbitSubtitle[] {
+  return items.filter((item) => Boolean(item.url)).map((item) => ({
+    url: item.url,
+    label: item.label ?? item.name ?? item.language ?? 'Auto',
+    language: item.language ?? item.label ?? 'unknown',
+  }));
+}
 
 function normalizeSources(items: RawSource[], serverId: string, provider: 'bingr' | 'cinepro'): RabbitSource[] {
   const isBingr = provider === 'bingr';
@@ -35,10 +58,14 @@ function normalizeSources(items: RawSource[], serverId: string, provider: 'bingr
   const parentServerName = isBingr ? 'Bingr' : 'CinePro';
   const configuredSource = isBingr ? getStreamServer(serverId) : null;
   const fallbackSourceName = configuredSource?.name ?? parentServerName;
+
   return items.filter((item) => Boolean(item.url)).map((item, index) => {
     const providerId = item.provider?.id ?? provider;
     const providerName = item.provider?.name ?? parentServerName;
-    const sourceName = isBingr ? fallbackSourceName : (item.name ?? item.label ?? item.provider?.name ?? `Source ${index + 1}`);
+    const sourceName = isBingr
+      ? fallbackSourceName
+      : (item.name ?? item.label ?? item.provider?.name ?? `Source ${index + 1}`);
+
     return {
       url: item.url,
       type: detectType(item),
@@ -53,7 +80,15 @@ function normalizeSources(items: RawSource[], serverId: string, provider: 'bingr
   });
 }
 
-export function useRabbitSources(serverId: string, mediaType: 'movie' | 'tv', tmdbId: number, title: string, year: string, season?: number, episode?: number) {
+export function useRabbitSources(
+  serverId: string,
+  mediaType: 'movie' | 'tv',
+  tmdbId: number,
+  title: string,
+  year: string,
+  season?: number,
+  episode?: number,
+) {
   const [sources, setSources] = useState<RabbitSource[]>([]);
   const [subtitles, setSubtitles] = useState<RabbitSubtitle[]>([]);
   const [loading, setLoading] = useState(false);
@@ -62,44 +97,104 @@ export function useRabbitSources(serverId: string, mediaType: 'movie' | 'tv', tm
 
   const fetchSources = useCallback(async () => {
     if (!tmdbId || !serverId || !title) return;
+
     const key = cacheKey(serverId, mediaType, tmdbId, season, episode);
     const cached = sourceCache.get(key);
-    if (cached && cached.expiresAt > Date.now()) { setSources(cached.sources); setSubtitles(cached.subtitles); setError(null); setLoading(false); return; }
-    abortRef.current?.abort();
-    const controller = new AbortController(); abortRef.current = controller;
-    setLoading(true); setError(null); setSources([]); setSubtitles([]);
+    if (cached && cached.expiresAt > Date.now()) {
+      setSources(cached.sources);
+      setSubtitles(cached.subtitles);
+      setError(null);
+      setLoading(false);
+      return;
+    }
 
-    let requestedSeason = season; let requestedEpisode = episode;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setLoading(true);
+    setError(null);
+    setSources([]);
+    setSubtitles([]);
+
+    let requestedSeason = season;
+    let requestedEpisode = episode;
+
     if (mediaType === 'tv' && typeof window !== 'undefined') {
-      const parts = window.location.pathname.split('/').filter(Boolean); const watchIndex = parts.indexOf('watch');
-      const urlSeason = Number(parts[watchIndex + 3]); const urlEpisode = Number(parts[watchIndex + 4]);
-      if (watchIndex >= 0 && parts[watchIndex + 1] === 'tv' && Number.isInteger(urlSeason) && urlSeason > 0 && Number.isInteger(urlEpisode) && urlEpisode > 0) { requestedSeason = urlSeason; requestedEpisode = urlEpisode; }
+      const parts = window.location.pathname.split('/').filter(Boolean);
+      const watchIndex = parts.indexOf('watch');
+      const urlSeason = Number(parts[watchIndex + 3]);
+      const urlEpisode = Number(parts[watchIndex + 4]);
+
+      if (
+        watchIndex >= 0 &&
+        parts[watchIndex + 1] === 'tv' &&
+        Number.isInteger(urlSeason) && urlSeason > 0 &&
+        Number.isInteger(urlEpisode) && urlEpisode > 0
+      ) {
+        requestedSeason = urlSeason;
+        requestedEpisode = urlEpisode;
+      }
     }
 
     try {
       const provider = getStreamProvider(serverId) === 'cinepro' ? 'cinepro' : 'bingr';
       let data: StreamResponse;
+
       if (provider === 'cinepro') {
-        const query = new URLSearchParams({ type: mediaType, tmdbId: String(tmdbId) });
-        if (mediaType === 'tv' && typeof requestedSeason === 'number' && typeof requestedEpisode === 'number') { query.set('season', String(requestedSeason)); query.set('episode', String(requestedEpisode)); }
-        const response = await fetch(`/api/cinepro?${query.toString()}`, { headers: { Accept: 'application/json' }, signal: controller.signal });
+        const endpoint =
+          mediaType === 'tv' &&
+          typeof requestedSeason === 'number' &&
+          typeof requestedEpisode === 'number'
+            ? `/api/stream/tv/${tmdbId}/season/${requestedSeason}/episode/${requestedEpisode}`
+            : `/api/stream/movie/${tmdbId}`;
+
+        const response = await fetch(endpoint, {
+          headers: { Accept: 'application/json' },
+          signal: controller.signal,
+        });
         if (!response.ok) throw new Error(`CinePro returned HTTP ${response.status}`);
         data = await response.json() as StreamResponse;
       } else {
-        const body: Record<string, unknown> = { srv: serverId, t: mediaType, id: tmdbId, query: { title, year: String(year) } };
-        if (mediaType === 'tv' && typeof requestedSeason === 'number' && typeof requestedEpisode === 'number') body.query = { ...(body.query as Record<string, unknown>), season: requestedSeason, episode: requestedEpisode };
-        const response = await fetch('/api/bingr/stream', { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: controller.signal });
+        const body: Record<string, unknown> = {
+          srv: serverId,
+          t: mediaType,
+          id: tmdbId,
+          query: { title, year: String(year) },
+        };
+        if (mediaType === 'tv' && typeof requestedSeason === 'number' && typeof requestedEpisode === 'number') {
+          body.query = { ...(body.query as Record<string, unknown>), season: requestedSeason, episode: requestedEpisode };
+        }
+
+        const response = await fetch('/api/bingr/stream', {
+          method: 'POST',
+          headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
         if (!response.ok) throw new Error(`Bingr returned HTTP ${response.status}`);
         data = await response.json() as StreamResponse;
       }
+
       if (data.error) throw new Error(data.error);
+
       const parsedSources = normalizeSources(Array.isArray(data.sources) ? data.sources : [], serverId, provider);
       const parsedSubtitles = normalizeSubtitles(Array.isArray(data.subtitles) ? data.subtitles : []);
       sourceCache.set(key, { sources: parsedSources, subtitles: parsedSubtitles, expiresAt: Date.now() + CACHE_TTL });
-      setSources(parsedSources); setSubtitles(parsedSubtitles); setLoading(false);
-    } catch (e: any) { if (e?.name !== 'AbortError') { setError(e?.message || `Failed to load ${serverId} stream`); setLoading(false); } }
+      setSources(parsedSources);
+      setSubtitles(parsedSubtitles);
+      setLoading(false);
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') {
+        setError(e?.message || `Failed to load ${serverId} stream`);
+        setLoading(false);
+      }
+    }
   }, [serverId, mediaType, tmdbId, title, year, season, episode]);
 
-  useEffect(() => { fetchSources(); return () => abortRef.current?.abort(); }, [fetchSources]);
+  useEffect(() => {
+    fetchSources();
+    return () => abortRef.current?.abort();
+  }, [fetchSources]);
+
   return { sources, subtitles, loading, error, refetch: fetchSources };
 }
