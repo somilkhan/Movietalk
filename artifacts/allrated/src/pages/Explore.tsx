@@ -1,23 +1,226 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useDebounce } from '@/hooks/use-debounce';
 import { Seo } from '@/components/Seo';
-import { useGetTrending, useSearchCatalog, getSearchCatalogQueryKey } from '@workspace/api-client-react';
-import { TitleCard } from '@/components/TitleCard';
-import { Clock, X, SlidersHorizontal } from 'lucide-react';
-import { TMDB_GENRES } from '@/lib/tmdbGenres';
+import {
+  getSearchCatalogQueryKey,
+  useGetTrending,
+  useSearchCatalog,
+} from '@workspace/api-client-react';
+import { buildImageUrl } from '@/lib/imageUrl';
+import { Search, ChevronDown, UsersRound } from 'lucide-react';
+import { useLocation } from 'wouter';
+
+const SEARCH_REGION = 'IN';
+const SEARCH_REGION_LABEL = 'India';
 const FILTER_OPTIONS = ['All Types', 'Movies', 'TV Shows', 'Anime'] as const;
 type FilterOption = (typeof FILTER_OPTIONS)[number];
-const LANGUAGES = [{ value:'all',label:'All Languages'},{value:'en',label:'English'},{value:'hi',label:'Hindi'},{value:'es',label:'Spanish'},{value:'fr',label:'French'},{value:'ja',label:'Japanese'},{value:'ko',label:'Korean'},{value:'de',label:'German'},{value:'it',label:'Italian'},{value:'pt',label:'Portuguese'},{value:'ru',label:'Russian'},{value:'zh',label:'Chinese'}];
-const QUALITIES = [{value:'all',label:'All Qualities'},{value:'4k',label:'4K'},{value:'1080p',label:'1080p'},{value:'720p',label:'720p'}];
-type AnyTitle={mediaType:string;genreIds?:number[];year?:string|null;voteAverage?:number;originalLanguage?:string|null;original_language?:string|null;quality?:string|null;[k:string]:unknown};
-export default function Explore(){
- const [query,setQuery]=useState(''); const [filter,setFilter]=useState<FilterOption>('All Types'); const [filterOpen,setFilterOpen]=useState(false); const debounced=useDebounce(query,350);
- const [recentSearches,setRecentSearches]=useState<string[]>(()=>{try{return JSON.parse(localStorage.getItem('rabbitrip_recent_searches')||'[]')}catch{return[]}}); const [showFilters,setShowFilters]=useState(false); const [selectedGenre,setSelectedGenre]=useState(''); const [selectedYear,setSelectedYear]=useState(''); const [sortBy,setSortBy]=useState<'relevance'|'rating'|'year'>('relevance'); const [language,setLanguage]=useState('all'); const [quality,setQuality]=useState('all');
- const trending=useGetTrending({mediaType:'all',window:'day'}); const search=useSearchCatalog({query:debounced},{query:{enabled:debounced.trim().length>0,queryKey:getSearchCatalogQueryKey({query:debounced})}});
- useEffect(()=>{const term=debounced.trim();if(!term||!search.data||search.isLoading)return;setRecentSearches(prev=>{const next=[term,...prev.filter(t=>t!==term)].slice(0,10);localStorage.setItem('rabbitrip_recent_searches',JSON.stringify(next));return next})},[debounced,search.data,search.isLoading]);
- const rawData=debounced.trim()?search.data:trending.data; const raw=Array.isArray(rawData)?rawData as AnyTitle[]:[]; const isLoading=debounced.trim()?search.isLoading:trending.isLoading;
- let results=raw.filter(t=>filter==='Movies'?t.mediaType==='movie':filter==='TV Shows'?t.mediaType==='tv':filter==='Anime'?t.mediaType==='anime':true);
- if(selectedGenre)results=results.filter(t=>(t.genreIds??[]).includes(Number(selectedGenre))); if(selectedYear)results=results.filter(t=>(t.year??'').startsWith(selectedYear)); if(language!=='all')results=results.filter(t=>(t.originalLanguage||t.original_language)===language); if(quality!=='all')results=results.filter(t=>String(t.quality||'').toLowerCase().replace(/p$/,'')===quality.replace('p','').toLowerCase()); if(sortBy!=='relevance')results=[...results].sort((a,b)=>sortBy==='rating'?(b.voteAverage??0)-(a.voteAverage??0):(b.year??'').localeCompare(a.year??''));
- const removeRecent=(term:string,e:React.MouseEvent)=>{e.stopPropagation();setRecentSearches(prev=>{const next=prev.filter(t=>t!==term);localStorage.setItem('rabbitrip_recent_searches',JSON.stringify(next));return next})}; const clearAllRecent=()=>{setRecentSearches([]);localStorage.removeItem('rabbitrip_recent_searches')};
- return <div className="pb-24 md:pb-12 pt-14 md:pt-0" data-testid="page-explore"><Seo title="Explore"/><div className="sticky top-14 md:top-0 z-30 pt-2 md:pt-4 pb-3 px-6 lg:px-20 bg-background/80 backdrop-blur-md"><div className="md:max-w-[560px]"><div className="relative flex items-center gap-0 rounded-xl border border-border bg-card overflow-visible"><div className="flex-shrink-0 pl-4 pr-2 flex items-center pointer-events-none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div><input type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Movies, shows, anime and more..." aria-label="Search movies and shows" role="searchbox" className="flex-1 min-w-0 bg-transparent py-3.5 pr-2 text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0" data-testid="input-search"/><div className="h-5 w-px bg-border flex-shrink-0"/><div className="relative flex-shrink-0"><button type="button" onClick={()=>setFilterOpen(o=>!o)} className="flex items-center gap-1.5 px-4 py-3.5 text-[14px] font-medium text-foreground whitespace-nowrap">{filter}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className={`transition-transform ${filterOpen?'rotate-180':''}`}><path d="M6 9l6 6 6-6"/></svg></button>{filterOpen&&<div className="absolute right-0 top-full mt-1 w-36 rounded-xl border border-border bg-popover shadow-xl overflow-hidden z-50">{FILTER_OPTIONS.map(opt=><button type="button" key={opt} onClick={()=>{setFilter(opt);setFilterOpen(false)}} className={`w-full px-4 py-2.5 text-left text-[14px] transition-colors hover:bg-white/5 ${filter===opt?'text-white font-semibold':'text-muted-foreground'}`}>{opt}</button>)}</div>}</div></div></div></div>{!query.trim()&&recentSearches.length>0&&<div className="px-6 lg:px-20 mb-6"><div className="flex items-center justify-between mb-3"><h3 className="text-sm font-medium text-[#ffffffb3]">Recent Searches</h3><button type="button" onClick={clearAllRecent} className="text-xs text-[#ffffff4d] hover:text-[#ffffffb3]">Clear all</button></div><div className="flex flex-wrap gap-2">{recentSearches.map(term=><div key={term} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#ffffff0d] text-[#ffffffb3] text-xs"><button type="button" onClick={()=>setQuery(term)} className="flex items-center gap-1.5"><Clock className="w-3 h-3 text-[#ffffff4d]"/>{term}</button><button type="button" aria-label={`Remove ${term}`} onClick={e=>removeRecent(term,e)}><X className="w-3 h-3 text-[#ffffff4d] hover:text-white"/></button></div>)}</div></div>}{/* filters remain below */}<div className="px-6 lg:px-20 mb-4 flex items-center gap-3"><button type="button" onClick={()=>setShowFilters(!showFilters)} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm ${showFilters||selectedGenre||selectedYear||sortBy!=='relevance'||language!=='all'||quality!=='all'?'bg-[#4752c4]/20 text-[#4752c4] border border-[#4752c4]/30':'bg-[#ffffff0d] text-[#ffffffb3]'}`}><SlidersHorizontal className="w-4 h-4"/>Filters</button>{(selectedGenre||selectedYear||sortBy!=='relevance'||language!=='all'||quality!=='all')&&<button type="button" onClick={()=>{setSelectedGenre('');setSelectedYear('');setSortBy('relevance');setLanguage('all');setQuality('all')}} className="text-xs text-[#ffffff4d] hover:text-[#ffffffb3]">Reset</button>}</div>{showFilters&&<div className="px-6 lg:px-20 mb-6"><div className="p-4 rounded-xl bg-[#252830] border border-[#ffffff0d]"><div className="grid grid-cols-1 sm:grid-cols-3 gap-4"><div><label className="text-xs text-[#ffffff4d] mb-1 block">Genre</label><select value={selectedGenre} onChange={e=>setSelectedGenre(e.target.value)} className="w-full bg-[#07070b] border border-[#ffffff1a] rounded-lg px-3 py-2 text-sm text-[#ffffffb3] outline-none focus:border-[#ffffff33]"><option value="">All Genres</option>{Object.entries(TMDB_GENRES).map(([gid,name])=><option key={gid} value={gid}>{name}</option>)}</select></div><div><label className="text-xs text-[#ffffff4d] mb-1 block">Year</label><select value={selectedYear} onChange={e=>setSelectedYear(e.target.value)} className="w-full bg-[#07070b] border border-[#ffffff1a] rounded-lg px-3 py-2 text-sm text-[#ffffffb3] outline-none focus:border-[#ffffff33]"><option value="">All Years</option>{Array.from({length:50},(_,i)=>2026-i).map(year=><option key={year} value={String(year)}>{year}</option>)}</select></div><div><label className="text-xs text-[#ffffff4d] mb-1 block">Sort By</label><select value={sortBy} onChange={e=>setSortBy(e.target.value as typeof sortBy)} className="w-full bg-[#07070b] border border-[#ffffff1a] rounded-lg px-3 py-2 text-sm text-[#ffffffb3] outline-none focus:border-[#ffffff33]"><option value="relevance">Relevance</option><option value="rating">Rating</option><option value="year">Year</option></select></div><div><label className="text-xs text-[#ffffff4d] mb-1 block">Language</label><select value={language} onChange={e=>setLanguage(e.target.value)} className="w-full bg-[#07070b] border border-[#ffffff1a] rounded-lg px-3 py-2 text-sm text-[#ffffffb3] outline-none focus:border-[#ffffff33]">{LANGUAGES.map(l=><option key={l.value} value={l.value}>{l.label}</option>)}</select></div><div><label className="text-xs text-[#ffffff4d] mb-1 block">Quality</label><select value={quality} onChange={e=>setQuality(e.target.value)} className="w-full bg-[#07070b] border border-[#ffffff1a] rounded-lg px-3 py-2 text-sm text-[#ffffffb3] outline-none focus:border-[#ffffff33]">{QUALITIES.slice(1).map(q=><option key={q.value} value={q.value}>{q.label}</option>)}</select></div></div></div></div>}<div className="px-6 lg:px-20"><h2 className="mb-4 text-[17px] font-bold text-white/90">{debounced.trim()?`Results for "${debounced}"`:'Trending in United States'}</h2><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">{isLoading&&Array.from({length:14}).map((_,i)=><div key={i} className="aspect-[2/3] animate-pulse rounded-lg bg-card"/>)}{!isLoading&&results.length===0&&<p className="col-span-full py-8 text-sm text-muted-foreground">No results found.</p>}{results.map(title=><TitleCard key={`${title.mediaType}-${title.id as number}`} title={title as unknown as import('@workspace/api-client-react').Title}/>)}</div></div></div>;
+
+type SearchTitle = {
+  id: number;
+  mediaType: string;
+  title: string;
+  posterPath: string | null;
+  voteAverage?: number;
+  year?: string | null;
+  genreIds?: number[];
+};
+
+function SearchTitleCard({
+  title,
+  index,
+  onOpen,
+}: {
+  title: SearchTitle;
+  index: number;
+  onOpen: (title: SearchTitle) => void;
+}) {
+  const posterUrl = buildImageUrl(title.posterPath, 'w500') ?? '/placeholder-poster.jpg';
+  const isAnime = title.genreIds?.includes(16) ?? false;
+  const typeLabel = title.mediaType === 'movie' ? 'Movie' : isAnime ? 'Anime' : 'Series';
+
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(title)}
+      aria-label={`${title.title}${title.year ? ` (${title.year})` : ''}`}
+      className="block w-[150px] p-0 text-left text-white"
+    >
+      <div className="h-[225px] w-[150px] overflow-hidden rounded-lg bg-[#0f1014]">
+        <img
+          src={posterUrl}
+          alt={title.title}
+          loading={index < 6 ? 'eager' : 'lazy'}
+          decoding="async"
+          className="block h-full w-full object-cover"
+        />
+      </div>
+
+      <div className="mt-[9px] truncate text-[14px] font-semibold leading-5 text-white/90">
+        {title.title}
+      </div>
+
+      <div className="mt-1 flex h-[16.5px] items-center text-[11px] font-medium leading-[16.5px] text-white/50">
+        {title.voteAverage !== undefined && title.voteAverage > 0 && (
+          <span className="flex items-center">
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="mr-1 shrink-0"
+              aria-hidden="true"
+            >
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+            </svg>
+            {title.voteAverage.toFixed(1)}
+          </span>
+        )}
+        {title.year && (
+          <>
+            <span className="mx-1.5 text-white/30">·</span>
+            <span>{title.year}</span>
+          </>
+        )}
+        <span className="mx-1.5 text-white/30">·</span>
+        <span>{typeLabel}</span>
+      </div>
+    </button>
+  );
+}
+
+export default function Explore() {
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<FilterOption>('All Types');
+  const [filterOpen, setFilterOpen] = useState(false);
+  const debounced = useDebounce(query, 350);
+  const [, navigate] = useLocation();
+
+  const trending = useGetTrending({
+    mediaType: 'all',
+    window: 'day',
+    region: SEARCH_REGION,
+  });
+  const search = useSearchCatalog(
+    { query: debounced, region: SEARCH_REGION },
+    {
+      query: {
+        enabled: debounced.trim().length > 0,
+        queryKey: getSearchCatalogQueryKey({
+          query: debounced,
+          region: SEARCH_REGION,
+        }),
+      },
+    },
+  );
+
+  const rawData = debounced.trim() ? search.data : trending.data;
+  const raw = Array.isArray(rawData) ? (rawData as SearchTitle[]) : [];
+  const isLoading = debounced.trim() ? search.isLoading : trending.isLoading;
+
+  const results = raw.filter((title) => {
+    if (filter === 'Movies') return title.mediaType === 'movie';
+    if (filter === 'TV Shows') return title.mediaType === 'tv';
+    if (filter === 'Anime') return title.genreIds?.includes(16) ?? false;
+    return true;
+  });
+
+  const openTitle = (title: SearchTitle) => {
+    navigate(`/title/${title.mediaType}/${title.id}`);
+  };
+
+  return (
+    <main className="pt-10 pb-24" data-testid="page-explore">
+      <Seo title="Explore" />
+
+      <div className="px-4">
+        <div className="mt-4 h-11">
+          <div className="flex h-11 w-full items-center rounded-xl border border-white/5 bg-[#0f1014] px-4">
+            <Search className="h-6 w-6 shrink-0 text-white/40" strokeWidth={2} aria-hidden="true" />
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Find your next binge..."
+              aria-label="Search movies and shows"
+              role="searchbox"
+              className="ml-3 min-w-0 flex-1 bg-transparent p-0 text-base font-medium leading-6 text-white outline-none placeholder:text-white/40"
+              data-testid="input-search"
+            />
+          </div>
+        </div>
+
+        <div className="mt-[13.5px] flex justify-end">
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setFilterOpen((open) => !open)}
+              className="flex h-8 w-28 items-center justify-between rounded-md border border-white/5 bg-[#0f1014] px-2.5 text-xs font-medium leading-[18px] text-white/70"
+            >
+              <span>{filter}</span>
+              <ChevronDown
+                className={`h-4 w-4 shrink-0 text-white/70 transition-transform ${filterOpen ? 'rotate-180' : ''}`}
+                strokeWidth={2}
+              />
+            </button>
+
+            {filterOpen && (
+              <div className="absolute right-0 top-full z-50 mt-1 w-36 overflow-hidden rounded-lg border border-white/10 bg-[#0f1014] shadow-xl">
+                {FILTER_OPTIONS.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => {
+                      setFilter(option);
+                      setFilterOpen(false);
+                    }}
+                    className={`block w-full px-3 py-2.5 text-left text-sm ${
+                      filter === option ? 'font-semibold text-white' : 'text-white/60'
+                    } hover:bg-white/5`}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-10 flex h-[37.5px] items-center justify-between">
+          <h2 className="m-0 text-[18px] font-semibold leading-[27px] text-white/90">
+            {debounced.trim() ? `Results for "${debounced}"` : `Trending in ${SEARCH_REGION_LABEL}`}
+          </h2>
+          <a
+            href="/watch-party"
+            className="inline-flex h-[37.5px] items-center gap-2 rounded-lg bg-white/10 px-4 text-sm font-medium leading-5 text-white/90"
+          >
+            <UsersRound className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden="true" />
+            Watch Party
+          </a>
+        </div>
+      </div>
+
+      <div className="mt-6 px-8 pb-16">
+        <div className="grid grid-cols-[repeat(2,150px)] justify-between gap-y-8">
+          {isLoading &&
+            Array.from({ length: 12 }).map((_, index) => (
+              <div key={index} className="h-[274.5px] w-[150px] animate-pulse rounded-lg bg-[#0f1014]" />
+            ))}
+
+          {!isLoading && results.length === 0 && (
+            <p className="col-span-full py-8 text-sm text-white/50">No results found.</p>
+          )}
+
+          {!isLoading &&
+            results.map((title, index) => (
+              <SearchTitleCard
+                key={`${title.mediaType}-${title.id}`}
+                title={title}
+                index={index}
+                onOpen={openTitle}
+              />
+            ))}
+        </div>
+      </div>
+    </main>
+  );
 }
