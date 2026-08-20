@@ -26,11 +26,11 @@ function ImageRow({ title, items, viewAllHref, expanded = false }: { title: stri
 
   return (
     <div className="w-full relative px-4 md:px-0 mb-[35px]">
-      <div className="flex items-center justify-between mb-4 pr-4 md:pr-0">
-        <h2 className="text-[18px] md:text-[20px] font-semibold text-white/90">{title}</h2>
+      <div className="flex items-center justify-between mb-4 pr-4 md:pr-0 gap-4">
+        <h2 className="min-w-0 text-[18px] md:text-[20px] font-semibold text-white/90">{title}</h2>
         {viewAllHref && (
           <Link href={viewAllHref}>
-            <a className="flex items-center text-sm font-medium text-white/50 hover:text-white transition-colors group/btn">
+            <a className="shrink-0 whitespace-nowrap flex items-center text-sm font-medium text-white/50 hover:text-white transition-colors group/btn">
               View All
               <ChevronRight className="w-4 h-4 ml-0.5 opacity-50 group-hover/btn:opacity-100 transition-opacity" />
             </a>
@@ -83,9 +83,9 @@ function PopularGenresRow({ expanded = false }: { expanded?: boolean }) {
 
   return (
     <div className="w-full relative px-4 md:px-0 mb-[35px]">
-      <div className="flex items-center justify-between mb-4 pr-4 md:pr-0">
-        <h2 className="text-[18px] md:text-[20px] font-semibold text-white/90">Popular Genres</h2>
-        {!expanded && <Link href="/categories?section=genres"><a className="flex items-center text-sm font-medium text-white/50 hover:text-white transition-colors">View All<ChevronRight className="w-4 h-4 ml-0.5 opacity-50" /></a></Link>}
+      <div className="flex items-center justify-between mb-4 pr-4 md:pr-0 gap-4">
+        <h2 className="min-w-0 text-[18px] md:text-[20px] font-semibold text-white/90">Popular Genres</h2>
+        {!expanded && <Link href="/categories?section=genres"><a className="shrink-0 whitespace-nowrap flex items-center text-sm font-medium text-white/50 hover:text-white transition-colors">View All<ChevronRight className="w-4 h-4 ml-0.5 opacity-50" /></a></Link>}
       </div>
       {expanded ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -108,7 +108,6 @@ function PopularGenresRow({ expanded = false }: { expanded?: boolean }) {
 export default function Categories() {
   const [location] = useLocation();
   const section = new URLSearchParams(location.split("?")[1] || "").get("section");
-  const expanded = !!section;
   const studioItems: ImageItem[] = STUDIOS.map((studio) => ({ name: studio.name, image: studio.image, href: `/catalog/movie/${encodeURIComponent(studio.name)}` }));
   const languageItems: ImageItem[] = LANGUAGES.map((language) => ({ name: language.name, image: language.image, href: `/catalog/movie/${encodeURIComponent(language.sublabel || language.name)}` }));
   const sportsItems: ImageItem[] = POPULAR_SPORTS.map((sport) => ({ ...sport, href: "/sports" }));
@@ -118,7 +117,7 @@ export default function Categories() {
       <Seo title="Categories" />
       <div className="relative z-10 pl-0 md:pl-[80px] lg:pl-[120px] pt-24 md:pt-20">
         <div className="max-w-[1600px]">
-          {expanded && <div className="px-4 md:px-0 mb-5"><Link href="/categories"><a className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-white"><ArrowLeft className="w-4 h-4" />All Categories</a></Link></div>}
+          {section && <div className="px-4 md:px-0 mb-5"><Link href="/categories"><a className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-white"><ArrowLeft className="w-4 h-4" />All Categories</a></Link></div>}
           {(!section || section === "browse") && <ImageRow title="Browse" items={CATEGORY_GROUPS.map((item) => ({ ...item }))} viewAllHref="/categories?section=browse" expanded={section === "browse"} />}
           {(!section || section === "studios") && <ImageRow title="Studios" items={studioItems} viewAllHref="/categories?section=studios" expanded={section === "studios"} />}
           {(!section || section === "languages") && <ImageRow title="Popular Languages" items={languageItems} viewAllHref="/categories?section=languages" expanded={section === "languages"} />}
