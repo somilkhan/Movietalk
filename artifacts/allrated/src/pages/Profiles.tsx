@@ -5,11 +5,10 @@ import { useProfiles, DEFAULT_AVATARS } from "@/hooks/useProfiles";
 import { useAuth } from "@/hooks/useAuth";
 import { Seo } from "@/components/Seo";
 
-function Avatar({ src, name, selected = false }: { src: string; name: string; selected?: boolean }) {
+function Avatar({ src, name }: { src: string; name: string }) {
   return (
     <span className="relative block h-24 w-24 shrink-0">
       <img src={src} alt={name} draggable={false} className="h-full w-full rounded-full object-cover" onError={(e) => { e.currentTarget.src = DEFAULT_AVATARS[0]; }} />
-      {selected && <span className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full border-[3px] border-black bg-white text-black"><Check className="h-4 w-4" strokeWidth={3} /></span>}
     </span>
   );
 }
@@ -65,17 +64,16 @@ export default function Profiles() {
   return (
     <div className="min-h-screen bg-black font-sans text-white">
       <Seo title="Who's watching?" />
-      <header className="flex h-[100px] items-center justify-between px-6">
+      <header className="flex h-[100px] items-center justify-between px-6 py-5">
         <img src="/brand/logo.png" alt="RabbitRip" className="h-[60px] w-[60px] object-contain" />
-        <button onClick={() => navigate("/space")} className="h-[38px] rounded-lg border border-white/15 bg-white/5 px-4 text-[14px] font-medium">My Space</button>
+        <button onClick={() => activeId && setEditing(activeId)} disabled={!activeId} className="flex h-[38px] items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 text-[14px] font-medium text-white/80 disabled:opacity-0"><Pencil className="h-4 w-4" />Edit</button>
       </header>
       <main className="flex min-h-[calc(100vh-100px)] flex-col items-center px-6 pb-24 pt-[228.87px]">
-        <h1 className="mb-12 text-[24px] font-bold leading-8">Who's watching?</h1>
+        <h1 className="mb-12 text-[24px] font-bold leading-8 text-white/90">Who's watching?</h1>
         <div className="flex items-start gap-8">
-          {profiles.map((p) => <button key={p.id} onClick={() => choose(p.id)} className="group flex w-24 flex-col items-center gap-3"><Avatar src={p.avatar} name={p.name} selected={p.id === activeId} /><span className="max-w-24 truncate text-[14px] font-medium text-white/80">{p.name}</span></button>)}
+          {profiles.map((p) => <button key={p.id} onClick={() => choose(p.id)} className="group flex w-32 flex-col items-center gap-3"><Avatar src={p.avatar} name={p.name} /><span className="max-w-32 truncate text-[14px] font-medium text-white/80">{p.name}</span></button>)}
           <button onClick={() => setAdding(true)} className="group flex w-24 flex-col items-center gap-3"><span className="flex h-24 w-24 items-center justify-center rounded-full border border-dashed border-white/25"><Plus className="h-9 w-9 text-white/55" /></span><span className="text-[14px] font-medium text-white/60">Add</span></button>
         </div>
-        {activeId && <button onClick={() => setEditing(activeId)} className="mt-12 inline-flex h-10 items-center gap-2 rounded-lg bg-white/5 px-4 text-[14px] font-medium"><Pencil className="h-4 w-4" />Edit Profile</button>}
       </main>
       {editing && <EditProfile id={editing} onClose={() => setEditing(null)} />}
       {adding && <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 px-6"><div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#101012] p-6"><div className="mb-5 flex justify-between"><h2 className="text-lg font-semibold">Add profile</h2><button onClick={() => setAdding(false)}>×</button></div><div className="mb-5 grid max-h-56 grid-cols-4 gap-4 overflow-y-auto">{DEFAULT_AVATARS.map((src, i) => <button key={`${src}-${i}`} onClick={() => setAvatar(src)}><img src={src} alt="" className={`mx-auto h-14 w-14 rounded-full object-cover ${avatar === src ? "ring-2 ring-white ring-offset-2 ring-offset-[#101012]" : "opacity-70"}`} /></button>)}</div><input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Profile Name" className="mb-4 h-12 w-full rounded-lg border border-white/15 bg-transparent px-4 outline-none" /><button disabled={!name.trim()} onClick={create} className="h-12 w-full rounded-lg bg-white font-semibold text-black disabled:opacity-40">Create profile</button></div></div>}
