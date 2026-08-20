@@ -20,6 +20,10 @@ function normalizeUrl(value) {
   return null;
 }
 
+function isCineMoveToken(value) {
+  return typeof value === 'string' && /^v1\.[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)?$/.test(value.trim());
+}
+
 function sourceFromUrl(url, fallbackName, extra = {}) {
   const normalized = normalizeUrl(url);
   if (!normalized) return null;
@@ -49,14 +53,19 @@ function extractSources(data, sourceName) {
   const visit = (value) => {
     if (value == null) return;
     if (typeof value === 'string') {
-      if (/\/media-proxy\?/i.test(value)) add(sourceFromUrl(value, sourceName));
+      const text = value.trim();
+      if (/\/media-proxy\?/i.test(text) || isCineMoveToken(text)) {
+        const url = /\/media-proxy\?/i.test(text)
+          ? text
+          : `${CINEMOVE_BASE}/media-proxy?t=${encodeURIComponent(text)}`;
+        add(sourceFromUrl(url, sourceName));
+      }
       return;
     }
     if (typeof value !== 'object') return;
     const url = value.url ?? value.streamUrl ?? value.stream_url ?? value.file ?? value.src ?? value.m3u8 ?? value.hls ?? value.mp4 ?? value.playlist ?? value.manifest ?? value.proxyUrl ?? value.mediaProxy;
     add(sourceFromUrl(url, sourceName, value));
-    if (Array.isArray(value)) value.forEach(visit);
-    else Object.values(value).forEach(visit);
+    for (const nested of Object.values(value)) visit(nested);
   };
   visit(data);
   return found;
