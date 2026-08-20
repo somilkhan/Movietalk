@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'wouter';
 import type { Title } from '@workspace/api-client-react';
 import { getGenreNames } from '@/lib/tmdbGenres';
@@ -10,6 +10,9 @@ export function HeroSection({ titles }: { titles: Title[] | undefined }) {
   const [backdropError, setBackdropError] = useState(false);
   const [trailerUrl, setTrailerUrl] = useState<string | null>(null);
   const [youtubeKey, setYoutubeKey] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [isMuted, setIsMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const title = featured?.[index];
 
   useEffect(() => {
@@ -17,6 +20,8 @@ export function HeroSection({ titles }: { titles: Title[] | undefined }) {
     setBackdropError(false);
     setTrailerUrl(null);
     setYoutubeKey(null);
+    setIsPlaying(true);
+    setIsMuted(true);
     if (!title) return;
     const ctrl = new AbortController();
 
@@ -36,6 +41,12 @@ export function HeroSection({ titles }: { titles: Title[] | undefined }) {
     return () => ctrl.abort();
   }, [title?.id, title?.mediaType]);
 
+  useEffect(() => {
+    if (!trailerUrl || !videoRef.current) return;
+    videoRef.current.muted = true;
+    videoRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+  }, [trailerUrl]);
+
   if (!title) return <div className="relative w-full h-[75vh] md:aspect-video max-h-[85vh] overflow-hidden bg-black animate-pulse" />;
 
   const genres = getGenreNames(title.genreIds ?? [], 4);
@@ -44,11 +55,30 @@ export function HeroSection({ titles }: { titles: Title[] | undefined }) {
     ? `https://www.youtube-nocookie.com/embed/${encodeURIComponent(youtubeKey)}?autoplay=1&mute=1&controls=0&loop=1&playlist=${encodeURIComponent(youtubeKey)}&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3`
     : null;
 
+  const togglePlay = async () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) {
+      try { await video.play(); setIsPlaying(true); } catch { setIsPlaying(false); }
+    } else {
+      video.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  const toggleMute = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = !video.muted;
+    setIsMuted(video.muted);
+    if (!video.muted) video.volume = 1;
+  };
+
   return (
     <section className="relative w-full h-[75vh] md:h-auto md:aspect-video max-h-[85vh] overflow-hidden group" data-testid="hero-section">
       {trailerUrl && !backdropError ? (
         <div className="absolute inset-0 z-0 bg-black overflow-hidden">
-          <video src={trailerUrl} autoPlay loop playsInline muted disablePictureInPicture disableRemotePlayback controlsList="nodownload nofullscreen noremoteplayback" className="w-full h-full object-cover object-center opacity-90 animate-in fade-in duration-1000 scale-[1.35] pointer-events-none" onError={() => setBackdropError(true)} />
+          <video ref={videoRef} src={trailerUrl} autoPlay loop playsInline muted disablePictureInPicture disableRemotePlayback controlsList="nodownload nofullscreen noremoteplayback" className="w-full h-full object-cover object-center opacity-90 animate-in fade-in duration-1000 scale-[1.35]" onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onError={() => setBackdropError(true)} />
         </div>
       ) : youtubeEmbed && !backdropError ? (
         <div className="absolute inset-0 z-0 bg-black overflow-hidden pointer-events-none">
@@ -72,7 +102,7 @@ export function HeroSection({ titles }: { titles: Title[] | undefined }) {
         <div className="flex flex-col gap-3 max-w-2xl">
           {logoPath ? <img src={logoPath} alt={title.title} className="h-16 md:h-24 object-contain object-left drop-shadow-2xl" onError={() => setLogoPath(null)} /> : <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white drop-shadow-lg leading-tight">{title.title}</h1>}
           <div className="flex items-center gap-2 text-sm md:text-base text-white/80">
-            {title.voteAverage > 0 && <span className="flex items-center gap-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>{title.voteAverage.toFixed(1)}</span>}
+            {title.voteAverage > 0 && <span className="flex items-center gap-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>{title.voteAverage.toFixed(1)}</span>}
             {title.voteAverage > 0 && title.releaseDate && <span className="text-white/40">·</span>}
             {title.releaseDate && <span>{new Date(title.releaseDate).getFullYear()}</span>}
             {genres.length > 0 && <><span className="text-white/40">·</span><span className="truncate">{genres.join(' · ')}</span></>}
@@ -84,6 +114,15 @@ export function HeroSection({ titles }: { titles: Title[] | undefined }) {
           </div>
         </div>
       </div>
+
+      {trailerUrl && !backdropError && <div className="absolute right-5 bottom-5 md:right-8 md:bottom-8 z-30 flex items-center gap-2 pointer-events-auto">
+        <button type="button" onClick={togglePlay} aria-label={isPlaying ? 'Pause trailer' : 'Play trailer'} className="w-10 h-10 rounded-full bg-black/45 hover:bg-black/65 backdrop-blur-md border border-white/15 text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95">
+          {isPlaying ? <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg> : <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>}
+        </button>
+        <button type="button" onClick={toggleMute} aria-label={isMuted ? 'Unmute trailer' : 'Mute trailer'} className="w-10 h-10 rounded-full bg-black/45 hover:bg-black/65 backdrop-blur-md border border-white/15 text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95">
+          {isMuted ? <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="m19 9-4 6"/><path d="m15 9 4 6"/></svg> : <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M19 9a5 5 0 0 1 0 6"/><path d="M15 12h.01"/></svg>}
+        </button>
+      </div>}
 
       {featured.length > 1 && <div className="hidden md:block absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 z-20 w-full max-w-3xl px-6"><div className="flex gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-smooth py-2">{featured.map((t, i) => <button key={`${t.id}-${i}`} onClick={() => setIndex(i)} className={`flex-shrink-0 rounded-lg overflow-hidden transition-all duration-300 ${i === index ? 'ring-2 ring-white scale-110' : 'opacity-50 hover:opacity-80 scale-95'}`}><img src={t.backdropPath || t.posterPath || ''} alt={t.title} className="w-28 h-16 object-cover" /></button>)}</div></div>}
     </section>
