@@ -7,7 +7,7 @@ import type { Title } from '@workspace/api-client-react';
 type CatalogPage = { titles: Title[]; nextPage: number | null };
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 
-function buildFetcher(name: string): (page: number) => Promise<CatalogPage> {
+function buildFetcher(name: string, routeMediaType: string): (page: number) => Promise<CatalogPage> {
   const catalogMap: Record<string, { mediaType: string; category: string }> = {
     'New Movies': { mediaType: 'movie', category: 'now_playing' },
     'Popular Movies': { mediaType: 'movie', category: 'popular' },
@@ -28,21 +28,15 @@ function buildFetcher(name: string): (page: number) => Promise<CatalogPage> {
     'Mythology Movies': 14, 'Superhero Movies': 28, 'Anime Movies': 16, 'Biopic Movies': 36, 'Devotional Movies': 36,
     'Teen Movies': 18, 'Lifestyle Movies': 99, 'Travel Movies': 99, 'Science and Technology Movies': 99,
   };
-  const combinedGenreMap: Record<string, number[]> = {
-    'Sci-Fi & Fantasy Movies': [878, 14],
-  };
+  const combinedGenreMap: Record<string, number[]> = { 'Sci-Fi & Fantasy Movies': [878, 14] };
   const languageMap: Record<string, string> = {
     English: 'en', Japanese: 'ja', Korean: 'ko', Hindi: 'hi', Spanish: 'es', French: 'fr', German: 'de', Chinese: 'zh',
     Portuguese: 'pt', Tamil: 'ta', Telugu: 'te', Kannada: 'kn', Malayalam: 'ml', Marathi: 'mr', Bengali: 'bn',
   };
   const studioCompanyIds: Record<string, number> = {
-    'Disney+': 2, 'Disney Plus': 2, 'Disney Plus Studios': 2,
-    'HBO Max': 3268, 'HBO Max Studios': 3268,
-    Peacock: 3353, 'Peacock Studios': 3353,
-    'Paramount+': 4, Paramount: 4, 'Paramount Studios': 4, 'Paramount+ Studios': 4,
-    Netflix: 213, 'Netflix Studios': 213,
-    Hulu: 453, 'Hulu Studios': 453,
-    'Prime Video': 1024, 'Prime Video Studios': 1024,
+    'Disney+': 2, 'Disney Plus': 2, 'Disney Plus Studios': 2, 'HBO Max': 3268, 'HBO Max Studios': 3268,
+    Peacock: 3353, 'Peacock Studios': 3353, 'Paramount+': 4, Paramount: 4, 'Paramount Studios': 4, 'Paramount+ Studios': 4,
+    Netflix: 213, 'Netflix Studios': 213, Hulu: 453, 'Hulu Studios': 453, 'Prime Video': 1024, 'Prime Video Studios': 1024,
     'Apple TV+': 350, 'Apple TV+ Studios': 350,
   };
   const studioCompanyNames: Record<string, string> = { 'Hotstar Specials': 'Hotstar Specials', 'Hotstar Specials Studios': 'Hotstar Specials' };
@@ -54,27 +48,23 @@ function buildFetcher(name: string): (page: number) => Promise<CatalogPage> {
   const language = languageMap[name];
   const studioCompanyId = studioCompanyIds[name];
   const studioCompanyName = studioCompanyNames[name];
+  const mediaType = routeMediaType === 'tv' ? 'tv' : 'movie';
 
   return async (page: number): Promise<CatalogPage> => {
     if (combinedGenreIds) {
-      const responses = await Promise.all(combinedGenreIds.map((genreId) => fetch(`${BASE}/api/catalog/genre?mediaType=movie&genreId=${genreId}&page=${page}`)));
+      const responses = await Promise.all(combinedGenreIds.map((genreId) => fetch(`${BASE}/api/catalog/genre?mediaType=${mediaType}&genreId=${genreId}&page=${page}`)));
       if (responses.some((res) => !res.ok)) throw new Error(`Failed to fetch combined genre page ${page}`);
       const lists = await Promise.all(responses.map((res) => res.json() as Promise<Title[]>));
       const seen = new Set<string>();
-      const titles = lists.flat().filter((title) => {
-        const key = `${title.mediaType}-${title.id}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
+      const titles = lists.flat().filter((title) => { const key = `${title.mediaType}-${title.id}`; if (seen.has(key)) return false; seen.add(key); return true; });
       return { titles, nextPage: titles.length === 20 ? page + 1 : null };
     }
 
     let url: string;
-    if (genreId) url = `${BASE}/api/catalog/genre?mediaType=movie&genreId=${genreId}&page=${page}`;
-    else if (language) url = `${BASE}/api/catalog/language?mediaType=movie&language=${language}&page=${page}`;
-    else if (studioCompanyId) url = `${BASE}/api/catalog/studio?mediaType=movie&companyId=${studioCompanyId}&page=${page}`;
-    else if (studioCompanyName) url = `${BASE}/api/catalog/studio?mediaType=movie&companyName=${encodeURIComponent(studioCompanyName)}&page=${page}`;
+    if (genreId) url = `${BASE}/api/catalog/genre?mediaType=${mediaType}&genreId=${genreId}&page=${page}`;
+    else if (language) url = `${BASE}/api/catalog/language?mediaType=${mediaType}&language=${language}&page=${page}`;
+    else if (studioCompanyId) url = `${BASE}/api/catalog/studio?mediaType=${mediaType}&companyId=${studioCompanyId}&page=${page}`;
+    else if (studioCompanyName) url = `${BASE}/api/catalog/studio?mediaType=${mediaType}&companyName=${encodeURIComponent(studioCompanyName)}&page=${page}`;
     else if (trendingParams) url = `${BASE}/api/catalog/trending?mediaType=${trendingParams.mediaType}&window=${trendingParams.window}&page=${page}`;
     else if (catalogParams) url = `${BASE}/api/catalog/list?mediaType=${catalogParams.mediaType}&category=${catalogParams.category}&page=${page}`;
     else return { titles: [], nextPage: null };
@@ -91,10 +81,10 @@ function PosterCard({ title }: { title: Title }) {
 }
 
 export default function Catalog() {
-  const { mediaType, category } = useParams<{ mediaType: string; category: string }>();
+  const { mediaType: routeMediaTypeParam, category } = useParams<{ mediaType: string; category: string }>();
   const name = decodeURIComponent(category ?? '');
-  const routeMediaType = decodeURIComponent(mediaType ?? '');
-  const fetcher = useCallback(buildFetcher(name), [name]);
+  const routeMediaType = decodeURIComponent(routeMediaTypeParam ?? 'movie');
+  const fetcher = useCallback(buildFetcher(name, routeMediaType), [name, routeMediaType]);
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError } = useInfiniteQuery({ queryKey: ['catalog-page', routeMediaType, name], queryFn: ({ pageParam }) => fetcher(pageParam as number), initialPageParam: 1, getNextPageParam: (lastPage) => lastPage.nextPage ?? undefined });
   const allTitles = data?.pages.flatMap((p) => p.titles) ?? [];
   const sentinelRef = useRef<HTMLDivElement>(null);
