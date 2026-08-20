@@ -25,7 +25,7 @@ function ImageRow({ title, items, viewAllHref }: { title: string; items: ImageIt
   };
 
   return (
-    <div className="w-full relative px-4 md:px-0 mb-10">
+    <div className="w-full relative px-4 md:px-0 mb-[35px]">
       <div className="flex items-center justify-between mb-4 pr-4 md:pr-0">
         <h2 className="text-[18px] md:text-[20px] font-semibold text-white/90">{title}</h2>
         {viewAllHref && (
@@ -67,7 +67,7 @@ function PopularGenresRow() {
   };
 
   return (
-    <div className="w-full relative px-4 md:px-0 mb-10">
+    <div className="w-full relative px-4 md:px-0 mb-[35px]">
       <div className="flex items-center justify-between mb-4 pr-4 md:pr-0"><h2 className="text-[18px] md:text-[20px] font-semibold text-white/90">Popular Genres</h2></div>
       <div className="relative group">
         <div ref={scrollRef} className="flex overflow-x-auto gap-3 py-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-smooth snap-x">
@@ -89,7 +89,7 @@ export default function Categories() {
   return (
     <div className="min-h-screen bg-[#07070b] text-white pb-28 md:pb-8" data-testid="page-categories">
       <Seo title="Categories" />
-      <div className="relative z-10 pl-0 md:pl-[80px] lg:pl-[120px] pt-12 md:pt-20">
+      <div className="relative z-10 pl-0 md:pl-[80px] lg:pl-[120px] pt-24 md:pt-20">
         <div className="max-w-[1600px]">
           <ImageRow title="Browse" items={[...CATEGORY_GROUPS]} />
           <ImageRow title="Studios" items={[...STUDIOS]} />
