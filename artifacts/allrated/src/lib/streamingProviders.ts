@@ -53,14 +53,11 @@ export function getStreamingServer(serverId: string) {
 export function getStreamServer(serverId: string) {
   if (serverId === 'bingr') return getStreamingServer('bingr');
   if (serverId === 'cinemove') return getStreamingServer('cinemove');
-  // Compatibility for the current player state while its label is migrated.
-  if (serverId === 'cinepro') return getStreamingServer('cinemove');
   const bingrSource = BINGR_SOURCES.find((source) => source.id === serverId);
   return bingrSource ? { id: bingrSource.id, name: bingrSource.name, provider: 'bingr' as const, sourceIds: [bingrSource.id] } : null;
 }
 
 export function getStreamProvider(serverId: string) {
-  if (serverId === 'cinepro') return 'cinemove' as const;
   return getStreamingServer(serverId)?.provider ?? (BINGR_SOURCES.some((source) => source.id === serverId) ? 'bingr' : null);
 }
 
