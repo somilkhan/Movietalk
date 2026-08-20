@@ -10,7 +10,6 @@
     "api/catalog/language.js": { "maxDuration": 30 },
     "api/catalog/list.js": { "maxDuration": 30 },
     "api/catalog/studio.js": { "maxDuration": 30 },
-    "api/catalog/trending.js": { "maxDuration": 30 },
     "api/catalog/anilist.js": { "maxDuration": 30 },
     "api/progress.js": { "maxDuration": 10 }
   },
@@ -22,7 +21,7 @@
     { "source": "/api/catalog/language", "destination": "/api/catalog/language" },
     { "source": "/api/catalog/list", "destination": "/api/catalog/list" },
     { "source": "/api/catalog/studio", "destination": "/api/catalog/studio" },
-    { "source": "/api/catalog/trending", "destination": "/api/catalog/trending" },
+    { "source": "/api/catalog/trending", "destination": "/api/index" },
     { "source": "/api/catalog/anilist", "destination": "/api/catalog/anilist" },
     { "source": "/api/progress", "destination": "/api/progress" },
     { "source": "/api/(.*)", "destination": "/api/index" },
