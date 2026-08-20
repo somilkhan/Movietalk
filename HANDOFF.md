@@ -14,7 +14,7 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 - API: `artifacts/api-server/` (Express, port 8080)
 - CinePro: `artifacts/cinepro-core/` (streaming engine, port 3001)
 
-## Current Status — CLEANUP PHASES 1–4
+## Current Status — LOGIN PIXEL-MATCH PASS
 
 ### Completed
 - Home Trending is driven by catalog data rather than a fixed Reacher/Spider-Man snapshot.
@@ -23,7 +23,10 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 - “Your next Bingr after” is driven by the actual most recently completed title and existing recommendation/similar APIs.
 - Broken Home category navigation was replaced with supported application routes.
 - Studios and Popular Genres cards now navigate instead of being dead UI.
-- Phase 5 server-selector consolidation is intentionally deferred and must not be changed unless explicitly requested.
+- RabbitRip login was rebuilt against the supplied Bingr DevTools geometry capture in `cb2a652b28303e7df5f13052e237d07ac8d31e5f`.
+- LoginRoute no longer mounts the extra LastLoginHint overlay on the pixel-match screen.
+- Email/password, Google, GitHub, and forgot-password flows remain intact.
+- Phase 5 server-selector consolidation remains intentionally deferred and must not be changed unless explicitly requested.
 
 ### Streaming architecture — DO NOT CHANGE
 - Bingr and CinePro are separate systems; **do not route Bingr through CinePro**.
@@ -33,7 +36,9 @@ Allrated — pixel-perfect clone of bingr.one. Full-stack monorepo:
 - TV watch URLs use `/watch/tv/:id/:season/:episode` and pass the actual season/episode into the existing Bingr POST request.
 
 ### Runtime verification still required
-- Deploy `main` and verify Bingr stream HTTP 200 with `sources` and `subtitles`.
+- Verify the latest Vercel deployment visually against the supplied Bingr capture at the same mobile viewport.
+- Verify email/password login, Google/GitHub OAuth, and forgot-password after the layout pass.
+- Verify existing Bingr stream HTTP 200 with `sources` and `subtitles`.
 - Finish a movie/episode and verify Home shows recommendations for that exact completed title.
 - Verify TV S/E values reach the Bingr request.
 - Verify subtitle rendering and existing player behavior.
