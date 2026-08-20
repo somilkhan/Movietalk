@@ -1,4 +1,5 @@
-// Curated visual-only lists for browse rails that don't map to a single TMDB endpoint.
+// Curated visual lists for category/browse navigation.
+// Catalog results themselves always come from the existing backend/TMDB flow.
 
 export const STUDIOS = [
   { name: 'Hotstar Specials', image: 'https://api.bingr.one/static/categories/1739441155598-a.webp' },
@@ -44,11 +45,11 @@ export const LANGUAGES = [
 
 export const CATEGORY_GROUPS = [
   { name: 'Sports', href: '/sports', image: 'https://api.bingr.one/static/categories/Sports.webp' },
-  { name: 'Sparks', href: '/spark', image: 'https://api.bingr.one/static/categories/Sparks.webp' },
+  { name: 'Sparks', href: '/sparks', image: 'https://api.bingr.one/static/categories/Sparks.webp' },
   { name: 'Anime', href: '/anime', image: 'https://api.bingr.one/static/categories/anime.webp' },
   { name: 'TV', href: '/tv', image: 'https://api.bingr.one/static/categories/TV.webp' },
   { name: 'Movies', href: '/movies', image: 'https://api.bingr.one/static/categories/Movie.webp' },
-  { name: 'News', href: '/categories', image: 'https://api.bingr.one/static/categories/News.webp' },
+  { name: 'News', href: '/news', image: 'https://api.bingr.one/static/categories/News.webp' },
 ] as const;
 
 export const POPULAR_SPORTS = [
