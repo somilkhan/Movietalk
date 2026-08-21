@@ -6,6 +6,7 @@ import { getAccessToken } from '@/lib/supabase';
 export interface ContinueItem { id:number; mediaType:'movie'|'tv'|'anime'; title:string; posterPath:string|null; backdropPath:string|null; progress:number; timestamp:number; season?:number; episode?:number; episodeTitle?:string; timeLeft?:number; duration?:number; completedAt?:number; }
 type DbItem = { id:number; mediaType:'movie'|'tv'; title?:string|null; poster_path?:string|null; backdrop_path?:string|null; position_seconds?:number; duration_seconds?:number; season?:number|null; episode?:number|null; updated_at?:string };
 type PendingWrite = Omit<ContinueItem,'timestamp'>;
+const SAVE_INTERVAL_MS = 5000;
 
 export function useContinueWatching() {
   const { profile, isLoggedIn } = useAuth();
@@ -47,12 +48,13 @@ export function useContinueWatching() {
   useEffect(() => { void refresh(); return () => requestRef.current?.abort(); }, [refresh]);
 
   const persist = useCallback(async (item: PendingWrite) => {
-    if (savingRef.current || !isLoggedIn || !profile?.id || !activeId) return;
+    if (!isLoggedIn || !profile?.id || !activeId) return;
     const token = getAccessToken();
     if (!token) return;
+    if (savingRef.current) { pendingRef.current = item; return; }
     savingRef.current = true;
     try {
-      const response = await fetch('/api/progress', { method:'POST', headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`}, body:JSON.stringify({ profileId:activeId,id:item.id,mediaType:item.mediaType,season:item.season,episode:item.episode,position:((item.progress||0)/100)*(item.duration||0),duration:item.duration||0,title:item.title,posterPath:item.posterPath,backdropPath:item.backdropPath,completed:false }) });
+      const response = await fetch('/api/progress', { method:'POST', headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`}, body:JSON.stringify({ profileId:activeId,id:item.id,mediaType:item.mediaType,season:item.season,episode:item.episode,position:((item.progress||0)/100)*(item.duration||0),duration:item.duration||0,title:item.title,posterPath:item.posterPath,backdropPath:item.backdropPath,completed:false }), keepalive:true });
       if (!response.ok) throw new Error(`Progress save failed: ${response.status}`);
     } catch {
       pendingRef.current = item;
@@ -62,22 +64,33 @@ export function useContinueWatching() {
         const next = pendingRef.current;
         pendingRef.current = null;
         if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-        saveTimerRef.current = setTimeout(() => { saveTimerRef.current = null; void persist(next); }, 1000);
+        saveTimerRef.current = setTimeout(() => { saveTimerRef.current = null; void persist(next); }, 250);
       }
     }
   }, [activeId, isLoggedIn, profile?.id]);
 
-  const addOrUpdate = useCallback(async (item: Omit<ContinueItem,'timestamp'>) => {
-    const optimistic = { ...item, timestamp:Date.now() };
-    setItems(prev => [optimistic, ...prev.filter(p => !(p.id===item.id && p.mediaType===item.mediaType && p.season===item.season && p.episode===item.episode))].slice(0,50));
-    pendingRef.current = item;
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+  const schedulePersist = useCallback(() => {
+    if (saveTimerRef.current || !pendingRef.current) return;
     saveTimerRef.current = setTimeout(() => {
       saveTimerRef.current = null;
       const next = pendingRef.current;
       pendingRef.current = null;
       if (next) void persist(next);
-    }, 1000);
+    }, SAVE_INTERVAL_MS);
+  }, [persist]);
+
+  const addOrUpdate = useCallback((item: Omit<ContinueItem,'timestamp'>) => {
+    const optimistic = { ...item, timestamp:Date.now() };
+    setItems(prev => [optimistic, ...prev.filter(p => !(p.id===item.id && p.mediaType===item.mediaType && p.season===item.season && p.episode===item.episode))].slice(0,50));
+    pendingRef.current = item;
+    schedulePersist();
+  }, [schedulePersist]);
+
+  const flush = useCallback(async () => {
+    if (saveTimerRef.current) { clearTimeout(saveTimerRef.current); saveTimerRef.current = null; }
+    const next = pendingRef.current;
+    pendingRef.current = null;
+    if (next) await persist(next);
   }, [persist]);
 
   const markCompleted = useCallback(async (item: Omit<ContinueItem,'timestamp'|'progress'|'completedAt'>) => {
@@ -87,17 +100,12 @@ export function useContinueWatching() {
     if (!isLoggedIn || !profile?.id || !activeId) return;
     const token = getAccessToken();
     if (!token) return;
-    try { await fetch('/api/progress', { method:'POST', headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`}, body:JSON.stringify({ profileId:activeId,id:item.id,mediaType:item.mediaType,season:item.season,episode:item.episode,position:item.duration||0,duration:item.duration||0,title:item.title,posterPath:item.posterPath,backdropPath:item.backdropPath,completed:true }) }); } catch {}
+    try { await fetch('/api/progress', { method:'POST', headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`}, body:JSON.stringify({ profileId:activeId,id:item.id,mediaType:item.mediaType,season:item.season,episode:item.episode,position:item.duration||0,duration:item.duration||0,title:item.title,posterPath:item.posterPath,backdropPath:item.backdropPath,completed:true }), keepalive:true }); } catch {}
   }, [activeId, isLoggedIn, profile?.id]);
 
-  useEffect(() => () => {
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    const pending = pendingRef.current;
-    pendingRef.current = null;
-    if (pending) void persist(pending);
-  }, [persist]);
+  useEffect(() => () => { void flush(); }, [flush]);
 
   const remove = useCallback((id:number, mediaType:string, season?:number, episode?:number) => setItems(prev => prev.filter(p => !(p.id===id && p.mediaType===mediaType && p.season===season && p.episode===episode))), []);
   const sortedItems = useMemo(() => [...items].sort((a,b) => b.timestamp-a.timestamp).slice(0,20), [items]);
-  return { items:sortedItems, completed:null, allItems:items, isLoading, refresh, addOrUpdate, markCompleted, remove };
+  return { items:sortedItems, completed:null, allItems:items, isLoading, refresh, addOrUpdate, markCompleted, remove, flush };
 }
