@@ -80,8 +80,6 @@ export function useContinueWatching() {
   }, [persist]);
 
   const addOrUpdate = useCallback((item: Omit<ContinueItem,'timestamp'>) => {
-    const optimistic = { ...item, timestamp:Date.now() };
-    setItems(prev => [optimistic, ...prev.filter(p => !(p.id===item.id && p.mediaType===item.mediaType && p.season===item.season && p.episode===item.episode))].slice(0,50));
     pendingRef.current = item;
     schedulePersist();
   }, [schedulePersist]);
