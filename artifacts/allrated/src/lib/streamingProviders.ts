@@ -1,7 +1,7 @@
 export type StreamingMediaType = 'movie' | 'tv';
 export type StreamType = 'hls' | 'mp4' | 'dash';
 
-export type StreamingProviderId = 'bingr' | 'cinemove' | (string & {});
+export type StreamingProviderId = 'bingr' | (string & {});
 
 export interface StreamingServer {
   id: string;
@@ -26,7 +26,6 @@ export interface NormalizedStream {
 
 export const STREAMING_SERVERS: readonly StreamingServer[] = [
   { id: 'bingr', name: 'Bingr', provider: 'bingr', sourceIds: ['s11', 's40', 's12', 's30', 's1', 's2', 's3', 's4', 's5'] },
-  { id: 'cinemove', name: 'CineMove', provider: 'cinemove', sourceIds: [] },
 ] as const;
 
 export const BINGR_SOURCES = [
@@ -47,15 +46,11 @@ export function getStreamingServer(serverId: string) {
 
 export function getStreamServer(serverId: string) {
   if (serverId === 'bingr') return getStreamingServer('bingr');
-  if (serverId === 'cinemove') return getStreamingServer('cinemove');
   const bingrSource = BINGR_SOURCES.find((source) => source.id === serverId);
   return bingrSource ? { id: bingrSource.id, name: bingrSource.name, provider: 'bingr' as const, sourceIds: [bingrSource.id] } : null;
 }
 
 export function getStreamProvider(serverId: string) {
-  // Keep the old watch-page state routable during migration; it resolves to
-  // CineMove and is never exposed as a provider/server name.
-  if (serverId === 'cinepro') return 'cinemove';
   return getStreamingServer(serverId)?.provider ?? (BINGR_SOURCES.some((source) => source.id === serverId) ? 'bingr' : null);
 }
 
