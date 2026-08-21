@@ -5,14 +5,17 @@ import { getAccessToken } from '@/lib/supabase';
 
 export interface ContinueItem { id:number; mediaType:'movie'|'tv'|'anime'; title:string; posterPath:string|null; backdropPath:string|null; progress:number; timestamp:number; season?:number; episode?:number; episodeTitle?:string; timeLeft?:number; duration?:number; completedAt?:number; }
 type DbItem = { id:number; mediaType:'movie'|'tv'; title?:string|null; poster_path?:string|null; backdrop_path?:string|null; position_seconds?:number; duration_seconds?:number; season?:number|null; episode?:number|null; updated_at?:string };
+type PendingWrite = Omit<ContinueItem,'timestamp'>;
 
 export function useContinueWatching() {
   const { profile, isLoggedIn } = useAuth();
   const { activeId, isHydrated: profileHydrated } = useProfiles();
   const [items, setItems] = useState<ContinueItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const lastWriteRef = useRef(0);
   const requestRef = useRef<AbortController | null>(null);
+  const pendingRef = useRef<PendingWrite | null>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savingRef = useRef(false);
 
   const refresh = useCallback(async () => {
     requestRef.current?.abort();
@@ -43,28 +46,56 @@ export function useContinueWatching() {
 
   useEffect(() => { void refresh(); return () => requestRef.current?.abort(); }, [refresh]);
 
-  const addOrUpdate = useCallback(async (item: Omit<ContinueItem,'timestamp'>) => {
-    const optimistic = { ...item, timestamp:Date.now() };
-    setItems(prev => [optimistic, ...prev.filter(p => !(p.id===item.id && p.mediaType===item.mediaType && p.season===item.season && p.episode===item.episode))].slice(0,50));
-    if (!isLoggedIn || !profile?.id || !activeId) return;
-    const now = Date.now();
-    if (now - lastWriteRef.current < 3500) return;
-    lastWriteRef.current = now;
+  const persist = useCallback(async (item: PendingWrite) => {
+    if (savingRef.current || !isLoggedIn || !profile?.id || !activeId) return;
     const token = getAccessToken();
     if (!token) return;
+    savingRef.current = true;
     try {
       const response = await fetch('/api/progress', { method:'POST', headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`}, body:JSON.stringify({ profileId:activeId,id:item.id,mediaType:item.mediaType,season:item.season,episode:item.episode,position:((item.progress||0)/100)*(item.duration||0),duration:item.duration||0,title:item.title,posterPath:item.posterPath,backdropPath:item.backdropPath,completed:false }) });
       if (!response.ok) throw new Error(`Progress save failed: ${response.status}`);
-    } catch { /* next timeupdate retries */ }
+    } catch {
+      pendingRef.current = item;
+    } finally {
+      savingRef.current = false;
+      if (pendingRef.current) {
+        const next = pendingRef.current;
+        pendingRef.current = null;
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = setTimeout(() => { saveTimerRef.current = null; void persist(next); }, 1000);
+      }
+    }
   }, [activeId, isLoggedIn, profile?.id]);
+
+  const addOrUpdate = useCallback(async (item: Omit<ContinueItem,'timestamp'>) => {
+    const optimistic = { ...item, timestamp:Date.now() };
+    setItems(prev => [optimistic, ...prev.filter(p => !(p.id===item.id && p.mediaType===item.mediaType && p.season===item.season && p.episode===item.episode))].slice(0,50));
+    pendingRef.current = item;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      saveTimerRef.current = null;
+      const next = pendingRef.current;
+      pendingRef.current = null;
+      if (next) void persist(next);
+    }, 1000);
+  }, [persist]);
 
   const markCompleted = useCallback(async (item: Omit<ContinueItem,'timestamp'|'progress'|'completedAt'>) => {
     setItems(prev => prev.filter(p => !(p.id===item.id && p.mediaType===item.mediaType && p.season===item.season && p.episode===item.episode)));
+    pendingRef.current = null;
+    if (saveTimerRef.current) { clearTimeout(saveTimerRef.current); saveTimerRef.current = null; }
     if (!isLoggedIn || !profile?.id || !activeId) return;
     const token = getAccessToken();
     if (!token) return;
     try { await fetch('/api/progress', { method:'POST', headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`}, body:JSON.stringify({ profileId:activeId,id:item.id,mediaType:item.mediaType,season:item.season,episode:item.episode,position:item.duration||0,duration:item.duration||0,title:item.title,posterPath:item.posterPath,backdropPath:item.backdropPath,completed:true }) }); } catch {}
   }, [activeId, isLoggedIn, profile?.id]);
+
+  useEffect(() => () => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    const pending = pendingRef.current;
+    pendingRef.current = null;
+    if (pending) void persist(pending);
+  }, [persist]);
 
   const remove = useCallback((id:number, mediaType:string, season?:number, episode?:number) => setItems(prev => prev.filter(p => !(p.id===id && p.mediaType===mediaType && p.season===season && p.episode===episode))), []);
   const sortedItems = useMemo(() => [...items].sort((a,b) => b.timestamp-a.timestamp).slice(0,20), [items]);
