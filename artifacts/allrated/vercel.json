@@ -5,7 +5,6 @@
     "api/index.js": { "maxDuration": 30 },
     "api/bingr/stream.js": { "maxDuration": 30 },
     "api/bingr/download.js": { "maxDuration": 30 },
-    "api/cinemove.js": { "maxDuration": 30 },
     "api/catalog/title/similar.js": { "maxDuration": 30 },
     "api/catalog/genre.js": { "maxDuration": 30 },
     "api/catalog/language.js": { "maxDuration": 30 },
@@ -17,7 +16,6 @@
   "rewrites": [
     { "source": "/api/bingr/stream", "destination": "/api/bingr/stream" },
     { "source": "/api/bingr/download", "destination": "/api/bingr/download" },
-    { "source": "/api/cinemove", "destination": "/api/cinemove" },
     { "source": "/api/catalog/title/:mediaType/:id/similar", "destination": "/api/catalog/title/similar?mediaType=:mediaType&id=:id" },
     { "source": "/api/catalog/genre", "destination": "/api/catalog/genre" },
     { "source": "/api/catalog/language", "destination": "/api/catalog/language" },
