@@ -12,9 +12,9 @@ Vercel
   ├── React/Vite web application
   └── /api/* Vercel Functions
         │
-        ├── Supabase Auth integration
-        ├── Neon/PostgreSQL data access
-        ├── TMDB catalog/poster data
+        ├── Supabase Auth — identity, sessions, OAuth
+        ├── Supabase PostgreSQL — application persistence
+        ├── TMDB — catalog/poster metadata
         └── external streaming/player providers
 ```
 
@@ -22,17 +22,15 @@ Vercel environment variables are the runtime configuration source for production
 
 ## External services
 
-### Supabase — authentication
+### Supabase — authentication and database
 
-Supabase is RabbitRip's authentication provider. The frontend integrates with Supabase Auth for email/password authentication and OAuth providers such as Google and GitHub.
+Supabase is RabbitRip's authentication provider and PostgreSQL persistence provider. The frontend integrates with Supabase Auth for email/password authentication and OAuth providers such as Google and GitHub.
+
+Application data is stored in the same Supabase project's PostgreSQL database and accessed server-side through the shared `@workspace/db` package using `DATABASE_URL`. The database remains behind RabbitRip's API boundary; browser code must not receive database credentials.
+
+Authentication identity and application records are intentionally separate concerns. User-owned application records should use the Supabase Auth user identity as their stable ownership key where the relevant feature supports authenticated ownership.
 
 Relevant client configuration is supplied through Vercel environment variables, including the Supabase URL and publishable key. Authentication sessions are handled by the application's auth layer; do not introduce a second authentication system without an explicit architecture decision.
-
-### Neon — database
-
-Neon provides the PostgreSQL database used by RabbitRip. The repository accesses it through the database package in `lib/db/` using the `DATABASE_URL` environment variable.
-
-Database responsibilities include application state such as user-related data, watch history/progress, watchlists, ratings, and other persisted application data defined by the current schema.
 
 ### TMDB — catalog and poster metadata
 
@@ -47,6 +45,19 @@ RabbitRip's playback/streaming data comes from external provider APIs. These pro
 For example, the current Bingr function proxies requests to the Bingr streaming API. The browser should use RabbitRip's controlled API surface rather than embedding provider-specific credentials or assumptions throughout UI components.
 
 Do not merge the streaming provider layer with TMDB catalog logic merely because both are used by the watch experience.
+
+## Database migration policy
+
+RabbitRip previously used Neon PostgreSQL for application persistence. The database boundary has been intentionally consolidated into Supabase PostgreSQL while the application remains PostgreSQL/Drizzle based.
+
+Migration rules:
+
+1. `DATABASE_URL` must point to the Supabase PostgreSQL database in each deployed environment.
+2. No Neon-specific hostname, credential, or connection behavior may be required by application code.
+3. Database schema remains owned by `lib/db/src/schema/` and is applied with the existing Drizzle tooling.
+4. Supabase Auth remains the identity source; application tables must not implement a competing password/session system.
+5. Database credentials remain server-side and must never be committed.
+6. Before removing any legacy database deployment configuration, verify that all production routes use the Supabase database.
 
 ## Primary web package
 
@@ -105,8 +116,8 @@ Notable paths include:
 ## Important invariants
 
 1. Vercel is the production deployment platform.
-2. Supabase is the authentication provider.
-3. Neon is the PostgreSQL database provider.
+2. Supabase is the authentication provider and PostgreSQL database provider.
+3. Neon is not a runtime dependency of RabbitRip.
 4. TMDB supplies catalog/poster metadata, not playback.
 5. External streaming APIs/providers supply playback data.
 6. Replit is not supported and must not be reintroduced.
