@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import './index.css';
+import './rabbit-polish.css';
 import './player-watermark.css';
 import './subtitle-polyfill';
 import { initAnalytics } from '@/hooks/useAnalytics';
