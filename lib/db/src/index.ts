@@ -7,12 +7,14 @@ const { Pool } = pg;
 function normalizedDatabaseUrl(value: string) {
   try {
     const url = new URL(value);
-    // Supabase provides standard PostgreSQL connection strings. Keep TLS
-    // enabled for production database connections without depending on a
-    // provider-specific hostname or SSL mode.
+
+    // PostgreSQL/pg currently treats `require` as an alias for `verify-full`.
+    // Make the stronger behavior explicit so the connection remains secure
+    // when pg-connection-string changes its semantics in a future major.
     if (process.env.NODE_ENV === "production") {
-      url.searchParams.set("sslmode", "require");
+      url.searchParams.set("sslmode", "verify-full");
     }
+
     return url.toString();
   } catch {
     return value;
@@ -31,16 +33,19 @@ if (process.env.DATABASE_URL) {
   });
   db = drizzle(pool, { schema });
 } else {
-  console.warn("[DB] DATABASE_URL not set — auth/watchlist/ratings disabled.");
-  const stubDb = {
-    select: () => { throw new Error("DATABASE_URL not configured"); },
-    insert: () => { throw new Error("DATABASE_URL not configured"); },
-    delete: () => { throw new Error("DATABASE_URL not configured"); },
-    update: () => { throw new Error("DATABASE_URL not configured"); },
-    execute: () => { throw new Error("DATABASE_URL not configured"); },
-    query: {} as any,
+  console.warn("[DB] DATABASE_URL not set — database-backed features are unavailable.");
+  const unavailable = () => {
+    throw new Error("DATABASE_URL is not configured");
+  };
+
+  db = {
+    select: unavailable,
+    insert: unavailable,
+    delete: unavailable,
+    update: unavailable,
+    execute: unavailable,
+    query: {},
   } as unknown as ReturnType<typeof drizzle>;
-  db = stubDb;
 }
 
 export { pool, db };
