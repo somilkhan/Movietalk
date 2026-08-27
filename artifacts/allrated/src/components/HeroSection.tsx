@@ -83,7 +83,10 @@ function HeroSlide({ title, active }: { title: Title; active: boolean }) {
   const hasTrailer = Boolean(trailerUrl || youtubeKey);
 
   return (
-    <div className="relative w-full h-full flex-shrink-0 snap-center 2xl:absolute 2xl:inset-0 2xl:transition-opacity 2xl:duration-1000" aria-hidden={!active}>
+    <div
+      className={`relative w-full h-full flex-shrink-0 snap-center 2xl:absolute 2xl:inset-0 2xl:transition-opacity 2xl:duration-1000 ${active ? '2xl:opacity-100 2xl:z-10' : '2xl:opacity-0 2xl:z-0 2xl:pointer-events-none'}`}
+      aria-hidden={!active}
+    >
       {trailerUrl && !backdropError ? (
         <div className="absolute inset-0 bg-black overflow-hidden">
           <video
@@ -251,9 +254,7 @@ export function HeroSection({ titles }: { titles: Title[] | undefined }) {
   return (
     <section className="relative w-full h-[75vh] md:h-auto md:aspect-video max-h-[85vh] overflow-hidden group" data-testid="hero-section">
       <div ref={scrollerRef} className="flex 2xl:block w-full h-full overflow-x-auto 2xl:overflow-hidden snap-x snap-mandatory 2xl:snap-none scroll-smooth cursor-grab active:cursor-grabbing 2xl:cursor-default [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-        {featured.map((title, i) => (
-          <HeroSlide key={`${title.id}-${i}`} title={title} active={i === index} />
-        ))}
+        {featured.map((title, i) => <HeroSlide key={`${title.id}-${i}`} title={title} active={i === index} />)}
       </div>
 
       <div className="hidden 2xl:flex absolute right-12 bottom-[120px] z-[60] items-center gap-3">
@@ -261,7 +262,7 @@ export function HeroSection({ titles }: { titles: Title[] | undefined }) {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="m15 18-6-6 6-6" /></svg>
         </button>
         <button type="button" onClick={() => selectSlide((index + 1) % featured.length)} aria-label="Next featured" className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white transition-all pointer-events-auto hover:scale-105">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="m9 18 6-6-6-6" /></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5"><path d="m9 18 6-6-6-6" /></svg>
         </button>
       </div>
 
