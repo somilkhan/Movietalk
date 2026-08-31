@@ -22,6 +22,7 @@ function uniqueTitles(items: Title[]): Title[] {
 export default function BingrHome() {
   const { region } = useRegion();
   const trendingQuery = useGetTrending({ mediaType: "all", window: "week", region });
+  const newMoviesQuery = useGetCatalogList({ mediaType: "movie", category: "now_playing", region });
   const popularMoviesQuery = useGetCatalogList({ mediaType: "movie", category: "popular", region });
   const popularTvQuery = useGetCatalogList({ mediaType: "tv", category: "popular", region });
   const topRatedMoviesQuery = useGetCatalogList({ mediaType: "movie", category: "top_rated", region });
@@ -29,32 +30,56 @@ export default function BingrHome() {
   const animeQuery = useGetAnime();
 
   const trending = useMemo(() => uniqueTitles(trendingQuery.data ?? []), [trendingQuery.data]);
+  const newMovies = useMemo(() => uniqueTitles(newMoviesQuery.data ?? []), [newMoviesQuery.data]);
   const popularMovies = useMemo(() => uniqueTitles(popularMoviesQuery.data ?? []), [popularMoviesQuery.data]);
   const popularTv = useMemo(() => uniqueTitles(popularTvQuery.data ?? []), [popularTvQuery.data]);
   const topRatedMovies = useMemo(() => uniqueTitles(topRatedMoviesQuery.data ?? []), [topRatedMoviesQuery.data]);
   const topRatedTv = useMemo(() => uniqueTitles(topRatedTvQuery.data ?? []), [topRatedTvQuery.data]);
-  const topRatedAnime = useMemo(() => uniqueTitles([...(animeQuery.data ?? [])].sort((a, b) => b.voteAverage - a.voteAverage).slice(0, 20)), [animeQuery.data]);
+  const topRatedAnime = useMemo(
+    () => uniqueTitles([...(animeQuery.data ?? [])].sort((a, b) => b.voteAverage - a.voteAverage).slice(0, 20)),
+    [animeQuery.data],
+  );
 
-  const heroTitles = useMemo(() => uniqueTitles([
-    ...(trendingQuery.data ?? []),
-    ...(popularMoviesQuery.data ?? []),
-    ...(popularTvQuery.data ?? []),
-    ...(animeQuery.data ?? []),
-  ]).slice(0, 10), [trendingQuery.data, popularMoviesQuery.data, popularTvQuery.data, animeQuery.data]);
+  const heroTitles = useMemo(
+    () => uniqueTitles([
+      ...(trendingQuery.data ?? []),
+      ...(newMoviesQuery.data ?? []),
+      ...(popularMoviesQuery.data ?? []),
+      ...(popularTvQuery.data ?? []),
+      ...(animeQuery.data ?? []),
+    ]).slice(0, 10),
+    [trendingQuery.data, newMoviesQuery.data, popularMoviesQuery.data, popularTvQuery.data, animeQuery.data],
+  );
 
   const genreRows = useMemo(() => {
-    const source = uniqueTitles([...(trendingQuery.data ?? []), ...(popularMoviesQuery.data ?? []), ...(popularTvQuery.data ?? [])]);
+    const source = uniqueTitles([
+      ...(trendingQuery.data ?? []),
+      ...(newMoviesQuery.data ?? []),
+      ...(popularMoviesQuery.data ?? []),
+      ...(popularTvQuery.data ?? []),
+    ]);
     return GENRES.map((title) => ({
       title,
       href: `/category/${encodeURIComponent(title)}`,
-      items: source.filter((item) => getGenreNames(item.genreIds ?? [], 8).some((name) => name.toLowerCase() === title.toLowerCase())).slice(0, 20),
+      items: source.filter((item) =>
+        getGenreNames(item.genreIds ?? [], 8).some((name) => name.toLowerCase() === title.toLowerCase()),
+      ).slice(0, 20),
     })).filter((row) => row.items.length > 0);
-  }, [trendingQuery.data, popularMoviesQuery.data, popularTvQuery.data]);
+  }, [trendingQuery.data, newMoviesQuery.data, popularMoviesQuery.data, popularTvQuery.data]);
 
   return (
     <div className="min-h-screen bg-black pb-28 md:pb-0" data-testid="page-home">
       <Seo />
-      <BingrHomeSections trending={trending} popularMovies={popularMovies} popularTv={popularTv} topRatedMovies={topRatedMovies} topRatedTv={topRatedTv} topRatedAnime={topRatedAnime} genreRows={genreRows}>
+      <BingrHomeSections
+        trending={trending}
+        newMovies={newMovies}
+        popularMovies={popularMovies}
+        popularTv={popularTv}
+        topRatedMovies={topRatedMovies}
+        topRatedTv={topRatedTv}
+        topRatedAnime={topRatedAnime}
+        genreRows={genreRows}
+      >
         <BingrHero titles={heroTitles} />
       </BingrHomeSections>
     </div>
