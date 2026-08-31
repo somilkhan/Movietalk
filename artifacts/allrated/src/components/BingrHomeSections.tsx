@@ -1,138 +1,110 @@
+import { useRef } from "react";
 import { Link } from "wouter";
-import type { ReactNode } from "react";
 import type { Title } from "@workspace/api-client-react";
-import { CompletedBingrTray } from "@/components/CompletedBingrTray";
 
 interface TrayProps {
   title: string;
   items: Title[];
-  href?: string;
+  href: string;
   ranked?: boolean;
 }
 
-const poster = (path?: string | null) =>
-  path ? `https://image.tmdb.org/t/p/w342${path}` : "/placeholder-poster.svg";
-
-const yearOf = (item: Title): string => {
-  if (!item.releaseDate) return "—";
-  return item.releaseDate.slice(0, 4);
+const poster = (path?: string | null) => {
+  if (!path) return "/placeholder-poster.svg";
+  return /^https?:\/\//i.test(path) ? path : `https://image.tmdb.org/t/p/w500${path}`;
 };
 
-const titleOf = (item: Title): string => item.title || "Untitled";
+const yearOf = (item: Title) => item.releaseDate?.slice(0, 4) || (item.year ? String(item.year) : "");
+const mediaLabel = (item: Title) => item.mediaType === "tv" ? "Series" : item.mediaType === "movie" ? "Movie" : "Anime";
 
-function SectionHeading({ title, href }: Pick<TrayProps, "title" | "href">) {
+function Heading({ title, href }: { title: string; href: string }) {
   return (
-    <div className="flex items-center justify-between gap-3">
-      <h2 className="text-[17px] font-semibold leading-[1.35] tracking-[-0.01em] text-white">
-        {title}
-      </h2>
-      {href ? (
-        <Link
-          href={href}
-          className="shrink-0 rounded-full border border-white/10 px-3 py-1 text-[11px] font-medium text-white/60 transition-colors hover:border-white/20 hover:text-white"
-        >
-          View All
-        </Link>
-      ) : null}
+    <div className="flex items-center justify-between mb-4">
+      <h2 className="text-[17px] lg:text-[19px] font-semibold text-white/90">{title}</h2>
+      <Link href={href} className="flex items-center gap-1 text-[12px] font-semibold text-white/50 bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full transition" aria-label={`View all ${title}`}>
+        View All
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+      </Link>
     </div>
   );
 }
 
-function MediaCard({ item }: { item: Title }) {
-  const mediaType = item.mediaType === "tv" ? "tv" : "movie";
-  const label = mediaType === "tv" ? "Series" : "Movie";
-
+function PosterCard({ item }: { item: Title }) {
   return (
-    <Link
-      href={`/watch/${mediaType}/${item.id}`}
-      className="group/card block w-[130px] shrink-0 md:w-[160px] lg:w-[185px]"
-      aria-label={`${titleOf(item)}, ${yearOf(item)}`}
-    >
-      <div className="overflow-hidden rounded-[6px] bg-white/[0.06]">
-        <img
-          src={poster(item.posterPath)}
-          alt={titleOf(item)}
-          loading="lazy"
-          className="aspect-[2/3] w-full object-cover transition-transform duration-300 group-hover/card:scale-[1.025]"
-        />
-      </div>
-      <h3 className="mt-2 line-clamp-1 text-[13px] font-medium leading-[18px] text-white/90">
-        {titleOf(item)}
-      </h3>
-      <div className="mt-0.5 flex items-center text-[11px] font-medium leading-[16.5px] text-white/50">
-        {item.voteAverage > 0 ? <span>★ {item.voteAverage.toFixed(1)}</span> : null}
-        {item.voteAverage > 0 ? <span className="mx-1.5 text-white/30">·</span> : null}
-        <span>{yearOf(item)}</span>
-        <span className="mx-1.5 text-white/30">·</span>
-        <span>{label}</span>
+    <Link href={`/${item.mediaType === "tv" ? "tv" : item.mediaType === "movie" ? "movie" : "anime"}/${item.id}`} className="flex-shrink-0 group/card relative w-[130px] md:w-[160px] lg:w-[185px]">
+      <div className="relative flex flex-col w-full">
+        <div className="relative rounded-lg overflow-hidden aspect-[2/3] bg-[#1a1c24] ring-1 ring-white/5 transition-all duration-300 group-hover/card:ring-white/20 group-hover/card:-translate-y-2">
+          <img alt={item.title} className="w-full h-full object-cover" loading="lazy" src={poster(item.posterPath)} />
+        </div>
+        <div className="mt-2 truncate text-[14px] font-semibold text-white/90 tracking-tight">{item.title}</div>
+        <div className="flex items-center mt-1 text-[11px] font-medium text-white/50">
+          {item.voteAverage > 0 ? <span className="flex items-center"><svg width="10" height="10" viewBox="0 0 24 24" fill="white" className="mr-1" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>{item.voteAverage.toFixed(1)}</span> : null}
+          {item.voteAverage > 0 && yearOf(item) ? <span className="mx-1.5 text-white/30">·</span> : null}
+          {yearOf(item) ? <span>{yearOf(item)}</span> : null}
+          {yearOf(item) ? <span className="mx-1.5 text-white/30">·</span> : null}
+          <span>{mediaLabel(item)}</span>
+        </div>
       </div>
     </Link>
   );
 }
 
 function RankedCard({ item, rank }: { item: Title; rank: number }) {
-  const mediaType = item.mediaType === "tv" ? "tv" : "movie";
-
   return (
-    <Link
-      href={`/watch/${mediaType}/${item.id}`}
-      className="flex w-[163px] shrink-0 items-center pr-2 lg:w-[210px] lg:pr-6"
-      aria-label={`${rank}. ${titleOf(item)}`}
-    >
-      <span className="select-none pl-2 text-[100px] font-black leading-[0.72] tracking-[-0.08em] text-white/10 md:text-[120px] lg:text-[140px]">
-        {rank}
-      </span>
-      <div className="relative z-10 w-[88px] shrink-0 overflow-hidden rounded-[5px] bg-white/[0.06] lg:w-[110px]">
-        <img
-          src={poster(item.posterPath)}
-          alt={titleOf(item)}
-          loading="lazy"
-          className="aspect-[2/3] w-full object-cover"
-        />
+    <Link href={`/${item.mediaType === "tv" ? "tv" : item.mediaType === "movie" ? "movie" : "anime"}/${item.id}`} className="flex-shrink-0 group/card relative flex items-center pr-2 lg:pr-6">
+      <div className="select-none z-10 pl-2 lg:pl-4 text-[100px] md:text-[120px] lg:text-[140px] font-normal leading-none tracking-[-0.05em] mr-[-10px] transform scale-x-[1.2] origin-left bg-gradient-to-r from-white via-white/100 to-transparent bg-clip-text text-transparent" style={{ fontFamily: "'Alfa Slab One', 'Arial Black', Impact, sans-serif" }}>{rank}</div>
+      <div className="relative flex flex-col w-[110px] sm:w-[130px] lg:w-[160px] z-20 shrink-0">
+        <div className="relative rounded-lg overflow-hidden aspect-[2/3] bg-[#1a1c24] ring-1 ring-white/5 transition-all duration-300 group-hover/card:ring-white/20 group-hover/card:-translate-y-2">
+          <img alt={item.title} className="w-full h-full object-cover" loading="lazy" src={poster(item.posterPath)} />
+        </div>
       </div>
     </Link>
   );
 }
 
 function Tray({ title, items, href, ranked = false }: TrayProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
   if (!items.length) return null;
+  const next = () => scrollRef.current?.scrollBy({ left: scrollRef.current.clientWidth * 0.75, behavior: "smooth" });
 
   return (
-    <section className="mt-8 px-6 first:mt-0" aria-label={title}>
-      <SectionHeading title={title} href={href} />
-      <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pt-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {items.map((item, index) =>
-          ranked ? (
-            <RankedCard key={`${item.mediaType}-${item.id}-${index}`} item={item} rank={index + 1} />
-          ) : (
-            <MediaCard key={`${item.mediaType}-${item.id}-${index}`} item={item} />
-          ),
-        )}
+    <section className="px-6 lg:px-20 pt-8">
+      <Heading title={title} href={href} />
+      <div className="relative group/row">
+        <div ref={scrollRef} className="flex gap-3 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden scroll-smooth pt-4">
+          {items.map((item, index) => ranked ? <RankedCard key={`${item.mediaType}-${item.id}`} item={item} rank={index + 1} /> : <PosterCard key={`${item.mediaType}-${item.id}`} item={item} />)}
+        </div>
+        <button type="button" onClick={next} className="absolute right-0 top-0 bottom-0 z-30 w-10 bg-gradient-to-l from-black to-transparent flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition" aria-label={`Next ${title}`}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+        </button>
       </div>
     </section>
   );
 }
 
-export function BingrHomeSections({ children, trending }: { children?: ReactNode; trending: Title[] }) {
-  const movies = trending.filter((item) => item.mediaType === "movie");
-  const series = trending.filter((item) => item.mediaType === "tv");
+export interface BingrHomeSectionsProps {
+  trending: Title[];
+  popularMovies: Title[];
+  popularTv: Title[];
+  topRatedMovies: Title[];
+  topRatedTv: Title[];
+  topRatedAnime: Title[];
+  genreRows: Array<{ title: string; items: Title[]; href: string }>;
+  children: React.ReactNode;
+}
 
+export function BingrHomeSections({ trending, popularMovies, popularTv, topRatedMovies, topRatedTv, topRatedAnime, genreRows, children }: BingrHomeSectionsProps) {
   return (
-    <main className="min-h-screen bg-black pb-24 text-white">
+    <main className="relative min-h-screen bg-black text-white pb-20" data-testid="bingr-home">
       {children}
-      <div className="mx-auto w-full max-w-[1440px]">
-        <Tray title="Trending Right Now" items={trending} href="/trending" />
-        <Tray title="New Movies" items={movies} href="/movies" />
-        <Tray title="Popular TV Shows" items={series} href="/tv" />
-        <CompletedBingrTray />
-        <Tray title="Top Rated TV Shows" items={series} href="/tv?sort=rating" ranked />
-        <Tray title="Top Rated Movies" items={movies} href="/movies?sort=rating" />
-        <Tray title="Top Rated Anime" items={series} href="/anime" />
-        <Tray title="Action" items={trending} href="/genre/action" />
-        <Tray title="Thriller" items={trending} href="/genre/thriller" />
-        <Tray title="Crime" items={trending} href="/genre/crime" />
-        <Tray title="Horror" items={trending} href="/genre/horror" />
-        <Tray title="Mystery" items={trending} href="/genre/mystery" />
+      <div className="relative z-10 -mt-4">
+        <Tray title="Trending Right Now" items={trending} href="/category/Trending%20Right%20Now" />
+        <Tray title="Popular Movies" items={popularMovies} href="/category/Popular%20Movies" />
+        <Tray title="Popular TV Shows" items={popularTv} href="/category/Popular%20TV%20Shows" />
+        <Tray title="Top Rated TV Shows" items={topRatedTv} href="/category/Top%20Rated%20TV%20Shows" ranked />
+        <Tray title="Top Rated Movies" items={topRatedMovies} href="/category/Top%20Rated%20Movies" />
+        <Tray title="Top Rated Anime" items={topRatedAnime} href="/category/Top%20Rated%20Anime" />
+        {genreRows.map((row) => <Tray key={row.title} title={row.title} items={row.items} href={row.href} />)}
       </div>
     </main>
   );
