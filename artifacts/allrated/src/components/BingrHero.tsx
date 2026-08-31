@@ -98,6 +98,10 @@ export function BingrHero({ titles }: { titles: Title[] | undefined }) {
     void video.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
   }, [trailerUrl]);
 
+  useEffect(() => {
+    if (youtubeKey) setPlaying(true);
+  }, [youtubeKey]);
+
   if (!current) return null;
 
   const genres = getGenreNames(current.genreIds ?? [], 3);
@@ -142,18 +146,13 @@ export function BingrHero({ titles }: { titles: Title[] | undefined }) {
   };
 
   return (
-    <section className="relative w-full h-[75vh] md:h-auto md:aspect-video max-h-[85vh] overflow-hidden bg-black" data-testid="hero-section">
+    <section className="relative w-full h-[80svh] min-h-[640px] md:h-auto md:aspect-video max-h-[90vh] overflow-hidden bg-black" data-testid="hero-section">
       <div className="relative w-full h-full">
         <div className="absolute inset-0 overflow-hidden bg-black">
           <picture>
             <source media="(min-width: 1900px)" srcSet={image(current.backdropPath || current.posterPath, "original")} />
             <source media="(min-width: 768px)" srcSet={image(current.backdropPath || current.posterPath, "w1280")} />
-            <img
-              src={image(current.posterPath || current.backdropPath, "w500")}
-              alt=""
-              aria-hidden="true"
-              className="h-full w-full object-cover object-top"
-            />
+            <img src={image(current.posterPath || current.backdropPath, "w500")} alt="" aria-hidden="true" className="h-full w-full object-cover object-top" />
           </picture>
 
           {trailerUrl ? (
@@ -177,7 +176,7 @@ export function BingrHero({ titles }: { titles: Title[] | undefined }) {
               ref={youtubeRef}
               src={youtubeSrc}
               title={`${current.title} trailer`}
-              className="absolute left-1/2 top-1/2 h-[56.25vw] min-h-full w-[177.78vh] min-w-full -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+              className="absolute left-1/2 top-1/2 h-[56.25vw] min-h-full w-[177.78vh] min-w-full -translate-x-1/2 -translate-y-1/2 pointer-events-none animate-in fade-in duration-1000"
               allow="autoplay; encrypted-media; picture-in-picture"
               referrerPolicy="strict-origin-when-cross-origin"
             />
@@ -213,9 +212,7 @@ export function BingrHero({ titles }: { titles: Title[] | undefined }) {
               {current.overview ? <p className="mb-5 max-w-xl line-clamp-3 md:line-clamp-4 text-[13px] md:text-[14px] lg:text-[15px] leading-[1.4] text-white/70">{current.overview}</p> : null}
               <div className="flex items-center gap-3">
                 <button type="button" onClick={togglePlay} className="h-12 w-12 md:h-14 md:w-14 shrink-0 rounded-full bg-[#f9f9f9] text-black flex items-center justify-center shadow-lg transition hover:bg-white active:scale-95" aria-label={playing ? "Pause trailer" : "Play trailer"}>
-                  {playing
-                    ? <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z" /></svg>
-                    : <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 4l15 8-15 8z" /></svg>}
+                  {playing ? <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z" /></svg> : <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 4l15 8-15 8z" /></svg>}
                 </button>
                 <Link href={routeOf(current)} className="inline-flex items-center justify-center gap-2.5 rounded-full border border-white/20 bg-[#0f1014]/60 px-6 py-3 md:py-3.5 text-[13px] md:text-[15px] font-semibold text-[#f9f9f9] backdrop-blur-md transition hover:bg-white/10 active:scale-95">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
@@ -226,9 +223,13 @@ export function BingrHero({ titles }: { titles: Title[] | undefined }) {
           </div>
         </div>
 
-        {hasTrailer && playing ? (
-          <button type="button" onClick={toggleMute} className="absolute right-6 bottom-[90px] z-30 h-12 w-12 md:h-14 md:w-14 rounded-full border border-white/20 bg-[#0f1014]/60 text-white backdrop-blur-md transition hover:bg-white/10 active:scale-95" aria-label={muted ? "Unmute trailer" : "Mute trailer"}>
-            {muted ? "🔇" : "🔊"}
+        {hasTrailer ? (
+          <button type="button" onClick={toggleMute} className="absolute right-6 bottom-[90px] z-30 h-12 w-12 md:h-14 md:w-14 rounded-full border border-white/20 bg-[#0f1014]/60 text-white backdrop-blur-md transition hover:bg-white/10 active:scale-95 flex items-center justify-center" aria-label={muted ? "Unmute trailer" : "Mute trailer"}>
+            {muted ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z" /><path d="m19 9-4 6" /><path d="m15 9 4 6" /></svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z" /><path d="M19 9a5 5 0 0 1 0 6" /><path d="M15 12h.01" /></svg>
+            )}
           </button>
         ) : null}
       </div>
