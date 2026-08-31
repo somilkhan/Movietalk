@@ -1,28 +1,11 @@
-import { useRef, type ReactNode } from "react";
 import { Link } from "wouter";
-import { useGetTrending } from "@workspace/api-client-react";
+import type { ReactNode } from "react";
+import type { Title } from "@workspace/api-client-react";
 import { CompletedBingrTray } from "@/components/CompletedBingrTray";
-
-interface StudioItem {
-  name: string;
-  id: number;
-  image: string;
-}
-
-interface MediaItem {
-  id: number;
-  title: string;
-  name?: string;
-  poster_path?: string | null;
-  vote_average?: number;
-  release_date?: string;
-  first_air_date?: string;
-  media_type?: string;
-}
 
 interface TrayProps {
   title: string;
-  items: MediaItem[];
+  items: Title[];
   href?: string;
   ranked?: boolean;
 }
@@ -30,10 +13,12 @@ interface TrayProps {
 const poster = (path?: string | null) =>
   path ? `https://image.tmdb.org/t/p/w342${path}` : "/placeholder-poster.svg";
 
-const yearOf = (item: MediaItem) => {
-  const date = item.release_date || item.first_air_date;
-  return date ? date.slice(0, 4) : "—";
+const yearOf = (item: Title): string => {
+  if (!item.releaseDate) return "—";
+  return item.releaseDate.slice(0, 4);
 };
+
+const titleOf = (item: Title): string => item.title || "Untitled";
 
 function SectionHeading({ title, href }: Pick<TrayProps, "title" | "href">) {
   return (
@@ -53,48 +38,54 @@ function SectionHeading({ title, href }: Pick<TrayProps, "title" | "href">) {
   );
 }
 
-function MediaCard({ item }: { item: MediaItem }) {
+function MediaCard({ item }: { item: Title }) {
+  const mediaType = item.mediaType === "tv" ? "tv" : "movie";
+  const label = mediaType === "tv" ? "Series" : "Movie";
+
   return (
     <Link
-      href={`/watch/${item.media_type === "tv" ? "tv" : "movie"}/${item.id}`}
-      className="group/card relative block w-[130px] shrink-0 md:w-[160px] lg:w-[185px]"
-      aria-label={`${item.title || item.name || "Untitled"}, ${yearOf(item)}`}
+      href={`/watch/${mediaType}/${item.id}`}
+      className="group/card block w-[130px] shrink-0 md:w-[160px] lg:w-[185px]"
+      aria-label={`${titleOf(item)}, ${yearOf(item)}`}
     >
       <div className="overflow-hidden rounded-[6px] bg-white/[0.06]">
         <img
-          src={poster(item.poster_path)}
-          alt={item.title || item.name || ""}
+          src={poster(item.posterPath)}
+          alt={titleOf(item)}
           loading="lazy"
           className="aspect-[2/3] w-full object-cover transition-transform duration-300 group-hover/card:scale-[1.025]"
         />
       </div>
       <h3 className="mt-2 line-clamp-1 text-[13px] font-medium leading-[18px] text-white/90">
-        {item.title || item.name || "Untitled"}
+        {titleOf(item)}
       </h3>
       <div className="mt-0.5 flex items-center text-[11px] font-medium leading-[16.5px] text-white/50">
-        {item.vote_average != null ? <span>★ {item.vote_average.toFixed(1)}</span> : null}
-        {item.vote_average != null ? <span className="mx-1.5 text-white/30">·</span> : null}
+        {item.voteAverage > 0 ? <span>★ {item.voteAverage.toFixed(1)}</span> : null}
+        {item.voteAverage > 0 ? <span className="mx-1.5 text-white/30">·</span> : null}
         <span>{yearOf(item)}</span>
         <span className="mx-1.5 text-white/30">·</span>
-        <span>{item.media_type === "tv" ? "Series" : "Movie"}</span>
+        <span>{label}</span>
       </div>
     </Link>
   );
 }
 
-function RankedCard({ item, rank }: { item: MediaItem; rank: number }) {
+function RankedCard({ item, rank }: { item: Title; rank: number }) {
+  const mediaType = item.mediaType === "tv" ? "tv" : "movie";
+
   return (
     <Link
-      href={`/watch/${item.media_type === "tv" ? "tv" : "movie"}/${item.id}`}
+      href={`/watch/${mediaType}/${item.id}`}
       className="flex w-[163px] shrink-0 items-center pr-2 lg:w-[210px] lg:pr-6"
+      aria-label={`${rank}. ${titleOf(item)}`}
     >
       <span className="select-none pl-2 text-[100px] font-black leading-[0.72] tracking-[-0.08em] text-white/10 md:text-[120px] lg:text-[140px]">
         {rank}
       </span>
       <div className="relative z-10 w-[88px] shrink-0 overflow-hidden rounded-[5px] bg-white/[0.06] lg:w-[110px]">
         <img
-          src={poster(item.poster_path)}
-          alt={item.title || item.name || ""}
+          src={poster(item.posterPath)}
+          alt={titleOf(item)}
           loading="lazy"
           className="aspect-[2/3] w-full object-cover"
         />
@@ -104,58 +95,39 @@ function RankedCard({ item, rank }: { item: MediaItem; rank: number }) {
 }
 
 function Tray({ title, items, href, ranked = false }: TrayProps) {
-  const scroller = useRef<HTMLDivElement>(null);
   if (!items.length) return null;
 
   return (
-    <section className="mt-8 px-6 first:mt-0">
+    <section className="mt-8 px-6 first:mt-0" aria-label={title}>
       <SectionHeading title={title} href={href} />
-      <div
-        ref={scroller}
-        className="flex gap-3 overflow-x-auto pt-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
+      <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pt-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {items.map((item, index) =>
-          ranked ? <RankedCard key={`${item.id}-${index}`} item={item} rank={index + 1} /> : <MediaCard key={`${item.id}-${index}`} item={item} />,
+          ranked ? (
+            <RankedCard key={`${item.mediaType}-${item.id}-${index}`} item={item} rank={index + 1} />
+          ) : (
+            <MediaCard key={`${item.mediaType}-${item.id}-${index}`} item={item} />
+          ),
         )}
       </div>
     </section>
   );
 }
 
-function StudioTray({ studios }: { studios: StudioItem[] }) {
-  if (!studios.length) return null;
-  return (
-    <section className="mt-8 px-6">
-      <SectionHeading title="Studios" href="/studios" />
-      <div className="flex gap-3 overflow-x-auto pt-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {studios.map((studio) => (
-          <Link key={studio.id} href={`/studio/${studio.id}`} className="w-[130px] shrink-0 md:w-[160px] lg:w-[185px]">
-            <div className="flex aspect-[16/9] items-center justify-center overflow-hidden rounded-[6px] border border-white/[0.06] bg-white/[0.04] p-5">
-              <img src={studio.image} alt={studio.name} loading="lazy" className="max-h-full max-w-full object-contain opacity-90 transition-opacity hover:opacity-100" />
-            </div>
-            <p className="mt-2 line-clamp-1 text-[13px] font-medium text-white/80">{studio.name}</p>
-          </Link>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-export function BingrHomeSections({ children }: { children?: ReactNode }) {
-  const { data } = useGetTrending({ mediaType: "all", timeWindow: "week" });
-  const trending = ((data as { results?: MediaItem[] } | undefined)?.results ?? []).filter((item) => item?.id);
+export function BingrHomeSections({ children, trending }: { children?: ReactNode; trending: Title[] }) {
+  const movies = trending.filter((item) => item.mediaType === "movie");
+  const series = trending.filter((item) => item.mediaType === "tv");
 
   return (
     <main className="min-h-screen bg-black pb-24 text-white">
       {children}
       <div className="mx-auto w-full max-w-[1440px]">
         <Tray title="Trending Right Now" items={trending} href="/trending" />
-        <Tray title="New Movies" items={trending.filter((x) => x.media_type === "movie")} href="/movies" />
-        <Tray title="Popular TV Shows" items={trending.filter((x) => x.media_type === "tv")} href="/tv" />
+        <Tray title="New Movies" items={movies} href="/movies" />
+        <Tray title="Popular TV Shows" items={series} href="/tv" />
         <CompletedBingrTray />
-        <Tray title="Top Rated TV Shows" items={trending.filter((x) => x.media_type === "tv")} href="/tv?sort=rating" ranked />
-        <Tray title="Top Rated Movies" items={trending.filter((x) => x.media_type === "movie")} href="/movies?sort=rating" />
-        <Tray title="Top Rated Anime" items={trending.filter((x) => x.media_type === "tv")} href="/anime" />
+        <Tray title="Top Rated TV Shows" items={series} href="/tv?sort=rating" ranked />
+        <Tray title="Top Rated Movies" items={movies} href="/movies?sort=rating" />
+        <Tray title="Top Rated Anime" items={series} href="/anime" />
         <Tray title="Action" items={trending} href="/genre/action" />
         <Tray title="Thriller" items={trending} href="/genre/thriller" />
         <Tray title="Crime" items={trending} href="/genre/crime" />
