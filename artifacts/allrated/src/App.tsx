@@ -12,7 +12,7 @@ import { ProfileGuard } from "@/components/ProfileGuard";
 import { GlobalUiFixes } from "@/components/GlobalUiFixes";
 import { cn } from "@/lib/utils";
 import { Footer } from "@/components/Footer";
-import Home from "@/pages/Home";
+import BingrHome from "@/pages/BingrHome";
 import NotFound from "@/pages/not-found";
 import LoginRoute from "@/pages/LoginRoute";
 import Register from "@/pages/Register";
@@ -50,7 +50,6 @@ function Router() {
   const [location] = useLocation();
   const isWatchPage = location.startsWith("/watch");
   const isTitlePage = location.startsWith("/title");
-
   return (
     <>
       <ScrollToTop />
@@ -68,7 +67,7 @@ function Router() {
             <main className={cn("flex-1 mobile-content md:pb-0 animate-slide-up", "md:ml-[80px]")}>
               <Switch>
                 <Route path="/" component={() => <Redirect to="/home" />} />
-                <Route path="/home" component={Home} />
+                <Route path="/home" component={BingrHome} />
                 <Route path="/movies"><Suspense fallback={<PageLoader />}><Movies /></Suspense></Route>
                 <Route path="/tv"><Suspense fallback={<PageLoader />}><Tv /></Suspense></Route>
                 <Route path="/anime"><Suspense fallback={<PageLoader />}><Anime /></Suspense></Route>
@@ -97,20 +96,5 @@ function Router() {
 }
 
 export default function App() {
-  return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <WouterRouter>
-          <TooltipProvider>
-            <NetworkStatus />
-            <ProfileGuard>
-              <Router />
-            </ProfileGuard>
-            <Toaster />
-            <SonnerToaster position="bottom-center" toastOptions={{ style: { background: "#15171d", color: "#fff", border: "1px solid rgba(255,255,255,0.1)" } }} />
-          </TooltipProvider>
-        </WouterRouter>
-      </QueryClientProvider>
-    </ErrorBoundary>
-  );
+  return <ErrorBoundary><QueryClientProvider client={queryClient}><WouterRouter><TooltipProvider><NetworkStatus /><ProfileGuard><Router /></ProfileGuard><Toaster /><SonnerToaster position="bottom-center" toastOptions={{ style: { background: "#15171d", color: "#fff", border: "1px solid rgba(255,255,255,0.1)" } }} /></TooltipProvider></WouterRouter></QueryClientProvider></ErrorBoundary>;
 }
