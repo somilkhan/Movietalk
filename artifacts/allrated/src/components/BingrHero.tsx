@@ -13,7 +13,7 @@ const image = (path: string | null | undefined, size: "w500" | "w1280" | "origin
 
 const yearOf = (title: Title) => title.releaseDate?.slice(0, 4) || (title.year ? String(title.year) : "");
 const typeOf = (title: Title) => title.mediaType === "tv" ? "Series" : title.mediaType === "movie" ? "Movie" : "Anime";
-const routeOf = (title: Title) => `/${title.mediaType === "tv" ? "tv" : title.mediaType === "movie" ? "movie" : "anime"}/${title.id}`;
+const routeOf = (title: Title) => `/title/${title.mediaType === "tv" ? "tv" : title.mediaType === "movie" ? "movie" : "anime"}/${title.id}`;
 
 export function BingrHero({ titles }: { titles: Title[] | undefined }) {
   const featured = useMemo(() => {
@@ -32,7 +32,6 @@ export function BingrHero({ titles }: { titles: Title[] | undefined }) {
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
   const [logoPath, setLogoPath] = useState<string | null>(null);
-  const sliderRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const youtubeRef = useRef<HTMLIFrameElement>(null);
   const current = featured[index];
@@ -117,8 +116,11 @@ export function BingrHero({ titles }: { titles: Title[] | undefined }) {
       }
       return;
     }
-    if (youtubeRef.current) {
-      youtubeRef.current.contentWindow?.postMessage(JSON.stringify({ event: "command", func: playing ? "pauseVideo" : "playVideo", args: [] }), "https://www.youtube-nocookie.com");
+    if (youtubeRef.current && hasTrailer) {
+      youtubeRef.current.contentWindow?.postMessage(
+        JSON.stringify({ event: "command", func: playing ? "pauseVideo" : "playVideo", args: [] }),
+        "https://www.youtube-nocookie.com",
+      );
       setPlaying((value) => !value);
     }
   };
@@ -129,88 +131,106 @@ export function BingrHero({ titles }: { titles: Title[] | undefined }) {
       setMuted(videoRef.current.muted);
       return;
     }
-    if (youtubeRef.current) {
+    if (youtubeRef.current && hasTrailer) {
       const func = muted ? "unMute" : "mute";
-      youtubeRef.current.contentWindow?.postMessage(JSON.stringify({ event: "command", func, args: [] }), "https://www.youtube-nocookie.com");
+      youtubeRef.current.contentWindow?.postMessage(
+        JSON.stringify({ event: "command", func, args: [] }),
+        "https://www.youtube-nocookie.com",
+      );
       setMuted((value) => !value);
     }
   };
 
   return (
     <section className="relative w-full h-[75vh] md:h-auto md:aspect-video max-h-[85vh] overflow-hidden bg-black" data-testid="hero-section">
-      <div ref={sliderRef} className="flex w-full h-full overflow-hidden">
-        <div className="relative w-full h-full shrink-0">
-          <div className="absolute inset-0 overflow-hidden bg-black">
-            {trailerUrl ? (
-              <video
-                ref={videoRef}
-                src={trailerUrl}
-                autoPlay
-                loop
-                playsInline
-                muted
-                disablePictureInPicture
-                disableRemotePlayback
-                controlsList="nodownload nofullscreen noremoteplayback"
-                className="h-full w-full object-cover object-center pointer-events-none animate-in fade-in duration-1000"
-                onPlay={() => setPlaying(true)}
-                onPause={() => setPlaying(false)}
-                onError={() => { setTrailerUrl(null); setPlaying(false); }}
-              />
-            ) : youtubeSrc ? (
-              <iframe
-                ref={youtubeRef}
-                src={youtubeSrc}
-                title={`${current.title} trailer`}
-                className="absolute left-1/2 top-1/2 h-[56.25vw] min-h-full w-[177.78vh] min-w-full -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-                allow="autoplay; encrypted-media; picture-in-picture"
-                referrerPolicy="strict-origin-when-cross-origin"
-              />
-            ) : (
-              <picture>
-                <source media="(min-width: 1900px)" srcSet={image(current.backdropPath || current.posterPath, "original")} />
-                <source media="(min-width: 768px)" srcSet={image(current.backdropPath || current.posterPath, "w1280")} />
-                <img src={image(current.posterPath || current.backdropPath, "w500")} alt={current.title} className="h-full w-full object-cover object-top" />
-              </picture>
-            )}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent pointer-events-none" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 md:via-transparent to-transparent pointer-events-none" />
-            <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black to-transparent pointer-events-none" />
-          </div>
+      <div className="relative w-full h-full">
+        <div className="absolute inset-0 overflow-hidden bg-black">
+          <picture>
+            <source media="(min-width: 1900px)" srcSet={image(current.backdropPath || current.posterPath, "original")} />
+            <source media="(min-width: 768px)" srcSet={image(current.backdropPath || current.posterPath, "w1280")} />
+            <img
+              src={image(current.posterPath || current.backdropPath, "w500")}
+              alt=""
+              aria-hidden="true"
+              className="h-full w-full object-cover object-top"
+            />
+          </picture>
 
-          <Link href="/home" className="absolute left-4 top-4 z-[60] h-[55px] w-[55px]" aria-label="Bingr home">
-            <img src="https://bingr.one/brand/logo.png" alt="Bingr Logo" className="h-[55px] w-[55px] object-contain drop-shadow-lg" />
-          </Link>
+          {trailerUrl ? (
+            <video
+              ref={videoRef}
+              src={trailerUrl}
+              autoPlay
+              loop
+              playsInline
+              muted
+              disablePictureInPicture
+              disableRemotePlayback
+              controlsList="nodownload nofullscreen noremoteplayback"
+              className="absolute inset-0 h-full w-full object-cover object-center pointer-events-none animate-in fade-in duration-1000"
+              onPlay={() => setPlaying(true)}
+              onPause={() => setPlaying(false)}
+              onError={() => { setTrailerUrl(null); setPlaying(false); }}
+            />
+          ) : youtubeSrc ? (
+            <iframe
+              ref={youtubeRef}
+              src={youtubeSrc}
+              title={`${current.title} trailer`}
+              className="absolute left-1/2 top-1/2 h-[56.25vw] min-h-full w-[177.78vh] min-w-full -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+              allow="autoplay; encrypted-media; picture-in-picture"
+              referrerPolicy="strict-origin-when-cross-origin"
+            />
+          ) : null}
 
-          <div className="absolute inset-0 flex flex-col justify-end px-6 pb-[90px] md:pl-[100px] md:pr-6 lg:pl-[120px] lg:pr-8 lg:pb-24 pointer-events-none">
-            <div className="w-full pointer-events-auto">
-              <div className="w-[85%] md:max-w-2xl flex flex-col items-start text-left">
-                <div className="mb-2 flex min-h-[60px] md:min-h-[80px] items-end w-full">
-                  {logoPath ? (
-                    <img src={image(logoPath, "w500")} alt={current.title} className="max-h-[60px] md:max-h-[70px] max-w-[78%] w-auto object-contain object-left drop-shadow-xl" />
-                  ) : (
-                    <h2 className="text-3xl sm:text-5xl lg:text-[64px] font-black leading-[1.1] tracking-tight text-[#f9f9f9] drop-shadow-xl">{current.title}</h2>
-                  )}
-                </div>
-                <div className="flex flex-wrap items-center gap-y-1 text-[13px] md:text-[14px] font-semibold text-white/90 mb-3">
-                  {current.voteAverage > 0 ? <span className="flex items-center text-white"><svg width="12" height="12" viewBox="0 0 24 24" fill="white" className="mr-1" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>{current.voteAverage.toFixed(1)}</span> : null}
-                  {current.voteAverage > 0 && yearOf(current) ? <span className="mx-1.5 text-white/30">·</span> : null}
-                  {yearOf(current) ? <span>{yearOf(current)}</span> : null}
-                  {(current.voteAverage > 0 || yearOf(current)) ? <span className="mx-1.5 text-white/30">·</span> : null}
-                  <span>{typeOf(current)}</span>
-                  {genres.map((genre) => <span key={genre} className="contents"><span className="mx-1.5 text-white/30">·</span><span>{genre}</span></span>)}
-                </div>
-                {current.overview ? <p className="mb-5 max-w-xl line-clamp-3 md:line-clamp-4 text-[13px] md:text-[14px] lg:text-[15px] leading-[1.4] text-white/70">{current.overview}</p> : null}
-                <div className="flex items-center gap-3">
-                  {hasTrailer ? <button type="button" onClick={togglePlay} className="h-12 w-12 md:h-14 md:w-14 shrink-0 rounded-full bg-[#f9f9f9] text-black flex items-center justify-center shadow-lg transition hover:bg-white active:scale-95" aria-label={playing ? "Pause trailer" : "Play trailer"}>{playing ? <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7zM13 5h4v14h-4z" /></svg> : <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l15 8-15 8z" /></svg>}</button> : null}
-                  <Link href={routeOf(current)} className="inline-flex items-center justify-center gap-2.5 rounded-full border border-white/20 bg-[#0f1014]/60 px-6 py-3 md:py-3.5 text-[13px] md:text-[15px] font-semibold text-[#f9f9f9] backdrop-blur-md transition hover:bg-white/10 active:scale-95"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>See More</Link>
-                </div>
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 md:via-transparent to-transparent pointer-events-none" />
+          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black to-transparent pointer-events-none" />
+        </div>
+
+        <Link href="/home" className="absolute left-4 top-4 z-[60] h-[55px] w-[55px]" aria-label="Bingr home">
+          <img src="https://bingr.one/brand/logo.png" alt="Bingr Logo" className="h-[55px] w-[55px] object-contain drop-shadow-lg" />
+        </Link>
+
+        <div className="absolute inset-0 flex flex-col justify-end px-6 pb-[90px] md:pl-[100px] md:pr-6 lg:pl-[120px] lg:pr-8 lg:pb-24 pointer-events-none">
+          <div className="w-full pointer-events-auto">
+            <div className="w-[85%] md:max-w-2xl flex flex-col items-start text-left">
+              <div className="mb-2 flex min-h-[60px] md:min-h-[80px] items-end w-full">
+                {logoPath ? (
+                  <img src={image(logoPath, "w500")} alt={current.title} className="max-h-[60px] md:max-h-[70px] max-w-[78%] w-auto object-contain object-left drop-shadow-xl" />
+                ) : (
+                  <h2 className="text-3xl sm:text-5xl lg:text-[64px] font-black leading-[1.1] tracking-tight text-[#f9f9f9] drop-shadow-xl">{current.title}</h2>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-y-1 text-[13px] md:text-[14px] font-semibold text-white/90 mb-3">
+                {current.voteAverage > 0 ? <span className="flex items-center text-white"><svg width="12" height="12" viewBox="0 0 24 24" fill="white" className="mr-1" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>{current.voteAverage.toFixed(1)}</span> : null}
+                {current.voteAverage > 0 && yearOf(current) ? <span className="mx-1.5 text-white/30">·</span> : null}
+                {yearOf(current) ? <span>{yearOf(current)}</span> : null}
+                {(current.voteAverage > 0 || yearOf(current)) ? <span className="mx-1.5 text-white/30">·</span> : null}
+                <span>{typeOf(current)}</span>
+                {genres.map((genre) => <span key={genre} className="contents"><span className="mx-1.5 text-white/30">·</span><span>{genre}</span></span>)}
+              </div>
+              {current.overview ? <p className="mb-5 max-w-xl line-clamp-3 md:line-clamp-4 text-[13px] md:text-[14px] lg:text-[15px] leading-[1.4] text-white/70">{current.overview}</p> : null}
+              <div className="flex items-center gap-3">
+                <button type="button" onClick={togglePlay} className="h-12 w-12 md:h-14 md:w-14 shrink-0 rounded-full bg-[#f9f9f9] text-black flex items-center justify-center shadow-lg transition hover:bg-white active:scale-95" aria-label={playing ? "Pause trailer" : "Play trailer"}>
+                  {playing
+                    ? <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z" /></svg>
+                    : <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 4l15 8-15 8z" /></svg>}
+                </button>
+                <Link href={routeOf(current)} className="inline-flex items-center justify-center gap-2.5 rounded-full border border-white/20 bg-[#0f1014]/60 px-6 py-3 md:py-3.5 text-[13px] md:text-[15px] font-semibold text-[#f9f9f9] backdrop-blur-md transition hover:bg-white/10 active:scale-95">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
+                  See More
+                </Link>
               </div>
             </div>
           </div>
-
-          {hasTrailer && playing ? <button type="button" onClick={toggleMute} className="absolute right-6 bottom-[90px] z-30 h-12 w-12 md:h-14 md:w-14 rounded-full border border-white/20 bg-[#0f1014]/60 text-white backdrop-blur-md transition hover:bg-white/10 active:scale-95" aria-label={muted ? "Unmute trailer" : "Mute trailer"}>{muted ? "🔇" : "🔊"}</button> : null}
         </div>
+
+        {hasTrailer && playing ? (
+          <button type="button" onClick={toggleMute} className="absolute right-6 bottom-[90px] z-30 h-12 w-12 md:h-14 md:w-14 rounded-full border border-white/20 bg-[#0f1014]/60 text-white backdrop-blur-md transition hover:bg-white/10 active:scale-95" aria-label={muted ? "Unmute trailer" : "Mute trailer"}>
+            {muted ? "🔇" : "🔊"}
+          </button>
+        ) : null}
       </div>
     </section>
   );
