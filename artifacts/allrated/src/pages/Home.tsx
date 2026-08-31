@@ -14,7 +14,8 @@ export default function Home() {
   useEffect(() => {
     void nowPlayingMovies.refetch();
     void trending.refetch();
-  }, [region]);
+    void trendingMovies.refetch();
+  }, [nowPlayingMovies, region, trending, trendingMovies]);
 
   const heroTitles = useMemo(() => {
     const merged = [
@@ -28,7 +29,7 @@ export default function Home() {
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
-    }).slice(0, 12);
+    }).slice(0, 8);
   }, [nowPlayingMovies.data, trending.data, trendingMovies.data]);
 
   const homeTitles = useMemo(() => {
