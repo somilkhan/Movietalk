@@ -23,20 +23,28 @@ export default function Home() {
       ...(trendingMovies.data ?? []),
     ];
     const seen = new Set<string>();
-    return merged
-      .filter((title) => {
-        const key = `${title.mediaType}-${title.id}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .slice(0, 12);
+    return merged.filter((title) => {
+      const key = `${title.mediaType}-${title.id}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).slice(0, 12);
   }, [nowPlayingMovies.data, trending.data, trendingMovies.data]);
+
+  const homeTitles = useMemo(() => {
+    const seen = new Set<string>();
+    return (trending.data ?? []).filter((title) => {
+      const key = `${title.mediaType}-${title.id}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [trending.data]);
 
   return (
     <div className="min-h-screen bg-black pb-28 md:pb-0" data-testid="page-home">
       <Seo />
-      <BingrHomeSections>
+      <BingrHomeSections trending={homeTitles}>
         <HeroSection titles={heroTitles} />
       </BingrHomeSections>
     </div>
