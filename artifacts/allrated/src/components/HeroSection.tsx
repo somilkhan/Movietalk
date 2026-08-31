@@ -10,67 +10,129 @@ export function HeroSection({ titles }: { titles: Title[] | undefined }) {
   const [backdropError, setBackdropError] = useState(false);
   const [trailerUrl, setTrailerUrl] = useState<string | null>(null);
   const [youtubeKey, setYoutubeKey] = useState<string | null>(null);
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const youtubeRef = useRef<HTMLIFrameElement>(null);
-  const title = featured?.[index];
+  const title = featured[index];
 
   useEffect(() => {
-    setLogoPath(null); setBackdropError(false); setTrailerUrl(null); setYoutubeKey(null); setIsPlaying(true); setIsMuted(true);
+    setLogoPath(null);
+    setBackdropError(false);
+    setTrailerUrl(null);
+    setYoutubeKey(null);
+    setIsPlaying(false);
+    setIsMuted(true);
     if (!title) return;
+
     const ctrl = new AbortController();
-    fetch(`/api/catalog/title/${title.mediaType}/${title.id}/logo`, { signal: ctrl.signal }).then(r => r.ok ? r.json() : null).then(data => data?.logoPath ? setLogoPath(data.logoPath) : null).catch(() => {});
-    fetch(`/api/catalog/title/${title.mediaType}/${title.id}/trailer`, { signal: ctrl.signal }).then(r => r.ok ? r.json() : null).then(data => { if (data?.url) setTrailerUrl(data.url); else if (data?.key) setYoutubeKey(data.key); }).catch(() => {});
+    const loadJson = async (url: string): Promise<Record<string, unknown> | null> => {
+      try {
+        const response = await fetch(url, { signal: ctrl.signal });
+        if (!response.ok) return null;
+        const value: unknown = await response.json();
+        return value && typeof value === 'object' ? value as Record<string, unknown> : null;
+      } catch {
+        return null;
+      }
+    };
+
+    void loadJson(`/api/catalog/title/${title.mediaType}/${title.id}/logo`).then((data) => {
+      const value = data?.logoPath;
+      if (typeof value === 'string' && value.length > 0) setLogoPath(value);
+    });
+    void loadJson(`/api/catalog/title/${title.mediaType}/${title.id}/trailer`).then((data) => {
+      const url = data?.url;
+      const key = data?.key;
+      if (typeof url === 'string' && url.length > 0) setTrailerUrl(url);
+      else if (typeof key === 'string' && key.length > 0) setYoutubeKey(key);
+    });
+
     return () => ctrl.abort();
   }, [title?.id, title?.mediaType]);
 
   useEffect(() => {
     if (!trailerUrl || !videoRef.current) return;
-    videoRef.current.muted = true;
-    videoRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+    const video = videoRef.current;
+    video.muted = true;
+    void video.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
   }, [trailerUrl]);
 
-  if (!title) return <div className="relative w-full h-[75vh] md:aspect-video max-h-[85vh] overflow-hidden bg-black animate-pulse" />;
+  if (!title) return <div className="relative h-[74vh] min-h-[680px] w-full overflow-hidden bg-black md:aspect-video md:h-auto md:min-h-0 md:max-h-[85vh]" />;
+
   const genres = getGenreNames(title.genreIds ?? [], 4);
-  const backdropUrl = title.backdropPath || title.posterPath;
-  const youtubeEmbed = youtubeKey ? `https://www.youtube-nocookie.com/embed/${encodeURIComponent(youtubeKey)}?autoplay=1&mute=1&controls=0&loop=1&playlist=${encodeURIComponent(youtubeKey)}&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3&enablejsapi=1` : null;
-  const postYoutube = (func: string) => youtubeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args: [] }), 'https://www.youtube-nocookie.com');
+  const backdropUrl = title.backdropPath || title.posterPath || '';
+  const youtubeEmbed = youtubeKey
+    ? `https://www.youtube-nocookie.com/embed/${encodeURIComponent(youtubeKey)}?autoplay=1&mute=1&controls=0&loop=1&playlist=${encodeURIComponent(youtubeKey)}&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3&enablejsapi=1`
+    : null;
+  const postYoutube = (func: string) => {
+    youtubeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args: [] }), 'https://www.youtube-nocookie.com');
+  };
   const togglePlay = async () => {
     if (trailerUrl && videoRef.current) {
-      if (videoRef.current.paused) { try { await videoRef.current.play(); setIsPlaying(true); } catch { setIsPlaying(false); } }
-      else { videoRef.current.pause(); setIsPlaying(false); }
-    } else if (youtubeKey) { postYoutube(isPlaying ? 'pauseVideo' : 'playVideo'); setIsPlaying(v => !v); }
+      const video = videoRef.current;
+      if (video.paused) {
+        try { await video.play(); setIsPlaying(true); } catch { setIsPlaying(false); }
+      } else {
+        video.pause(); setIsPlaying(false);
+      }
+      return;
+    }
+    if (youtubeKey) {
+      postYoutube(isPlaying ? 'pauseVideo' : 'playVideo');
+      setIsPlaying((playing) => !playing);
+    }
   };
   const toggleMute = () => {
-    if (trailerUrl && videoRef.current) { videoRef.current.muted = !videoRef.current.muted; setIsMuted(videoRef.current.muted); }
-    else if (youtubeKey) { postYoutube(isMuted ? 'unMute' : 'mute'); setIsMuted(v => !v); }
+    if (trailerUrl && videoRef.current) {
+      videoRef.current.muted = !videoRef.current.muted;
+      setIsMuted(videoRef.current.muted);
+    } else if (youtubeKey) {
+      postYoutube(isMuted ? 'unMute' : 'mute');
+      setIsMuted((muted) => !muted);
+    }
   };
   const hasTrailer = Boolean(trailerUrl || youtubeKey);
 
-  const playButton = hasTrailer ? <button type="button" onClick={togglePlay} aria-label={isPlaying ? 'Pause trailer' : 'Play trailer'} className="flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full bg-white text-black hover:bg-white/90 transition-transform hover:scale-105 active:scale-95">
-    {isPlaying ? <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg> : <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5"><path d="M8 5v14l11-7z"/></svg>}
-  </button> : null;
+  return (
+    <section className="relative h-[74vh] min-h-[680px] w-full overflow-hidden bg-black md:aspect-video md:h-auto md:min-h-0 md:max-h-[85vh]" data-testid="hero-section">
+      {trailerUrl ? (
+        <div className="absolute inset-0 z-0 overflow-hidden bg-black">
+          <video ref={videoRef} src={trailerUrl} autoPlay loop playsInline muted disablePictureInPicture disableRemotePlayback controlsList="nodownload nofullscreen noremoteplayback" className="h-full w-full object-cover object-center opacity-90" onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onError={() => setTrailerUrl(null)} />
+        </div>
+      ) : youtubeEmbed ? (
+        <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden bg-black">
+          <iframe ref={youtubeRef} src={youtubeEmbed} title={`${title.title} trailer`} className="absolute left-1/2 top-1/2 h-[56.25vw] min-h-full w-[177.78vh] min-w-full -translate-x-1/2 -translate-y-1/2 opacity-90" allow="autoplay; encrypted-media; picture-in-picture" referrerPolicy="strict-origin-when-cross-origin" />
+        </div>
+      ) : null}
 
-  const muteButton = hasTrailer ? <button type="button" onClick={toggleMute} aria-label={isMuted ? 'Unmute trailer' : 'Mute trailer'} className="flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 text-white transition-all hover:scale-105 active:scale-95">
-    {isMuted ? <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="m19 9-4 6"/><path d="m15 9 4 6"/></svg> : <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M19 9a5 5 0 0 1 0 6"/><path d="M15 12h.01"/></svg>}
-  </button> : null;
+      {backdropUrl && !trailerUrl && !youtubeEmbed ? <img src={backdropUrl} alt="" aria-hidden="true" className="absolute inset-0 z-0 h-full w-full object-cover object-center" onError={() => setBackdropError(true)} /> : null}
+      {backdropError || !backdropUrl ? <div className="absolute inset-0 z-0 bg-black" /> : null}
 
-  return <section className="relative w-full h-[75vh] md:h-auto md:aspect-video max-h-[85vh] overflow-hidden group" data-testid="hero-section">
-    {trailerUrl && !backdropError ? <div className="absolute inset-0 z-0 bg-black overflow-hidden"><video ref={videoRef} src={trailerUrl} autoPlay loop playsInline muted disablePictureInPicture disableRemotePlayback controlsList="nodownload nofullscreen noremoteplayback" className="w-full h-full object-cover object-center opacity-90 animate-in fade-in duration-1000 scale-[1.35]" onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onError={() => setBackdropError(true)} /></div> : youtubeEmbed && !backdropError ? <div className="absolute inset-0 z-0 bg-black overflow-hidden pointer-events-none"><iframe ref={youtubeRef} src={youtubeEmbed} title={`${title.title} trailer`} className="absolute left-1/2 top-1/2 w-[177.78vh] min-w-full h-[56.25vw] min-h-full -translate-x-1/2 -translate-y-1/2 scale-[1.35] opacity-90" allow="autoplay; encrypted-media; picture-in-picture" referrerPolicy="strict-origin-when-cross-origin" onError={() => setBackdropError(true)} /></div> : <><img src={backdropUrl || ''} alt={title.title} className={`absolute inset-0 h-full w-full object-cover z-0 ${!backdropUrl || backdropError ? 'hidden' : ''}`} onError={() => setBackdropError(true)} />{(!backdropUrl || backdropError) && <div className="absolute inset-0 bg-black z-0" />}</>}
-    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent pointer-events-none z-[1]" />
-    <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent w-[50%] md:w-[65%] pointer-events-none z-[1]" />
-    <div className="absolute top-5 left-5 z-20 md:hidden"><svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/></svg></div>
-    <div className="absolute inset-0 flex flex-col justify-end px-6 pb-10 md:pb-16 md:pl-[100px] lg:pl-[120px] pointer-events-none z-10"><div className="flex flex-col gap-3 max-w-2xl">
-      {logoPath ? <img src={logoPath} alt={title.title} className="h-16 md:h-24 object-contain object-left drop-shadow-2xl" onError={() => setLogoPath(null)} /> : <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white drop-shadow-lg leading-tight">{title.title}</h1>}
-      <div className="flex items-center gap-2 text-sm md:text-base text-white/80">{title.voteAverage > 0 && <span className="flex items-center gap-1">★ {title.voteAverage.toFixed(1)}</span>}{title.voteAverage > 0 && title.releaseDate && <span className="text-white/40">·</span>}{title.releaseDate && <span>{new Date(title.releaseDate).getFullYear()}</span>}{genres.length > 0 && <><span className="text-white/40">·</span><span className="truncate">{genres.join(' · ')}</span></>}</div>
-      {title.overview && <p className="text-sm md:text-base text-white/70 line-clamp-3 max-w-xl leading-relaxed">{title.overview}</p>}
-      <div className="flex items-center gap-3 mt-2 pointer-events-auto">
-        {playButton}
-        <Link href={`/title/${title.mediaType}/${title.id}`} className="flex items-center gap-2 px-6 py-3.5 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 text-white text-sm font-semibold transition-all hover:scale-105 active:scale-95"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>See More</Link>
-        {muteButton}
+      <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-black via-black/35 to-black/5" />
+      <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-r from-black/55 via-black/15 to-transparent md:from-black/70 md:via-black/35" />
+
+      <div className="absolute left-5 top-5 z-20 md:hidden"><svg width="28" height="28" viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" /></svg></div>
+
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex px-6 pb-28 pt-32 md:pb-16 md:pl-[100px] lg:pl-[120px]">
+        <div className="pointer-events-none flex max-w-2xl flex-col gap-3">
+          {logoPath ? <img src={logoPath} alt={title.title} className="h-16 object-contain object-left drop-shadow-2xl md:h-24" onError={() => setLogoPath(null)} /> : <h1 className="text-4xl font-bold leading-[1.02] tracking-[-0.025em] text-white drop-shadow-lg md:text-5xl lg:text-6xl">{title.title}</h1>}
+          <div className="flex items-center gap-2 text-sm text-white/90 md:text-base">
+            {title.voteAverage > 0 ? <span>★ {title.voteAverage.toFixed(1)}</span> : null}
+            {title.voteAverage > 0 && title.releaseDate ? <span className="text-white/50">·</span> : null}
+            {title.releaseDate ? <span>{new Date(title.releaseDate).getFullYear()}</span> : null}
+            {genres.length > 0 ? <><span className="text-white/50">·</span><span className="truncate">{genres.join(' · ')}</span></> : null}
+          </div>
+          {title.overview ? <p className="line-clamp-3 max-w-xl text-[15px] leading-6 text-white/75 md:text-base md:leading-7">{title.overview}</p> : null}
+          <div className="pointer-events-auto mt-2 flex items-center gap-3">
+            {hasTrailer ? <button type="button" onClick={togglePlay} aria-label={isPlaying ? 'Pause trailer' : 'Play trailer'} className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-black transition-transform hover:scale-105 active:scale-95 md:h-14 md:w-14">{isPlaying ? <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7zM13 5h4v14h-4z" /></svg> : <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>}</button> : null}
+            <Link href={`/title/${title.mediaType}/${title.id}`} className="flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-6 py-3.5 text-sm font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20 hover:scale-[1.02] active:scale-95"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>See More</Link>
+            {hasTrailer ? <button type="button" onClick={toggleMute} aria-label={isMuted ? 'Unmute trailer' : 'Mute trailer'} className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/10 text-white backdrop-blur-md transition-transform hover:scale-105 active:scale-95 md:h-14 md:w-14">{isMuted ? <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5 6 9H2v6h4l5 4z" /><path d="m19 9-4 6" /><path d="m15 9 4 6" /></svg> : <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5 6 9H2v6h4l5 4z" /><path d="M19 9a5 5 0 0 1 0 6" /><path d="M15 12h.01" /></svg>}</button> : null}
+          </div>
+        </div>
       </div>
-    </div></div>
-    {featured.length > 1 && <div className="hidden md:block absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 z-20 w-full max-w-3xl px-6"><div className="flex gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-smooth py-2">{featured.map((t, i) => <button key={`${t.id}-${i}`} onClick={() => setIndex(i)} className={`flex-shrink-0 rounded-lg overflow-hidden transition-all duration-300 ${i === index ? 'ring-2 ring-white scale-110' : 'opacity-50 hover:opacity-80 scale-95'}`}><img src={t.backdropPath || t.posterPath || ''} alt={t.title} className="w-28 h-16 object-cover" /></button>)}</div></div>}
-  </section>;
+
+      {featured.length > 1 ? <div className="absolute bottom-4 left-1/2 z-20 hidden w-full max-w-3xl -translate-x-1/2 px-6 md:block"><div className="flex gap-2 overflow-x-auto scroll-smooth py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">{featured.map((item, itemIndex) => <button key={`${item.id}-${itemIndex}`} type="button" onClick={() => setIndex(itemIndex)} aria-label={`Show ${item.title}`} className={`shrink-0 overflow-hidden rounded-lg transition-all duration-300 ${itemIndex === index ? 'scale-110 ring-2 ring-white' : 'scale-95 opacity-50 hover:opacity-80'}`}><img src={item.backdropPath || item.posterPath || ''} alt="" className="h-16 w-28 object-cover" loading="lazy" /></button>)}</div></div> : null}
+    </section>
+  );
 }
