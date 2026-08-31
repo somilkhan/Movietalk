@@ -95,7 +95,7 @@ export function HeroSection({ titles }: { titles: Title[] | undefined }) {
   const hasTrailer = Boolean(trailerUrl || youtubeKey);
 
   return (
-    <section className="relative h-[74vh] min-h-[680px] w-full overflow-hidden bg-black md:aspect-video md:h-auto md:min-h-0 md:max-h-[85vh]" data-testid="hero-section">
+    <section className="relative h-[calc(100svh-164px)] min-h-[980px] w-full overflow-hidden bg-black md:aspect-video md:h-auto md:min-h-0 md:max-h-[85vh]" data-testid="hero-section">
       {trailerUrl ? (
         <div className="absolute inset-0 z-0 overflow-hidden bg-black">
           <video ref={videoRef} src={trailerUrl} autoPlay loop playsInline muted disablePictureInPicture disableRemotePlayback controlsList="nodownload nofullscreen noremoteplayback" className="h-full w-full object-cover object-center opacity-90" onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onError={() => setTrailerUrl(null)} />
@@ -114,21 +114,23 @@ export function HeroSection({ titles }: { titles: Title[] | undefined }) {
 
       <div className="absolute left-5 top-5 z-20 md:hidden"><svg width="28" height="28" viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" /></svg></div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex px-6 pb-28 pt-32 md:pb-16 md:pl-[100px] lg:pl-[120px]">
-        <div className="pointer-events-none flex max-w-2xl flex-col gap-3">
-          {logoPath ? <img src={logoPath} alt={title.title} className="h-16 object-contain object-left drop-shadow-2xl md:h-24" onError={() => setLogoPath(null)} /> : <h1 className="text-4xl font-bold leading-[1.02] tracking-[-0.025em] text-white drop-shadow-lg md:text-5xl lg:text-6xl">{title.title}</h1>}
-          <div className="flex items-center gap-2 text-sm text-white/90 md:text-base">
-            {title.voteAverage > 0 ? <span>★ {title.voteAverage.toFixed(1)}</span> : null}
-            {title.voteAverage > 0 && title.releaseDate ? <span className="text-white/50">·</span> : null}
-            {title.releaseDate ? <span>{new Date(title.releaseDate).getFullYear()}</span> : null}
-            {genres.length > 0 ? <><span className="text-white/50">·</span><span className="truncate">{genres.join(' · ')}</span></> : null}
+      <div className="absolute inset-x-0 bottom-0 z-10 px-10 pb-28 pt-32 md:pb-16 md:pl-[100px] lg:pl-[120px]">
+        <div className="relative max-w-2xl">
+          <div className="flex max-w-2xl flex-col gap-3">
+            {logoPath ? <img src={logoPath} alt={title.title} className="h-16 object-contain object-left drop-shadow-2xl md:h-24" onError={() => setLogoPath(null)} /> : <h1 className="text-4xl font-bold leading-[1.02] tracking-[-0.025em] text-white drop-shadow-lg md:text-5xl lg:text-6xl">{title.title}</h1>}
+            <div className="flex items-center gap-2 text-sm text-white/90 md:text-base">
+              {title.voteAverage > 0 ? <span>★ {title.voteAverage.toFixed(1)}</span> : null}
+              {title.voteAverage > 0 && title.releaseDate ? <span className="text-white/50">·</span> : null}
+              {title.releaseDate ? <span>{new Date(title.releaseDate).getFullYear()}</span> : null}
+              {genres.length > 0 ? <><span className="text-white/50">·</span><span className="truncate">{genres.join(' · ')}</span></> : null}
+            </div>
+            {title.overview ? <p className="line-clamp-3 max-w-xl text-[15px] leading-6 text-white/75 md:text-base md:leading-7">{title.overview}</p> : null}
+            <div className="mt-2 flex items-center gap-3">
+              {hasTrailer ? <button type="button" onClick={togglePlay} aria-label={isPlaying ? 'Pause trailer' : 'Play trailer'} className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white text-black transition-transform hover:scale-105 active:scale-95 md:h-14 md:w-14">{isPlaying ? <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7zM13 5h4v14h-4z" /></svg> : <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>}</button> : null}
+              <Link href={`/title/${title.mediaType}/${title.id}`} className="flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-6 py-3.5 text-sm font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20 hover:scale-[1.02] active:scale-95"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>See More</Link>
+            </div>
           </div>
-          {title.overview ? <p className="line-clamp-3 max-w-xl text-[15px] leading-6 text-white/75 md:text-base md:leading-7">{title.overview}</p> : null}
-          <div className="pointer-events-auto mt-2 flex items-center gap-3">
-            {hasTrailer ? <button type="button" onClick={togglePlay} aria-label={isPlaying ? 'Pause trailer' : 'Play trailer'} className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-black transition-transform hover:scale-105 active:scale-95 md:h-14 md:w-14">{isPlaying ? <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7zM13 5h4v14h-4z" /></svg> : <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>}</button> : null}
-            <Link href={`/title/${title.mediaType}/${title.id}`} className="flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-6 py-3.5 text-sm font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20 hover:scale-[1.02] active:scale-95"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>See More</Link>
-            {hasTrailer ? <button type="button" onClick={toggleMute} aria-label={isMuted ? 'Unmute trailer' : 'Mute trailer'} className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/10 text-white backdrop-blur-md transition-transform hover:scale-105 active:scale-95 md:h-14 md:w-14">{isMuted ? <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5 6 9H2v6h4l5 4z" /><path d="m19 9-4 6" /><path d="m15 9 4 6" /></svg> : <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5 6 9H2v6h4l5 4z" /><path d="M19 9a5 5 0 0 1 0 6" /><path d="M15 12h.01" /></svg>}</button> : null}
-          </div>
+          {hasTrailer ? <button type="button" onClick={toggleMute} aria-label={isMuted ? 'Unmute trailer' : 'Mute trailer'} className="absolute bottom-0 right-0 flex h-12 w-12 shrink-0 translate-y-0 items-center justify-center rounded-full border border-white/10 bg-white/10 text-white backdrop-blur-md transition-transform hover:scale-105 active:scale-95 md:h-14 md:w-14">{isMuted ? <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5 6 9H2v6h4l5 4z" /><path d="m19 9-4 6" /><path d="m15 9 4 6" /></svg> : <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5 6 9H2v6h4l5 4z" /><path d="M19 9a5 5 0 0 1 0 6" /><path d="M15 12h.01" /></svg>}</button> : null}
         </div>
       </div>
 
