@@ -60,7 +60,7 @@ export default function BingrHome() {
     ]);
     return GENRES.map((title) => ({
       title,
-      href: `/category/${encodeURIComponent(title)}`,
+      href: `/catalog/movie/${encodeURIComponent(`${title} Movies`)}`,
       items: source.filter((item) =>
         getGenreNames(item.genreIds ?? [], 8).some((name) => name.toLowerCase() === title.toLowerCase()),
       ).slice(0, 20),
