@@ -1,14 +1,12 @@
 export type StreamingMediaType = 'movie' | 'tv';
 export type StreamType = 'hls' | 'mp4' | 'dash' | 'embed';
-export type StreamingProviderId = 'vidrift' | 'vidsrc' | 'vidlink' | 'vidfast' | 'vidcore' | 'vidcore2' | 'superembed' | 'videasy' | 'filmu' | 'screenscape' | 'vixsrc' | (string & {});
+export type StreamingProviderId = 'vidrift' | 'vidsrc' | 'vidcore' | 'vidcore2' | 'superembed' | 'videasy' | 'filmu' | 'screenscape' | 'vixsrc' | (string & {});
 export interface StreamingServer { id: StreamingProviderId; name: string; provider: StreamingProviderId; sourceIds: readonly string[]; }
 export interface NormalizedStream { url: string; type: StreamType; quality: string; provider: { id: string; name: string }; serverId: string; serverName: string; sourceId: string; sourceName: string; audio?: Array<{ id: string; label: string; language?: string }>; subtitles?: Array<{ url: string; label: string; language: string }>; headers?: Record<string, string>; }
 
 export const STREAMING_SERVERS: readonly StreamingServer[] = [
   { id: 'vidrift', name: 'VidRift', provider: 'vidrift', sourceIds: ['vidrift'] },
   { id: 'vidsrc', name: 'VidSrc', provider: 'vidsrc', sourceIds: ['vidsrc'] },
-  { id: 'vidlink', name: 'VidLink', provider: 'vidlink', sourceIds: ['vidlink'] },
-  { id: 'vidfast', name: 'VidFast', provider: 'vidfast', sourceIds: ['vidfast'] },
   { id: 'vidcore', name: 'VidCore', provider: 'vidcore', sourceIds: ['vidcore'] },
   { id: 'vidcore2', name: 'VidCore 2', provider: 'vidcore2', sourceIds: ['vidcore2'] },
   { id: 'superembed', name: 'SuperEmbed', provider: 'superembed', sourceIds: ['superembed'] },
@@ -38,8 +36,6 @@ export function buildEmbedUrl(mediaType: StreamingMediaType, tmdbId: number, ser
     case 'filmu': return mediaType === 'tv' ? (s && e ? `https://embed.filmu.in/embed/tv/${id}/${s}/${e}` : null) : `https://embed.filmu.in/embed/movie/${id}`;
     case 'screenscape': return mediaType === 'tv' ? (s && e ? `https://flix.screenscape.me/embed?tmdb=${id}&type=tv&s=${s}&e=${e}` : null) : `https://flix.screenscape.me/embed?tmdb=${id}&type=movie`;
     case 'vixsrc': return mediaType === 'tv' ? (s && e ? `https://vixsrc.to/tv/${id}/${s}/${e}` : null) : `https://vixsrc.to/movie/${id}`;
-    case 'vidlink':
-    case 'vidfast':
     default: return null;
   }
 }
