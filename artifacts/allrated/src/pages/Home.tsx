@@ -36,6 +36,7 @@ function genreMatches(item: Title, genre: string): boolean {
 export default function Home() {
   const { region } = useRegion();
   const trendingQuery = useGetTrending({ mediaType: "all", window: "week", region });
+  const newMoviesQuery = useGetCatalogList({ mediaType: "movie", category: "now_playing", region });
   const popularMoviesQuery = useGetCatalogList({ mediaType: "movie", category: "popular", region });
   const popularTvQuery = useGetCatalogList({ mediaType: "tv", category: "popular", region });
   const topRatedMoviesQuery = useGetCatalogList({ mediaType: "movie", category: "top_rated", region });
@@ -43,6 +44,7 @@ export default function Home() {
   const animeQuery = useGetAnime();
 
   const trending = useMemo(() => uniqueTitles(trendingQuery.data ?? []), [trendingQuery.data]);
+  const newMovies = useMemo(() => uniqueTitles(newMoviesQuery.data ?? []), [newMoviesQuery.data]);
   const popularMovies = useMemo(() => uniqueTitles(popularMoviesQuery.data ?? []), [popularMoviesQuery.data]);
   const popularTv = useMemo(() => uniqueTitles(popularTvQuery.data ?? []), [popularTvQuery.data]);
   const topRatedMovies = useMemo(() => uniqueTitles(topRatedMoviesQuery.data ?? []), [topRatedMoviesQuery.data]);
@@ -55,26 +57,33 @@ export default function Home() {
   const heroTitles = useMemo(() => {
     return uniqueTitles([
       ...(trendingQuery.data ?? []),
+      ...(newMoviesQuery.data ?? []),
       ...(popularMoviesQuery.data ?? []),
       ...(popularTvQuery.data ?? []),
       ...(animeQuery.data ?? []),
     ]).slice(0, 10);
-  }, [trendingQuery.data, popularMoviesQuery.data, popularTvQuery.data, animeQuery.data]);
+  }, [trendingQuery.data, newMoviesQuery.data, popularMoviesQuery.data, popularTvQuery.data, animeQuery.data]);
 
   const genreRows = useMemo(() => {
-    const source = uniqueTitles([...(trendingQuery.data ?? []), ...(popularMoviesQuery.data ?? []), ...(popularTvQuery.data ?? [])]);
+    const source = uniqueTitles([
+      ...(trendingQuery.data ?? []),
+      ...(newMoviesQuery.data ?? []),
+      ...(popularMoviesQuery.data ?? []),
+      ...(popularTvQuery.data ?? []),
+    ]);
     return GENRE_ROWS.map((row) => ({
       title: row.title,
       href: `/category/${encodeURIComponent(row.title)}`,
       items: source.filter((item) => genreMatches(item, row.title)).slice(0, 20),
     })).filter((row) => row.items.length > 0);
-  }, [trendingQuery.data, popularMoviesQuery.data, popularTvQuery.data]);
+  }, [trendingQuery.data, newMoviesQuery.data, popularMoviesQuery.data, popularTvQuery.data]);
 
   return (
     <div className="min-h-screen bg-black pb-28 md:pb-0" data-testid="page-home">
       <Seo />
       <BingrHomeSections
         trending={trending}
+        newMovies={newMovies}
         popularMovies={popularMovies}
         popularTv={popularTv}
         topRatedMovies={topRatedMovies}
