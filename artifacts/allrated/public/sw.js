@@ -1,5 +1,5 @@
-// RabbitRip Service Worker v4
-const CACHE_NAME = 'rabbitrip-v4';
+// RabbitRip Service Worker v5
+const CACHE_NAME = 'rabbitrip-v5';
 const STATIC_ASSETS = [
   '/',
   '/home',
@@ -51,9 +51,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // HTML + JS + CSS must always prefer the network. This prevents an old
-  // index.html from referencing a hashed chunk that no longer exists after
-  // a new Vercel deployment.
+  // HTML + JS + CSS always prefer the network so a fresh deployment cannot
+  // be masked by an older application shell or hashed bundle.
   const isAppShell =
     request.mode === 'navigate' ||
     request.destination === 'script' ||
@@ -62,7 +61,7 @@ self.addEventListener('fetch', (event) => {
 
   if (isAppShell) {
     event.respondWith(
-      fetch(request)
+      fetch(request, { cache: 'no-store' })
         .then((response) => {
           if (response.ok) {
             const clone = response.clone();
