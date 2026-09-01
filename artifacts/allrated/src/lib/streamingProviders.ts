@@ -1,10 +1,25 @@
 export type StreamingMediaType = 'movie' | 'tv';
-export type StreamType = 'hls' | 'mp4' | 'dash';
+export type StreamType = 'hls' | 'mp4' | 'dash' | 'embed';
 
-export type StreamingProviderId = 'bingr' | (string & {});
+export type StreamingProviderId =
+  | 'vidrift'
+  | 'playapi'
+  | 'hindi-new'
+  | 'screenscape'
+  | 'vidbolt'
+  | 'cinezo'
+  | 'vidcore'
+  | 'vidup'
+  | 'hindi2'
+  | 'zxcstream'
+  | 'filmu'
+  | 'videasy'
+  | 'vidlink'
+  | 'vidfast'
+  | (string & {});
 
 export interface StreamingServer {
-  id: string;
+  id: StreamingProviderId;
   name: string;
   provider: StreamingProviderId;
   sourceIds: readonly string[];
@@ -24,34 +39,37 @@ export interface NormalizedStream {
   headers?: Record<string, string>;
 }
 
+// Provider/server identifiers observed in the supplied Firefox HAR.
+// The captured architecture is dynamic: /play?id=<TMDB_ID>&type=<movie|tv>&server=<SERVER>.
 export const STREAMING_SERVERS: readonly StreamingServer[] = [
-  { id: 'bingr', name: 'Bingr', provider: 'bingr', sourceIds: ['s11', 's40', 's12', 's30', 's1', 's2', 's3', 's4', 's5'] },
+  { id: 'vidrift', name: 'Vidrift', provider: 'vidrift', sourceIds: ['vidrift'] },
+  { id: 'playapi', name: 'PlayAPI', provider: 'playapi', sourceIds: ['playapi'] },
+  { id: 'hindi-new', name: 'Hindi', provider: 'hindi-new', sourceIds: ['hindi-new'] },
+  { id: 'screenscape', name: 'Screenscape', provider: 'screenscape', sourceIds: ['screenscape'] },
+  { id: 'vidbolt', name: 'Vidbolt', provider: 'vidbolt', sourceIds: ['vidbolt'] },
+  { id: 'cinezo', name: 'Cinezo', provider: 'cinezo', sourceIds: ['cinezo'] },
+  { id: 'vidcore', name: 'Vidcore', provider: 'vidcore', sourceIds: ['vidcore'] },
+  { id: 'vidup', name: 'Vidup', provider: 'vidup', sourceIds: ['vidup'] },
+  { id: 'hindi2', name: 'Hindi 2', provider: 'hindi2', sourceIds: ['hindi2'] },
+  { id: 'zxcstream', name: 'ZXCStream', provider: 'zxcstream', sourceIds: ['zxcstream'] },
+  { id: 'filmu', name: 'Filmu', provider: 'filmu', sourceIds: ['filmu'] },
+  { id: 'videasy', name: 'Videasy', provider: 'videasy', sourceIds: ['videasy'] },
+  { id: 'vidlink', name: 'Vidlink', provider: 'vidlink', sourceIds: ['vidlink'] },
+  { id: 'vidfast', name: 'Vidfast', provider: 'vidfast', sourceIds: ['vidfast'] },
 ] as const;
 
-export const BINGR_SOURCES = [
-  { id: 's11', name: 'Sirius' },
-  { id: 's40', name: 'DarkMatter' },
-  { id: 's12', name: 'Quasar' },
-  { id: 's30', name: 'Apollo' },
-  { id: 's1', name: 'Miller' },
-  { id: 's2', name: 'Mann' },
-  { id: 's3', name: 'Edmunds' },
-  { id: 's4', name: 'Luna' },
-  { id: 's5', name: 'Aditya' },
-] as const;
+export const BINGR_SOURCES = STREAMING_SERVERS.map((server) => ({ id: server.id, name: server.name }));
 
 export function getStreamingServer(serverId: string) {
   return STREAMING_SERVERS.find((server) => server.id === serverId) ?? null;
 }
 
 export function getStreamServer(serverId: string) {
-  if (serverId === 'bingr') return getStreamingServer('bingr');
-  const bingrSource = BINGR_SOURCES.find((source) => source.id === serverId);
-  return bingrSource ? { id: bingrSource.id, name: bingrSource.name, provider: 'bingr' as const, sourceIds: [bingrSource.id] } : null;
+  return getStreamingServer(serverId);
 }
 
 export function getStreamProvider(serverId: string) {
-  return getStreamingServer(serverId)?.provider ?? (BINGR_SOURCES.some((source) => source.id === serverId) ? 'bingr' : null);
+  return getStreamingServer(serverId)?.provider ?? null;
 }
 
 export function getBingrSource(sourceId: string) {
