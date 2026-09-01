@@ -71,6 +71,24 @@ video {
   background-clip: padding-box;
 }
 
+/* Home/movie trays are intentionally scrollbar-free on every engine,
+ * including Chromium/WebKit on Android where scrollbar-width is ignored. */
+.no-scrollbar {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.no-scrollbar::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar-track,
+.no-scrollbar::-webkit-scrollbar-thumb {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+  background: transparent !important;
+}
+
 /* Prevent accidental horizontal overflow from media/trays on small screens. */
 #root {
   min-height: 100dvh;
