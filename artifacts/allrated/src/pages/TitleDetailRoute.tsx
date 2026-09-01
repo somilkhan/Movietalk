@@ -14,6 +14,7 @@ interface WatchSelection {
 export default function TitleDetailRoute() {
   const params = useParams<{ mediaType: string; id: string }>();
   const [watch, setWatch] = useState<WatchSelection | null>(null);
+  const [streamSlot, setStreamSlot] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
@@ -69,6 +70,7 @@ export default function TitleDetailRoute() {
   }, []);
 
   useEffect(() => {
+    setStreamSlot(null);
     if (!watch) return;
     const root = document.querySelector('[data-testid="page-title-detail"]');
     if (!(root instanceof HTMLElement)) return;
@@ -77,8 +79,12 @@ export default function TitleDetailRoute() {
     const slot = document.createElement('div');
     slot.setAttribute('data-detail-stream-slot', 'true');
     hero.insertAdjacentElement('afterend', slot);
+    setStreamSlot(slot);
     requestAnimationFrame(() => slot.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-    return () => slot.remove();
+    return () => {
+      setStreamSlot(null);
+      slot.remove();
+    };
   }, [watch]);
 
   useEffect(() => {
@@ -90,22 +96,18 @@ export default function TitleDetailRoute() {
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [watch]);
 
-  const selection = watch ?? null;
-  const detailMediaType = params.mediaType === 'tv' ? 'tv' : 'movie';
-  const detailId = Number(params.id);
-
   return (
     <>
       <TitleDetail />
-      {selection ? createPortal(
+      {watch && streamSlot ? createPortal(
         <DetailStreamPlayer
-          mediaType={selection.mediaType}
-          id={selection.id}
-          season={selection.season}
-          episode={selection.episode}
+          mediaType={watch.mediaType}
+          id={watch.id}
+          season={watch.season}
+          episode={watch.episode}
           onClose={() => setWatch(null)}
         />,
-        document.querySelector('[data-detail-stream-slot]') ?? document.body,
+        streamSlot,
       ) : null}
     </>
   );
