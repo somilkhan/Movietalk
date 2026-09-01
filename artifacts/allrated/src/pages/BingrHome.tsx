@@ -4,6 +4,7 @@ import { BingrHero } from "@/components/BingrHero";
 import { BingrHomeSections } from "@/components/BingrHomeSections";
 import { Seo } from "@/components/Seo";
 import { useRegion } from "@/hooks/useRegion";
+import { useHomePersonalization } from "@/hooks/useHomePersonalization";
 import type { Title } from "@workspace/api-client-react";
 import { getGenreNames } from "@/lib/tmdbGenres";
 
@@ -21,6 +22,7 @@ function uniqueTitles(items: Title[]): Title[] {
 
 export default function BingrHome() {
   const { region } = useRegion();
+  const { continueWatching, continueTitles, recommendations } = useHomePersonalization();
   const trendingQuery = useGetTrending({ mediaType: "all", window: "week", region });
   const newMoviesQuery = useGetCatalogList({ mediaType: "movie", category: "now_playing", region });
   const popularMoviesQuery = useGetCatalogList({ mediaType: "movie", category: "popular", region });
@@ -79,6 +81,9 @@ export default function BingrHome() {
         topRatedTv={topRatedTv}
         topRatedAnime={topRatedAnime}
         genreRows={genreRows}
+        continueWatching={continueWatching}
+        continueTitles={continueTitles}
+        recommendations={recommendations}
       >
         <BingrHero titles={heroTitles} />
       </BingrHomeSections>
