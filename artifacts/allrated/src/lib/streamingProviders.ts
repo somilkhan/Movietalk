@@ -40,7 +40,7 @@ export interface NormalizedStream {
 }
 
 // Provider/server identifiers observed in the supplied Firefox HAR.
-// The captured architecture is dynamic: /play?id=<TMDB_ID>&type=<movie|tv>&server=<SERVER>.
+// The captured player route is dynamic: /play?id=<TMDB_ID>&type=<movie|tv>&server=<SERVER>.
 export const STREAMING_SERVERS: readonly StreamingServer[] = [
   { id: 'vidrift', name: 'Vidrift', provider: 'vidrift', sourceIds: ['vidrift'] },
   { id: 'playapi', name: 'PlayAPI', provider: 'playapi', sourceIds: ['playapi'] },
@@ -74,4 +74,24 @@ export function getStreamProvider(serverId: string) {
 
 export function getBingrSource(sourceId: string) {
   return BINGR_SOURCES.find((source) => source.id === sourceId) ?? null;
+}
+
+/**
+ * Build the provider player URL from dynamic title identity + selected server.
+ * The base is configuration, not movie/show data, so providers can be changed
+ * without changing the detail-page UI.
+ */
+export function buildEmbedUrl(mediaType: StreamingMediaType, tmdbId: number, serverId: string, season?: number, episode?: number) {
+  const configuredBase = (import.meta.env.VITE_STREAM_PLAY_BASE_URL as string | undefined)?.trim();
+  if (!configuredBase) return null;
+
+  const url = new URL(configuredBase);
+  url.searchParams.set('id', String(tmdbId));
+  url.searchParams.set('type', mediaType);
+  url.searchParams.set('server', serverId);
+  if (mediaType === 'tv' && season && episode) {
+    url.searchParams.set('season', String(season));
+    url.searchParams.set('episode', String(episode));
+  }
+  return url.toString();
 }
