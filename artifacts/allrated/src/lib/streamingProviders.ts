@@ -15,23 +15,11 @@ export interface NormalizedStream {
   headers?: Record<string, string>;
 }
 
-// Server identifiers observed in the supplied Firefox HAR. The player route is dynamic:
-// /play?id=<TMDB_ID>&type=<movie|tv>&server=<SERVER>.
+// Keep the selector data-driven. Only providers with a configured adapter should be
+// offered as playable sources; additional licensed providers can be added without
+// changing the detail-page UI.
 export const STREAMING_SERVERS: readonly StreamingServer[] = [
   { id: 'vidrift', name: 'Vidrift', provider: 'vidrift', sourceIds: ['vidrift'] },
-  { id: 'playapi', name: 'PlayAPI', provider: 'playapi', sourceIds: ['playapi'] },
-  { id: 'hindi-new', name: 'Hindi', provider: 'hindi-new', sourceIds: ['hindi-new'] },
-  { id: 'screenscape', name: 'Screenscape', provider: 'screenscape', sourceIds: ['screenscape'] },
-  { id: 'vidbolt', name: 'Vidbolt', provider: 'vidbolt', sourceIds: ['vidbolt'] },
-  { id: 'cinezo', name: 'Cinezo', provider: 'cinezo', sourceIds: ['cinezo'] },
-  { id: 'vidcore', name: 'Vidcore', provider: 'vidcore', sourceIds: ['vidcore'] },
-  { id: 'vidup', name: 'Vidup', provider: 'vidup', sourceIds: ['vidup'] },
-  { id: 'hindi2', name: 'Hindi 2', provider: 'hindi2', sourceIds: ['hindi2'] },
-  { id: 'zxcstream', name: 'ZXCStream', provider: 'zxcstream', sourceIds: ['zxcstream'] },
-  { id: 'filmu', name: 'Filmu', provider: 'filmu', sourceIds: ['filmu'] },
-  { id: 'videasy', name: 'Videasy', provider: 'videasy', sourceIds: ['videasy'] },
-  { id: 'vidlink', name: 'Vidlink', provider: 'vidlink', sourceIds: ['vidlink'] },
-  { id: 'vidfast', name: 'Vidfast', provider: 'vidfast', sourceIds: ['vidfast'] },
 ] as const;
 
 export const BINGR_SOURCES = STREAMING_SERVERS.map(({ id, name }) => ({ id, name }));
@@ -40,17 +28,19 @@ export function getStreamServer(serverId: string) { return getStreamingServer(se
 export function getStreamProvider(serverId: string) { return getStreamingServer(serverId)?.provider ?? null; }
 export function getBingrSource(sourceId: string) { return BINGR_SOURCES.find((source) => source.id === sourceId) ?? null; }
 
-/** Build the dynamic player URL from the configured player base. */
+/**
+ * Build the provider's native embeddable player URL.
+ * VidRift documents a direct iframe endpoint, so the detail page can keep the
+ * player in-place instead of navigating to a separate playback page.
+ */
 export function buildEmbedUrl(mediaType: StreamingMediaType, tmdbId: number, serverId: string, season?: number, episode?: number) {
-  const configuredBase = (import.meta.env.VITE_STREAM_PLAY_BASE_URL as string | undefined)?.trim();
-  const base = configuredBase || 'https://redflix.club/play';
-  const url = new URL(base);
-  url.searchParams.set('id', String(tmdbId));
-  url.searchParams.set('type', mediaType);
-  url.searchParams.set('server', serverId);
-  if (mediaType === 'tv' && season && episode) {
-    url.searchParams.set('season', String(season));
-    url.searchParams.set('episode', String(episode));
+  if (serverId !== 'vidrift' || !Number.isFinite(tmdbId)) return null;
+
+  const base = 'https://embed.vidrift.in/embed';
+  if (mediaType === 'tv') {
+    if (!Number.isFinite(season) || !Number.isFinite(episode)) return null;
+    return `${base}/tv/${encodeURIComponent(String(tmdbId))}/${encodeURIComponent(String(season))}/${encodeURIComponent(String(episode))}`;
   }
-  return url.toString();
+
+  return `${base}/movie/${encodeURIComponent(String(tmdbId))}`;
 }
