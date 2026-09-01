@@ -20,12 +20,16 @@ async function bootstrapOAuthCallback() {
   }
 }
 
-// Register Service Worker
+// Register Service Worker with an uncached update check so new deployments
+// replace stale Home bundles immediately instead of leaving an old UI alive.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
-      .register('/sw.js')
-      .then((reg) => console.log('SW registered:', reg.scope))
+      .register('/sw.js', { updateViaCache: 'none' })
+      .then((reg) => {
+        console.log('SW registered:', reg.scope);
+        void reg.update();
+      })
       .catch((err) => console.error('SW registration failed:', err));
   });
 }
