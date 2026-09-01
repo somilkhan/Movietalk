@@ -20,6 +20,19 @@ export default function TitleDetailRoute() {
     const handleClick = (event: MouseEvent) => {
       const target = event.target;
       if (!(target instanceof Element)) return;
+
+      const playButton = target.closest('[data-testid="button-play"]');
+      if (playButton instanceof HTMLElement) {
+        const mediaType = params.mediaType === 'tv' ? 'tv' : 'movie';
+        const id = Number(params.id);
+        if (Number.isFinite(id)) {
+          event.preventDefault();
+          event.stopPropagation();
+          setWatch({ mediaType, id });
+          return;
+        }
+      }
+
       const anchor = target.closest('a[href]');
       if (!(anchor instanceof HTMLAnchorElement)) return;
       let url: URL;
@@ -42,7 +55,7 @@ export default function TitleDetailRoute() {
     };
     document.addEventListener('click', handleClick, true);
     return () => document.removeEventListener('click', handleClick, true);
-  }, []);
+  }, [params.mediaType, params.id]);
 
   useEffect(() => {
     const enhance = () => {
