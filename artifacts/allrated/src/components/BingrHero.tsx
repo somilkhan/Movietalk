@@ -29,7 +29,6 @@ export function BingrHero({ titles }: { titles: Title[] | undefined }) {
   const [index, setIndex] = useState(0);
   const [trailerUrl, setTrailerUrl] = useState<string | null>(null);
   const [youtubeKey, setYoutubeKey] = useState<string | null>(null);
-  const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
   const [logoPath, setLogoPath] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -51,7 +50,6 @@ export function BingrHero({ titles }: { titles: Title[] | undefined }) {
     const controller = new AbortController();
     setTrailerUrl(null);
     setYoutubeKey(null);
-    setPlaying(false);
     setMuted(true);
     setLogoPath(current.logoPath || null);
     void fetch(`/api/catalog/title/${current.mediaType}/${current.id}/trailer`, {
@@ -95,12 +93,8 @@ export function BingrHero({ titles }: { titles: Title[] | undefined }) {
     if (!trailerUrl || !videoRef.current) return;
     const video = videoRef.current;
     video.muted = true;
-    void video.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+    void video.play().catch(() => undefined);
   }, [trailerUrl]);
-
-  useEffect(() => {
-    if (youtubeKey) setPlaying(true);
-  }, [youtubeKey]);
 
   if (!current) return null;
 
@@ -110,32 +104,13 @@ export function BingrHero({ titles }: { titles: Title[] | undefined }) {
     ? `https://www.youtube-nocookie.com/embed/${encodeURIComponent(youtubeKey)}?autoplay=1&mute=1&controls=0&loop=1&playlist=${encodeURIComponent(youtubeKey)}&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3&enablejsapi=1`
     : null;
 
-  const togglePlay = async () => {
-    if (videoRef.current) {
-      if (videoRef.current.paused) {
-        try { await videoRef.current.play(); setPlaying(true); } catch { setPlaying(false); }
-      } else {
-        videoRef.current.pause();
-        setPlaying(false);
-      }
-      return;
-    }
-    if (youtubeRef.current && hasTrailer) {
-      youtubeRef.current.contentWindow?.postMessage(
-        JSON.stringify({ event: "command", func: playing ? "pauseVideo" : "playVideo", args: [] }),
-        "https://www.youtube-nocookie.com",
-      );
-      setPlaying((value) => !value);
-    }
-  };
-
   const toggleMute = () => {
     if (videoRef.current) {
       videoRef.current.muted = !videoRef.current.muted;
       setMuted(videoRef.current.muted);
       return;
     }
-    if (youtubeRef.current && hasTrailer) {
+    if (youtubeRef.current && youtubeKey) {
       const func = muted ? "unMute" : "mute";
       youtubeRef.current.contentWindow?.postMessage(
         JSON.stringify({ event: "command", func, args: [] }),
@@ -165,11 +140,10 @@ export function BingrHero({ titles }: { titles: Title[] | undefined }) {
               muted
               disablePictureInPicture
               disableRemotePlayback
+              controls={false}
               controlsList="nodownload nofullscreen noremoteplayback"
               className="absolute inset-0 h-full w-full object-cover object-center pointer-events-none animate-in fade-in duration-1000"
-              onPlay={() => setPlaying(true)}
-              onPause={() => setPlaying(false)}
-              onError={() => { setTrailerUrl(null); setPlaying(false); }}
+              onError={() => setTrailerUrl(null)}
             />
           ) : youtubeSrc ? (
             <iframe
@@ -211,10 +185,22 @@ export function BingrHero({ titles }: { titles: Title[] | undefined }) {
               </div>
               {current.overview ? <p className="mb-5 max-w-xl line-clamp-3 md:line-clamp-4 text-[13px] md:text-[14px] lg:text-[15px] leading-[1.4] text-white/70">{current.overview}</p> : null}
               <div className="flex items-center gap-3">
-                <button type="button" onClick={togglePlay} className="h-12 w-12 md:h-14 md:w-14 shrink-0 rounded-full bg-[#f9f9f9] text-black flex items-center justify-center shadow-lg transition hover:bg-white active:scale-95" aria-label={playing ? "Pause trailer" : "Play trailer"}>
-                  {playing ? <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z" /></svg> : <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 4l15 8-15 8z" /></svg>}
-                </button>
-                <Link href={routeOf(current)} className="inline-flex items-center justify-center gap-2.5 rounded-full border border-white/20 bg-[#0f1014]/60 px-6 py-3 md:py-3.5 text-[13px] md:text-[15px] font-semibold text-[#f9f9f9] backdrop-blur-md transition hover:bg-white/10 active:scale-95">
+                <Link
+                  href={routeOf(current)}
+                  className="h-12 w-12 md:h-14 md:w-14 shrink-0 rounded-full bg-[#f9f9f9] text-black flex items-center justify-center shadow-lg transition hover:bg-white active:scale-95"
+                  aria-label="Open details"
+                  data-testid="button-hero-play"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M6 4l15 8-15 8z" />
+                  </svg>
+                </Link>
+
+                <Link
+                  href={routeOf(current)}
+                  className="inline-flex items-center justify-center gap-2.5 rounded-full border border-white/20 bg-[#0f1014]/60 px-6 py-3 md:py-3.5 text-[13px] md:text-[15px] font-semibold text-[#f9f9f9] backdrop-blur-md transition hover:bg-white/10 active:scale-95"
+                  data-testid="button-hero-info"
+                >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
                   See More
                 </Link>
