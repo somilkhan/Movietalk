@@ -3,7 +3,6 @@ export type StreamType = 'hls' | 'mp4' | 'dash' | 'embed';
 export type StreamingProviderId = 'vidrift' | 'vidsrc' | 'vidcore' | 'vidcore2' | 'superembed' | 'videasy' | 'filmu' | 'screenscape' | 'vixsrc' | (string & {});
 export interface StreamingServer { id: StreamingProviderId; name: string; provider: StreamingProviderId; sourceIds: readonly string[]; }
 export interface NormalizedStream { url: string; type: StreamType; quality: string; provider: { id: string; name: string }; serverId: string; serverName: string; sourceId: string; sourceName: string; audio?: Array<{ id: string; label: string; language?: string }>; subtitles?: Array<{ url: string; label: string; language: string }>; headers?: Record<string, string>; }
-
 export const STREAMING_SERVERS: readonly StreamingServer[] = [
   { id: 'vidrift', name: 'VidRift', provider: 'vidrift', sourceIds: ['vidrift'] },
   { id: 'vidsrc', name: 'VidSrc', provider: 'vidsrc', sourceIds: ['vidsrc'] },
@@ -20,7 +19,6 @@ export function getStreamingServer(serverId: string) { return STREAMING_SERVERS.
 export function getStreamServer(serverId: string) { return getStreamingServer(serverId); }
 export function getStreamProvider(serverId: string) { return getStreamingServer(serverId)?.provider ?? null; }
 export function getBingrSource(sourceId: string) { return BINGR_SOURCES.find((source) => source.id === sourceId) ?? null; }
-
 export function buildEmbedUrl(mediaType: StreamingMediaType, tmdbId: number, serverId: string, season?: number, episode?: number) {
   if (!Number.isFinite(tmdbId)) return null;
   const id = encodeURIComponent(String(tmdbId));
@@ -34,7 +32,7 @@ export function buildEmbedUrl(mediaType: StreamingMediaType, tmdbId: number, ser
     case 'superembed': return mediaType === 'tv' ? (s && e ? `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${s}&e=${e}` : null) : `https://multiembed.mov/?video_id=${id}&tmdb=1`;
     case 'videasy': return mediaType === 'tv' ? (s && e ? `https://player.videasy.net/tv/${id}/${s}/${e}` : null) : `https://player.videasy.net/movie/${id}`;
     case 'filmu': return mediaType === 'tv' ? (s && e ? `https://embed.filmu.in/embed/tv/${id}/${s}/${e}` : null) : `https://embed.filmu.in/embed/movie/${id}`;
-    case 'screenscape': return mediaType === 'tv' ? (s && e ? `https://flix.screenscape.me/embed?tmdb=${id}&type=tv&s=${s}&e=${e}` : null) : `https://flix.screenscape.me/embed?tmdb=${id}&type=movie`;
+    case 'screenscape': return mediaType === 'tv' ? (s && e ? `https://screenscape.me/embed?tmdb=${id}&type=tv&s=${s}&e=${e}` : null) : `https://screenscape.me/embed?tmdb=${id}&type=movie`;
     case 'vixsrc': return mediaType === 'tv' ? (s && e ? `https://vixsrc.to/tv/${id}/${s}/${e}` : null) : `https://vixsrc.to/movie/${id}`;
     default: return null;
   }
